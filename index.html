@@ -7,6 +7,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
+
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
     :root {
       --primary: #0ea5e9; --primary-dark: #0284c7; --secondary: #06b6d4;
@@ -18,7 +19,6 @@
     }
     body { background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); min-height: 100vh; padding-bottom: 100px; }
     .container { max-width: 900px; margin: 0 auto; padding: 20px; }
-    
     .header {
       background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
       border-radius: 24px; padding: 28px; margin-bottom: 24px;
@@ -31,7 +31,6 @@
     }
     .header h1 { font-size: 26px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
     .header p { opacity: 0.9; font-size: 14px; }
-    
     .sync-status {
       position: absolute; top: 20px; right: 20px;
       background: rgba(255,255,255,0.2); backdrop-filter: blur(10px);
@@ -45,7 +44,6 @@
     .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
     .sync-status.syncing .sync-dot { animation: pulse 1.5s infinite; }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-    
     .nav-bar {
       position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
       background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px);
@@ -67,11 +65,9 @@
       color: white; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4);
     }
     .nav-item.active .icon { transform: translateY(-2px); }
-    
     .page { display: none; animation: fadeIn 0.4s ease-out; }
     .page.show { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-    
     .card {
       background: var(--card-bg); border-radius: 24px; padding: 24px;
       margin-bottom: 20px; box-shadow: var(--shadow);
@@ -86,7 +82,6 @@
       background: linear-gradient(180deg, var(--primary) 0%, var(--secondary) 100%);
       border-radius: 2px;
     }
-    
     .stats-grid {
       display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
       margin-bottom: 24px;
@@ -109,7 +104,6 @@
     .stat-card:nth-child(1) .stat-value { color: var(--success); }
     .stat-card:nth-child(2) .stat-value { color: var(--danger); }
     .stat-card:nth-child(3) .stat-value { color: var(--primary); }
-    
     .filter-bar {
       display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
       margin-bottom: 20px;
@@ -130,7 +124,6 @@
       box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
     }
     select option { padding: 12px; font-size: 15px; }
-    
     .btn {
       padding: 14px 24px; border: none; border-radius: 16px;
       font-weight: 600; font-size: 15px; cursor: pointer;
@@ -143,7 +136,6 @@
     .btn-danger { background: linear-gradient(135deg, var(--danger) 0%, #f87171 100%); color: white; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); }
     .btn-secondary { background: #f1f5f9; color: var(--text-primary); border: 2px solid var(--border); }
     .btn:active { transform: scale(0.96); }
-    
     .table-wrapper { overflow-x: auto; border-radius: 16px; background: #f8fafc; border: 1px solid var(--border); -webkit-overflow-scrolling: touch; }
     table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 14px; min-width: 600px; }
     th { background: white; font-weight: 600; color: var(--text-primary); padding: 16px 12px; text-align: center; border-bottom: 2px solid var(--border); white-space: nowrap; }
@@ -154,7 +146,6 @@
     .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
     .badge-in { background: rgba(16, 185, 129, 0.1); color: var(--success); }
     .badge-out { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
-    
     .pack-group { margin-bottom: 16px; border-radius: 20px; overflow: hidden; background: white; box-shadow: var(--shadow); border: 1px solid var(--border); }
     .pack-summary { background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 16px 20px; font-weight: 700; font-size: 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: var(--text-primary); transition: all 0.3s; }
     .pack-summary:hover { background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); }
@@ -167,7 +158,6 @@
     .spec-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
     .spec-name { font-weight: 600; color: var(--text-primary); font-size: 14px; }
     .spec-meta { font-size: 12px; color: var(--text-secondary); }
-    
     .toast {
       position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(100px);
       background: var(--text-primary); color: white; padding: 16px 28px;
@@ -178,15 +168,12 @@
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     .toast.success { background: var(--success); }
     .toast.error { background: var(--danger); }
-    
     .log-summary { background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 16px 20px; border-radius: 16px; font-weight: 600; color: var(--text-primary); display: flex; justify-content: space-between; align-items: center; margin-top: 16px; border: 1px solid var(--border); flex-wrap: wrap; gap: 12px; }
     .log-summary .numbers { display: flex; gap: 20px; flex-wrap: wrap; }
     .log-summary .in { color: var(--success); }
     .log-summary .out { color: var(--danger); }
-    
     .empty-state { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
     .empty-state .icon { font-size: 64px; margin-bottom: 16px; opacity: 0.5; }
-    
     @media (max-width: 600px) {
       .container { padding: 12px; }
       .header { padding: 20px; border-radius: 20px; }
@@ -203,10 +190,8 @@
       input, select, textarea { padding: 12px 14px; font-size: 14px; }
       .sync-status { top: 10px; right: 10px; padding: 6px 12px; font-size: 11px; }
     }
-    
     .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 16px; }
     @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
-    
     .stock-display { background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 2px solid var(--primary); border-radius: 16px; padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; animation: fadeIn 0.3s ease-out; flex-wrap: wrap; gap: 12px; }
     .stock-display-label { font-size: 14px; color: var(--text-secondary); font-weight: 500; }
     .stock-display-value { font-size: 28px; font-weight: 700; color: var(--primary); display: flex; align-items: baseline; gap: 4px; }
@@ -215,25 +200,200 @@
     .stock-display.empty .stock-display-value { color: var(--danger); }
     .stock-display.warning { border-color: var(--warning); background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); }
     .stock-display.warning .stock-display-value { color: var(--warning); }
-    
     .btn-all-out { background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); color: white; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); font-size: 13px; padding: 10px 16px; border-radius: 12px; white-space: nowrap; border: none; cursor: pointer; font-weight: 600; transition: all 0.3s; }
     .btn-all-out:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5); }
     .btn-all-out:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-delete { background: linear-gradient(135deg, #ef4444 0%, #f87171 100%); color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.3s; }
+    .btn-delete:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4); }
+    .btn-delete:disabled { opacity: 0.5; cursor: not-allowed; }
+    .query-btn-container { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
     
-    .query-btn-container {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
+    /* 库存预警弹窗样式 */
+    .stock-alert-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 10000;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
     }
+    .stock-alert-modal.show { display: block !important; }
+    .stock-alert-content {
+      background: white;
+      border-radius: 24px;
+      padding: 28px;
+      max-width: 340px;
+      width: 85%;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+      animation: modalSlideIn 0.3s ease-out;
+      text-align: center;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      -webkit-transform: translate(-50%, -50%);
+      margin: 0;
+    }
+    @keyframes modalSlideIn {
+      from { opacity: 0; transform: translate(-50%, -45%) scale(0.95); }
+      to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+    .stock-alert-icon { font-size: 56px; margin-bottom: 12px; }
+    .stock-alert-title { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; }
+    .stock-alert-message { font-size: 15px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 20px; }
+    .stock-alert-info { background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 2px solid #ef4444; border-radius: 16px; padding: 16px; margin-bottom: 24px; text-align: left; }
+    .stock-alert-info-row { display: flex; justify-content: space-between; margin: 8px 0; font-size: 15px; }
+    .stock-alert-info-label { color: var(--text-secondary); font-weight: 500; }
+    .stock-alert-info-value { font-weight: 700; color: var(--danger); }
+    .stock-alert-btn { background: linear-gradient(135deg, var(--danger) 0%, #f87171 100%); color: white; border: none; padding: 14px 32px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); width: 100%; }
+    .stock-alert-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5); }
+    
+    /* 批量出入库样式 */
+    .batch-item {
+      display: grid;
+      grid-template-columns: 40px 1fr 100px 80px;
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      margin-bottom: 8px;
+      background: #f8fafc;
+      border-radius: 12px;
+      border: 2px solid transparent;
+      transition: all 0.3s;
+    }
+    .batch-item:hover { background: #f1f5f9; }
+    .batch-item.selected { 
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      border-color: var(--primary);
+    }
+    .batch-item.error { 
+      background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+      border-color: var(--danger);
+      animation: shake 0.5s;
+    }
+    .batch-item.success { 
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      border-color: var(--success);
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+    .batch-checkbox {
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+    }
+    .batch-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .batch-name {
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+    .batch-meta {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    .batch-stock {
+      text-align: center;
+      font-size: 13px;
+    }
+    .batch-stock-label {
+      color: var(--text-secondary);
+      font-size: 11px;
+    }
+    .batch-stock-value {
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 16px;
+    }
+    .batch-input {
+      padding: 10px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      width: 100%;
+      text-align: center;
+    }
+    .batch-input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .batch-input.error {
+      border-color: var(--danger);
+      background: #fef2f2;
+    }
+    .batch-status {
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      padding: 4px 8px;
+      border-radius: 8px;
+    }
+    .batch-status.pending { color: var(--text-secondary); }
+    .batch-status.success { 
+      color: var(--success); 
+      background: rgba(16, 185, 129, 0.1);
+    }
+    .batch-status.error { 
+      color: var(--danger); 
+      background: rgba(239, 68, 68, 0.1);
+    }
+    .batch-result {
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      border-radius: 16px;
+      padding: 16px;
+      margin-top: 16px;
+      border: 1px solid var(--border);
+    }
+    .batch-result-title {
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--text-primary);
+    }
+    .batch-result-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .batch-result-item:last-child { border-bottom: none; }
+    .batch-select-all {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      background: white;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .batch-select-all input {
+      width: 20px;
+      height: 20px;
+    }
+  
   </style>
 </head>
+<body>
 <body>
 <div class="container">
   <div class="header">
     <div class="sync-status" id="syncStatus">
       <span class="sync-dot"></span>
       <span id="syncText">正在连接云端...</span>
+      <span id="syncTime" style="margin-left: 8px; opacity: 0.8; font-size: 11px;"></span>
     </div>
     <h1>🦐 佳信水产</h1>
     <p>智能仓库管理系统 · 实时库存监控</p>
@@ -272,6 +432,9 @@
         <button class="btn btn-secondary" onclick="resetStockFilters()">
           <span>🔄</span> 重置
         </button>
+        <button class="btn btn-success" onclick="showBalanceStock()">
+          <span>📦</span> 结余库存
+        </button>
       </div>
       
       <div class="table-wrapper">
@@ -282,6 +445,8 @@
               <th>规格</th>
               <th>品牌</th>
               <th>库存(件)</th>
+              <th>累计入库</th>
+              <th>累计出库</th>
               <th>净重/件</th>
               <th>总净重</th>
             </tr>
@@ -295,92 +460,134 @@
   <!-- 出库登记 -->
   <div class="page" id="out">
     <div class="card">
-      <div class="card-title">出库登记</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>选择产品</label>
-          <select id="out_product"></select>
-        </div>
-      </div>
+      <div class="card-title">📤 批量出库登记</div>
       
-      <div id="out_stock_display" class="stock-display" style="display: none;">
-        <div>
-          <div class="stock-display-label">📦 当前库存</div>
-          <div class="stock-display-value">
-            <span id="out_stock_value">0</span>
-            <span class="unit">件</span>
-          </div>
-        </div>
-        <button class="btn-all-out" id="btn_all_out" onclick="doAllStockOut()">
-          <span>⚡</span> 全部出库
-        </button>
-      </div>
-
       <div class="form-row">
-        <div class="form-group">
-          <label>出库数量(件)</label>
-          <input type="number" id="out_qty" value="1" min="1">
-        </div>
         <div class="form-group">
           <label>出库日期</label>
           <input type="date" id="out_date">
         </div>
-      </div>
-      <div class="form-row">
         <div class="form-group">
-          <label>备注</label>
-          <textarea id="out_remark" rows="2" placeholder="可选填客户名称或其他信息..."></textarea>
+          <label>备注（统一）</label>
+          <input type="text" id="out_remark" placeholder="可选填客户名称或其他信息...">
         </div>
       </div>
-      <button class="btn btn-danger" onclick="doStockOut()">
-        <span>📤</span> 确认出库
-      </button>
+      
+      <div class="card-title" style="margin-top: 20px; font-size: 16px;">📝 选择出库产品</div>
+
+      <!-- 批量出库筛选栏 -->
+      <div class="filter-bar" style="margin-bottom: 16px; background: #f8fafc; padding: 12px; border-radius: 16px;">
+        <div class="form-group">
+          <label>品牌筛选</label>
+          <select id="batchOutFilterBrand" onchange="filterBatchOutList()">
+            <option value="">全部品牌</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>品类筛选</label>
+          <select id="batchOutFilterName" onchange="filterBatchOutList()">
+            <option value="">全部品类</option>
+          </select>
+        </div>
+        <div class="form-group" style="display: flex; align-items: flex-end;">
+          <button class="btn btn-secondary" onclick="resetBatchOutFilters()" style="width: 100%;">
+            <span>🔄</span> 重置筛选
+          </button>
+        </div>
+      </div>
+
+      <div id="batchOutList" style="max-height: 400px; overflow-y: auto;">
+        <!-- 动态生成产品列表 -->
+      </div>
+      
+      <div style="display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap;">
+        <button class="btn btn-danger" onclick="doBatchStockOut()">
+          <span>📤</span> 一键批量出库
+        </button>
+        <button class="btn btn-secondary" onclick="clearBatchOut()">
+          <span>🔄</span> 清空
+        </button>
+      </div>
+      
+      <div id="batchOutResult" style="margin-top: 16px;"></div>
+    </div>
+    
+    <!-- 当天出库流水 -->
+    <div class="card" style="margin-top: 20px;">
+      <div class="card-title">📋 今日出库流水</div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>时间</th>
+              <th>品名</th>
+              <th>规格</th>
+              <th>品牌</th>
+              <th>数量</th>
+              <th>备注</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="todayOutTable"></tbody>
+        </table>
+      </div>
+      <div id="todayOutSummary" style="margin-top: 12px; font-size: 13px; color: var(--text-secondary);"></div>
     </div>
   </div>
 
   <!-- 入库登记 -->
   <div class="page" id="in">
     <div class="card">
-      <div class="card-title">入库登记</div>
+      <div class="card-title">📥 批量入库登记</div>
+      
       <div class="form-row">
-        <div class="form-group">
-          <label>选择产品</label>
-          <select id="in_product"></select>
-        </div>
-        
-        <div class="form-group" id="in_stock_display_wrapper" style="display: none;">
-          <label>当前库存</label>
-          <div class="stock-display" style="margin: 0; padding: 12px 16px;">
-            <div class="stock-display-value" style="font-size: 24px;">
-              <span id="in_stock_value">0</span>
-              <span class="unit">件</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>入库数量(件)</label>
-          <input type="number" id="in_qty" value="1" min="1">
-        </div>
         <div class="form-group">
           <label>入库日期</label>
           <input type="date" id="in_date">
         </div>
-      </div>
-      <div class="form-row">
         <div class="form-group">
-          <label>收购单号</label>
+          <label>收购单号（统一）</label>
           <input type="text" id="in_bill" placeholder="如：001">
         </div>
+      </div>
+      
+      <div class="card-title" style="margin-top: 20px; font-size: 16px;">📝 选择入库产品</div>
+
+      <!-- 批量入库筛选栏 -->
+      <div class="filter-bar" style="margin-bottom: 16px; background: #f8fafc; padding: 12px; border-radius: 16px;">
         <div class="form-group">
-          <label>备注</label>
-          <textarea id="in_remark" rows="2"></textarea>
+          <label>品牌筛选</label>
+          <select id="batchInFilterBrand" onchange="filterBatchInList()">
+            <option value="">全部品牌</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>品类筛选</label>
+          <select id="batchInFilterName" onchange="filterBatchInList()">
+            <option value="">全部品类</option>
+          </select>
+        </div>
+        <div class="form-group" style="display: flex; align-items: flex-end;">
+          <button class="btn btn-secondary" onclick="resetBatchInFilters()" style="width: 100%;">
+            <span>🔄</span> 重置筛选
+          </button>
         </div>
       </div>
-      <button class="btn btn-success" onclick="doStockIn()">
-        <span>📥</span> 确认入库
-      </button>
+
+      <div id="batchInList" style="max-height: 400px; overflow-y: auto;">
+        <!-- 动态生成产品列表 -->
+      </div>
+      
+      <div style="display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap;">
+        <button class="btn btn-success" onclick="doBatchStockIn()">
+          <span>📥</span> 一键批量入库
+        </button>
+        <button class="btn btn-secondary" onclick="clearBatchIn()">
+          <span>🔄</span> 清空
+        </button>
+      </div>
+      
+      <div id="batchInResult" style="margin-top: 16px;"></div>
     </div>
   </div>
 
@@ -446,14 +653,23 @@
         <div class="form-group">
           <label>品名</label>
           <input type="text" id="p_name" placeholder="例：盒装白灼虾">
+          <select id="p_name_history" onchange="fillProductField('p_name', this.value)" style="margin-top: 8px; font-size: 13px; color: var(--text-secondary);">
+            <option value="">📋 选择历史品名</option>
+          </select>
         </div>
         <div class="form-group">
           <label>规格</label>
           <input type="text" id="p_sku" placeholder="例：16-20">
+          <select id="p_sku_history" onchange="fillProductField('p_sku', this.value)" style="margin-top: 8px; font-size: 13px; color: var(--text-secondary);">
+            <option value="">📋 选择历史规格</option>
+          </select>
         </div>
         <div class="form-group">
           <label>品牌</label>
           <input type="text" id="p_brand" placeholder="例：佳信">
+          <select id="p_brand_history" onchange="fillProductField('p_brand', this.value)" style="margin-top: 8px; font-size: 13px; color: var(--text-secondary);">
+            <option value="">📋 选择历史品牌</option>
+          </select>
         </div>
       </div>
       <div class="form-row">
@@ -517,6 +733,35 @@
   </div>
 </div>
 
+<div class="toast" id="toast"></div>
+
+<!-- 库存预警弹窗 -->
+<div class="stock-alert-modal" id="stockAlertModal">
+  <div class="stock-alert-content">
+    <div class="stock-alert-icon">⚠️</div>
+    <div class="stock-alert-title" id="stockAlertTitle">库存不足</div>
+    <div class="stock-alert-message" id="stockAlertMessage">
+      您尝试出库的数量超过了当前可用库存。
+    </div>
+    <div class="stock-alert-info">
+      <div class="stock-alert-info-row">
+        <span class="stock-alert-info-label">当前库存:</span>
+        <span class="stock-alert-info-value" id="stockAlertCurrent">0 件</span>
+      </div>
+      <div class="stock-alert-info-row">
+        <span class="stock-alert-info-label">尝试出库:</span>
+        <span class="stock-alert-info-value" id="stockAlertRequest">0 件</span>
+      </div>
+      <div class="stock-alert-info-row">
+        <span class="stock-alert-info-label">缺少数量:</span>
+        <span class="stock-alert-info-value" id="stockAlertShortage">0 件</span>
+      </div>
+    </div>
+    <button class="stock-alert-btn" onclick="closeStockAlert()">我知道了</button>
+  </div>
+</div>
+
+
 <script>
 // ============================================
 // JSONBin.io 配置
@@ -539,9 +784,7 @@ async function fetchData() {
   try {
     const response = await fetch(API_URL, {
       method: 'GET',
-      headers: {
-        'X-Master-Key': MASTER_KEY
-      }
+      headers: { 'X-Master-Key': MASTER_KEY }
     });
     if (!response.ok) throw new Error('获取数据失败');
     const result = await response.json();
@@ -577,41 +820,46 @@ async function updateData(data) {
 
 async function initSystem() {
   updateSyncStatus('syncing', '正在连接云端...');
-  
+
   const todayStr = new Date().toISOString().split('T')[0];
   document.getElementById('in_date').value = todayStr;
   document.getElementById('out_date').value = todayStr;
-  
+  document.getElementById('l_start').value = todayStr;
+  document.getElementById('l_end').value = todayStr;
+
   try {
     const data = await fetchData();
     currentProducts = data.products || [];
     currentStock = data.stock || {};
     currentLogs = data.logs || [];
     isOnline = true;
-    
+
     updateSyncStatus('synced', '已同步到云端');
     showToast('✅ 数据加载成功');
-    
+
     initUI();
-    
+    initBatchLists();
+
   } catch (err) {
     console.error('初始化失败:', err);
     updateSyncStatus('error', '连接失败，使用本地模式');
     isOnline = false;
-    showToast('❌ 云端连接失败，请检查网络', 'error');
-    // 使用空数据初始化
     currentProducts = [];
     currentStock = {};
     currentLogs = [];
     initUI();
+    initBatchLists();
   }
 }
 
 function updateSyncStatus(status, text) {
   const el = document.getElementById('syncStatus');
   const txt = document.getElementById('syncText');
+  const time = document.getElementById('syncTime');
   el.className = 'sync-status ' + status;
   txt.textContent = text;
+  const now = new Date();
+  time.textContent = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
 // ============================================
@@ -619,43 +867,35 @@ function updateSyncStatus(status, text) {
 // ============================================
 
 function initUI() {
-  // 初始化筛选选项
   initFilterOptions();
-  
-  // 初始化表格（显示全部数据）
   renderStockTable(currentProducts);
-  
   updateSummary();
   renderProductSelects();
   renderProductTree();
   applyLogFilter();
-  
-  // 绑定产品选择事件
-  document.getElementById('in_product').onchange = updateInStockDisplay;
-  document.getElementById('out_product').onchange = updateOutStockDisplay;
+  renderTodayLogs();
 }
 
-// 初始化筛选选项（不触发查询）
 function initFilterOptions() {
   const brands = [...new Set(currentProducts.map(p => p.brand))].sort();
   const nets = [...new Set(currentProducts.map(p => p.net))].sort((a,b) => a-b);
   const names = [...new Set(currentProducts.map(p => p.name))].sort();
   const skus = [...new Set(currentProducts.map(p => p.sku))].sort();
-  
+
   const brandSel = document.getElementById('filterPack');
   const netSel = document.getElementById('filterNet');
   const nameSel = document.getElementById('filterName');
   const skuSel = document.getElementById('filterSku');
-  
+
   brandSel.innerHTML = '<option value="">全部品牌</option>' + 
     brands.map(v => `<option value="${v}">${v}</option>`).join('');
-  
+
   netSel.innerHTML = '<option value="">全部净重</option>' + 
     nets.map(v => `<option value="${v}">${v}kg</option>`).join('');
-  
+
   nameSel.innerHTML = '<option value="">全部品类</option>' + 
     names.map(v => `<option value="${v}">${v}</option>`).join('');
-  
+
   skuSel.innerHTML = '<option value="">全部规格</option>' + 
     skus.map(v => `<option value="${v}">${v}</option>`).join('');
 }
@@ -665,22 +905,21 @@ function initFilterOptions() {
 // ============================================
 
 function showToast(msg, type = 'success') {
-  const toast = document.createElement('div');
+  const toast = document.getElementById('toast');
   toast.className = `toast ${type}`;
   toast.innerText = msg;
-  document.body.appendChild(toast);
-  setTimeout(() => toast.classList.add('show'), 10);
-  setTimeout(() => {
-    toast.classList.remove('show');
-    setTimeout(() => toast.remove(), 400);
-  }, 2500);
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
 }
 
 function updateSummary() {
   let totalIn = 0, totalOut = 0;
-  currentLogs.forEach(l => { if (l.type === 'in') totalIn += l.qty; else totalOut += l.qty; });
+  currentLogs.forEach(l => { 
+    if (l.type === 'in') totalIn += l.qty; 
+    else totalOut += l.qty; 
+  });
   const totalStock = Object.values(currentStock).reduce((a,b)=>a+b,0);
-  
+
   document.getElementById('summaryCards').innerHTML = `
     <div class="stat-card">
       <div class="stat-label">📥 总入库</div>
@@ -700,344 +939,736 @@ function updateSummary() {
   `;
 }
 
-// 查询按钮功能
+// ============================================
+// 库存查询功能
+// ============================================
+
 function queryStock() {
   const brand = document.getElementById('filterPack').value;
-  const net = parseFloat(document.getElementById('filterNet').value);
+  const net = document.getElementById('filterNet').value;
   const name = document.getElementById('filterName').value;
   const sku = document.getElementById('filterSku').value;
-  
-  const filtered = currentProducts.filter(p => {
-    if (brand && p.brand !== brand) return false;
-    if (!isNaN(net) && p.net !== net) return false;
-    if (name && p.name !== name) return false;
-    if (sku && p.sku !== sku) return false;
-    return true;
+
+  let filtered = currentProducts.filter(p => {
+    return (!brand || p.brand === brand) &&
+           (!net || p.net == net) &&
+           (!name || p.name === name) &&
+           (!sku || p.sku === sku);
   });
-  
+
   renderStockTable(filtered);
-  showToast(`✅ 查询完成，共 ${filtered.length} 条记录`);
+  showToast(`✅ 查询完成，找到 ${filtered.length} 个产品`);
 }
 
-// 重置筛选
 function resetStockFilters() {
   document.getElementById('filterPack').value = '';
   document.getElementById('filterNet').value = '';
   document.getElementById('filterName').value = '';
   document.getElementById('filterSku').value = '';
   renderStockTable(currentProducts);
-  showToast('✅ 已重置筛选');
+  showToast('🔄 筛选已重置');
 }
 
-// 渲染库存表格
+function showBalanceStock() {
+  let filtered = currentProducts.filter(p => {
+    const stock = currentStock[p.id] || 0;
+    return stock > 0;
+  });
+  renderStockTable(filtered);
+  showToast(`📦 显示 ${filtered.length} 个有库存产品`);
+}
+
 function renderStockTable(products) {
   const tbody = document.getElementById('stockTable');
-  tbody.innerHTML = '';
-  
   if (products.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><div class="icon">📦</div>暂无符合条件的库存</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><div class="icon">📭</div>暂无数据</td></tr>';
     return;
   }
-  
-  products.forEach(p => {
-    const qty = currentStock[p.id] || 0;
-    const totalNet = (qty * p.net).toFixed(2);
-    const stockClass = (qty < 0) ? 'stock-negative' : '';
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><strong>${p.name}</strong></td>
-      <td><span class="badge badge-in">${p.sku}</span></td>
-      <td>${p.brand}</td>
-      <td class="${stockClass}">${qty}</td>
-      <td>${p.net.toFixed(2)}kg</td>
-      <td>${totalNet}kg</td>
+
+  tbody.innerHTML = products.map(p => {
+    const stock = currentStock[p.id] || 0;
+    const totalIn = currentLogs.filter(l => l.productId === p.id && l.type === 'in').reduce((a,l) => a + l.qty, 0);
+    const totalOut = currentLogs.filter(l => l.productId === p.id && l.type === 'out').reduce((a,l) => a + l.qty, 0);
+    const totalNet = (stock * p.net).toFixed(2);
+
+    return `
+      <tr>
+        <td>${p.name}</td>
+        <td>${p.sku}</td>
+        <td>${p.brand}</td>
+        <td class="${stock < 0 ? 'stock-negative' : ''}">${stock}</td>
+        <td>${totalIn}</td>
+        <td>${totalOut}</td>
+        <td>${p.net}kg</td>
+        <td>${totalNet}kg</td>
+      </tr>
     `;
-    tbody.appendChild(tr);
+  }).join('');
+}
+
+// ============================================
+// 批量出入库功能
+// ============================================
+
+function initBatchLists() {
+  initBatchFilters();
+  renderBatchOutList();
+  renderBatchInList();
+}
+
+// 初始化批量出入库筛选选项
+function initBatchFilters() {
+  const brands = [...new Set(currentProducts.map(p => p.brand))].sort();
+  const names = [...new Set(currentProducts.map(p => p.name))].sort();
+
+  // 出库筛选
+  const outBrandSel = document.getElementById('batchOutFilterBrand');
+  const outNameSel = document.getElementById('batchOutFilterName');
+  if (outBrandSel) {
+    outBrandSel.innerHTML = '<option value="">全部品牌</option>' + 
+      brands.map(v => `<option value="${v}">${v}</option>`).join('');
+  }
+  if (outNameSel) {
+    outNameSel.innerHTML = '<option value="">全部品类</option>' + 
+      names.map(v => `<option value="${v}">${v}</option>`).join('');
+  }
+
+  // 入库筛选
+  const inBrandSel = document.getElementById('batchInFilterBrand');
+  const inNameSel = document.getElementById('batchInFilterName');
+  if (inBrandSel) {
+    inBrandSel.innerHTML = '<option value="">全部品牌</option>' + 
+      brands.map(v => `<option value="${v}">${v}</option>`).join('');
+  }
+  if (inNameSel) {
+    inNameSel.innerHTML = '<option value="">全部品类</option>' + 
+      names.map(v => `<option value="${v}">${v}</option>`).join('');
+  }
+}
+
+// 批量出库筛选
+let currentBatchOutFiltered = [];
+
+function filterBatchOutList() {
+  const brand = document.getElementById('batchOutFilterBrand').value;
+  const name = document.getElementById('batchOutFilterName').value;
+
+  currentBatchOutFiltered = currentProducts.filter(p => {
+    return (!brand || p.brand === brand) && (!name || p.name === name);
   });
+
+  renderBatchOutListFiltered();
+  showToast(`🔍 筛选结果: ${currentBatchOutFiltered.length} 个产品`);
 }
 
-// 入库/出库库存显示
-function updateInStockDisplay() {
-  const pid = document.getElementById('in_product').value;
-  const displayWrapper = document.getElementById('in_stock_display_wrapper');
-  if (pid) {
-    const qty = currentStock[pid] || 0;
-    document.getElementById('in_stock_value').textContent = qty;
-    displayWrapper.style.display = 'block';
-  } else {
-    displayWrapper.style.display = 'none';
-  }
+function resetBatchOutFilters() {
+  document.getElementById('batchOutFilterBrand').value = '';
+  document.getElementById('batchOutFilterName').value = '';
+  currentBatchOutFiltered = [];
+  renderBatchOutList();
+  showToast('🔄 筛选已重置');
 }
 
-function updateOutStockDisplay() {
-  const pid = document.getElementById('out_product').value;
-  const displayDiv = document.getElementById('out_stock_display');
-  const stockValue = document.getElementById('out_stock_value');
-  const allOutBtn = document.getElementById('btn_all_out');
-  
-  if (pid) {
-    const qty = currentStock[pid] || 0;
-    stockValue.textContent = qty;
-    displayDiv.style.display = 'flex';
-    displayDiv.classList.remove('empty', 'warning');
-    allOutBtn.disabled = qty <= 0;
-    if (qty === 0) displayDiv.classList.add('empty');
-    else if (qty < 10) displayDiv.classList.add('warning');
-  } else {
-    displayDiv.style.display = 'none';
-  }
-}
+function renderBatchOutListFiltered() {
+  const container = document.getElementById('batchOutList');
+  const products = currentBatchOutFiltered.length > 0 ? currentBatchOutFiltered : currentProducts;
 
-function doAllStockOut() {
-  const pid = document.getElementById('out_product').value;
-  if (!pid) { showToast('请先选择产品', 'error'); return; }
-  const currentQty = currentStock[pid] || 0;
-  if (currentQty <= 0) { showToast('当前库存为0', 'error'); return; }
-  document.getElementById('out_qty').value = currentQty;
-  showToast(`已设置出库数量：${currentQty} 件`);
-}
-
-// 入库操作
-async function doStockIn() {
-  const pid = document.getElementById('in_product').value;
-  const qty = parseInt(document.getElementById('in_qty').value);
-  const date = document.getElementById('in_date').value;
-  const bill = document.getElementById('in_bill').value.trim();
-  const remark = document.getElementById('in_remark').value.trim();
-  
-  if (!pid || isNaN(qty) || qty <= 0) {
-    showToast('请选择产品并输入正数数量', 'error');
+  if (products.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📭</div>没有符合条件的产品</div>';
     return;
   }
-  
-  const p = currentProducts.find(x => x.id === pid);
-  if (!p) return;
-  
-  // 更新数据
-  currentStock[pid] = (currentStock[pid] || 0) + qty;
-  const newLog = {
-    id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-    type: 'in', date, pid, name: p.name, sku: p.sku, brand: p.brand, qty, bill, remark
-  };
-  currentLogs.push(newLog);
-  
-  // 同步到云端
-  if (isOnline) {
-    try {
-      await updateData({
-        products: currentProducts,
-        stock: currentStock,
-        logs: currentLogs,
-        initialized: true
-      });
-    } catch (err) {
-      showToast('❌ 云端同步失败', 'error');
-      return;
-    }
-  }
-  
-  showToast(`✅ 成功入库 ${qty} 件 ${p.name}`);
-  document.getElementById('in_qty').value = 1;
-  document.getElementById('in_bill').value = '';
-  document.getElementById('in_remark').value = '';
-  
-  updateSummary();
-  queryStock(); // 刷新表格
-  updateInStockDisplay();
-  renderProductTree();
+
+  let html = `
+    <div class="batch-select-all" onclick="toggleSelectAllFiltered('out')">
+      <input type="checkbox" id="selectAllOutFiltered"> 
+      <span>全选当前筛选结果 (${products.length}个)</span>
+    </div>
+  `;
+
+  html += products.map(p => {
+    const stock = currentStock[p.id] || 0;
+    return `
+      <div class="batch-item" id="out-item-${p.id}">
+        <input type="checkbox" class="batch-checkbox" data-id="${p.id}" data-type="out" onchange="updateBatchItem('${p.id}', 'out')">
+        <div class="batch-info">
+          <div class="batch-name">${p.name}</div>
+          <div class="batch-meta">${p.brand} · ${p.sku} · ${p.net}kg/件</div>
+        </div>
+        <div class="batch-stock">
+          <div class="batch-stock-label">库存</div>
+          <div class="batch-stock-value ${stock <= 0 ? 'stock-negative' : ''}">${stock}</div>
+        </div>
+        <input type="number" class="batch-input" id="out-qty-${p.id}" placeholder="数量" min="1" disabled onchange="validateBatchQty('${p.id}', 'out')">
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = html;
 }
 
-// 出库操作
-async function doStockOut() {
-  const pid = document.getElementById('out_product').value;
-  const qty = parseInt(document.getElementById('out_qty').value);
+function toggleSelectAllFiltered(type) {
+  const products = type === 'out' ? 
+    (currentBatchOutFiltered.length > 0 ? currentBatchOutFiltered : currentProducts) :
+    (currentBatchInFiltered.length > 0 ? currentBatchInFiltered : currentProducts);
+
+  const checkboxes = document.querySelectorAll('.batch-checkbox[data-type="' + type + '"]');
+  const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+
+  checkboxes.forEach(cb => {
+    cb.checked = !allChecked;
+    const id = cb.getAttribute('data-id');
+    updateBatchItem(id, type);
+  });
+
+  const selectAllId = type === 'out' ? 'selectAllOutFiltered' : 'selectAllInFiltered';
+  const selectAllEl = document.getElementById(selectAllId) || document.getElementById('selectAll' + (type === 'out' ? 'Out' : 'In'));
+  if (selectAllEl) selectAllEl.checked = !allChecked;
+}
+
+// 批量入库筛选
+let currentBatchInFiltered = [];
+
+function filterBatchInList() {
+  const brand = document.getElementById('batchInFilterBrand').value;
+  const name = document.getElementById('batchInFilterName').value;
+
+  currentBatchInFiltered = currentProducts.filter(p => {
+    return (!brand || p.brand === brand) && (!name || p.name === name);
+  });
+
+  renderBatchInListFiltered();
+  showToast(`🔍 筛选结果: ${currentBatchInFiltered.length} 个产品`);
+}
+
+function resetBatchInFilters() {
+  document.getElementById('batchInFilterBrand').value = '';
+  document.getElementById('batchInFilterName').value = '';
+  currentBatchInFiltered = [];
+  renderBatchInList();
+  showToast('🔄 筛选已重置');
+}
+
+function renderBatchInListFiltered() {
+  const container = document.getElementById('batchInList');
+  const products = currentBatchInFiltered.length > 0 ? currentBatchInFiltered : currentProducts;
+
+  if (products.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📭</div>没有符合条件的产品</div>';
+    return;
+  }
+
+  let html = `
+    <div class="batch-select-all" onclick="toggleSelectAllFiltered('in')">
+      <input type="checkbox" id="selectAllInFiltered"> 
+      <span>全选当前筛选结果 (${products.length}个)</span>
+    </div>
+  `;
+
+  html += products.map(p => {
+    const stock = currentStock[p.id] || 0;
+    return `
+      <div class="batch-item" id="in-item-${p.id}">
+        <input type="checkbox" class="batch-checkbox" data-id="${p.id}" data-type="in" onchange="updateBatchItem('${p.id}', 'in')">
+        <div class="batch-info">
+          <div class="batch-name">${p.name}</div>
+          <div class="batch-meta">${p.brand} · ${p.sku} · ${p.net}kg/件</div>
+        </div>
+        <div class="batch-stock">
+          <div class="batch-stock-label">库存</div>
+          <div class="batch-stock-value">${stock}</div>
+        </div>
+        <input type="number" class="batch-input" id="in-qty-${p.id}" placeholder="数量" min="1" disabled>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = html;
+}
+
+function renderBatchOutList() {
+  const container = document.getElementById('batchOutList');
+  if (currentProducts.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📭</div>请先添加产品</div>';
+    return;
+  }
+
+  let html = `
+    <div class="batch-select-all" onclick="toggleSelectAll('out')">
+      <input type="checkbox" id="selectAllOut"> 
+      <span>全选所有产品</span>
+    </div>
+  `;
+
+  html += currentProducts.map(p => {
+    const stock = currentStock[p.id] || 0;
+    return `
+      <div class="batch-item" id="out-item-${p.id}">
+        <input type="checkbox" class="batch-checkbox" data-id="${p.id}" data-type="out" onchange="updateBatchItem('${p.id}', 'out')">
+        <div class="batch-info">
+          <div class="batch-name">${p.name}</div>
+          <div class="batch-meta">${p.brand} · ${p.sku} · ${p.net}kg/件</div>
+        </div>
+        <div class="batch-stock">
+          <div class="batch-stock-label">库存</div>
+          <div class="batch-stock-value ${stock <= 0 ? 'stock-negative' : ''}">${stock}</div>
+        </div>
+        <input type="number" class="batch-input" id="out-qty-${p.id}" placeholder="数量" min="1" disabled onchange="validateBatchQty('${p.id}', 'out')">
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = html;
+}
+
+function renderBatchInList() {
+  const container = document.getElementById('batchInList');
+  if (currentProducts.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📭</div>请先添加产品</div>';
+    return;
+  }
+
+  let html = `
+    <div class="batch-select-all" onclick="toggleSelectAll('in')">
+      <input type="checkbox" id="selectAllIn"> 
+      <span>全选所有产品</span>
+    </div>
+  `;
+
+  html += currentProducts.map(p => {
+    const stock = currentStock[p.id] || 0;
+    return `
+      <div class="batch-item" id="in-item-${p.id}">
+        <input type="checkbox" class="batch-checkbox" data-id="${p.id}" data-type="in" onchange="updateBatchItem('${p.id}', 'in')">
+        <div class="batch-info">
+          <div class="batch-name">${p.name}</div>
+          <div class="batch-meta">${p.brand} · ${p.sku} · ${p.net}kg/件</div>
+        </div>
+        <div class="batch-stock">
+          <div class="batch-stock-label">库存</div>
+          <div class="batch-stock-value">${stock}</div>
+        </div>
+        <input type="number" class="batch-input" id="in-qty-${p.id}" placeholder="数量" min="1" disabled>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = html;
+}
+
+function toggleSelectAll(type) {
+  const checkboxes = document.querySelectorAll(`.batch-checkbox[data-type="${type}"]`);
+  const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+
+  checkboxes.forEach(cb => {
+    cb.checked = !allChecked;
+    const id = cb.getAttribute('data-id');
+    updateBatchItem(id, type);
+  });
+
+  document.getElementById(`selectAll${type === 'out' ? 'Out' : 'In'}`).checked = !allChecked;
+}
+
+function updateBatchItem(id, type) {
+  const checkbox = document.querySelector(`.batch-checkbox[data-id="${id}"][data-type="${type}"]`);
+  const input = document.getElementById(`${type}-qty-${id}`);
+  const item = document.getElementById(`${type}-item-${id}`);
+
+  if (checkbox.checked) {
+    input.disabled = false;
+    item.classList.add('selected');
+    input.focus();
+  } else {
+    input.disabled = true;
+    input.value = '';
+    item.classList.remove('selected', 'error', 'success');
+  }
+}
+
+function validateBatchQty(id, type) {
+  const input = document.getElementById(`out-qty-${id}`);
+  const item = document.getElementById(`out-item-${id}`);
+  const stock = currentStock[id] || 0;
+  const qty = parseInt(input.value) || 0;
+
+  if (type === 'out' && qty > stock) {
+    item.classList.add('error');
+    item.classList.remove('success');
+    showStockAlert(id, qty, stock);
+    return false;
+  } else if (qty > 0) {
+    item.classList.remove('error');
+    item.classList.add('success');
+    return true;
+  }
+  return false;
+}
+
+function showStockAlert(productId, requestQty, currentQty) {
+  const p = currentProducts.find(x => x.id === productId);
+  document.getElementById('stockAlertCurrent').textContent = `${currentQty} 件`;
+  document.getElementById('stockAlertRequest').textContent = `${requestQty} 件`;
+  document.getElementById('stockAlertShortage').textContent = `${requestQty - currentQty} 件`;
+  document.getElementById('stockAlertModal').classList.add('show');
+}
+
+function closeStockAlert() {
+  document.getElementById('stockAlertModal').classList.remove('show');
+}
+
+async function doBatchStockOut() {
   const date = document.getElementById('out_date').value;
-  const remark = document.getElementById('out_remark').value.trim();
-  
-  if (!pid || isNaN(qty) || qty <= 0) {
-    showToast('请选择产品并输入正数数量', 'error');
+  const remark = document.getElementById('out_remark').value;
+
+  if (!date) {
+    showToast('❌ 请选择出库日期', 'error');
     return;
   }
-  
-  const p = currentProducts.find(x => x.id === pid);
-  if (!p) return;
-  
-  const current = currentStock[pid] || 0;
-  if (current < qty) {
-    showToast(`库存不足！当前库存 ${current} 件`, 'error');
+
+  const selected = [];
+  document.querySelectorAll('.batch-checkbox[data-type="out"]:checked').forEach(cb => {
+    const id = cb.getAttribute('data-id');
+    const qty = parseInt(document.getElementById(`out-qty-${id}`).value) || 0;
+    if (qty > 0) {
+      const stock = currentStock[id] || 0;
+      if (qty <= stock) {
+        const product = currentProducts.find(p => p.id === id);
+        if (product) selected.push({ id, qty, product });
+      }
+    }
+  });
+
+  if (selected.length === 0) {
+    showToast('❌ 请选择至少一个产品并填写数量', 'error');
     return;
   }
-  
-  // 更新数据
-  currentStock[pid] = current - qty;
-  const newLog = {
-    id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-    type: 'out', date, pid, name: p.name, sku: p.sku, brand: p.brand, qty, bill: remark, remark
-  };
-  currentLogs.push(newLog);
-  
-  // 同步到云端
+
+  // 执行出库
+  for (const item of selected) {
+    currentStock[item.id] = (currentStock[item.id] || 0) - item.qty;
+    currentLogs.push({
+      id: Date.now() + Math.random(),
+      type: 'out',
+      productId: item.id,
+      name: item.product.name,
+      sku: item.product.sku,
+      brand: item.product.brand,
+      net: item.product.net,
+      qty: item.qty,
+      date: date,
+      remark: remark,
+      time: new Date().toISOString()
+    });
+  }
+
+  // 保存数据
   if (isOnline) {
     try {
-      await updateData({
-        products: currentProducts,
-        stock: currentStock,
-        logs: currentLogs,
-        initialized: true
-      });
-    } catch (err) {
-      showToast('❌ 云端同步失败', 'error');
-      return;
+      await updateData({ products: currentProducts, stock: currentStock, logs: currentLogs });
+      updateSyncStatus('synced', '已同步到云端');
+    } catch (e) {
+      updateSyncStatus('error', '同步失败');
     }
   }
-  
-  showToast(`✅ 成功出库 ${qty} 件 ${p.name}`);
-  document.getElementById('out_qty').value = 1;
-  document.getElementById('out_remark').value = '';
-  
+
+  // 显示结果
+  let resultHtml = '<div class="batch-result"><div class="batch-result-title">✅ 出库成功</div>';
+  selected.forEach(item => {
+    resultHtml += `<div class="batch-result-item"><span>${item.product.name} ${item.product.sku}</span><span>-${item.qty}件</span></div>`;
+  });
+  resultHtml += '</div>';
+  document.getElementById('batchOutResult').innerHTML = resultHtml;
+
+  showToast(`✅ 成功出库 ${selected.length} 个产品`);
   updateSummary();
-  queryStock(); // 刷新表格
-  updateOutStockDisplay();
-  renderProductTree();
+  renderStockTable(currentProducts);
+  renderTodayLogs();
+  clearBatchOut();
 }
 
-// 产品树
-function renderProductTree() {
-  const groups = {};
-  for (let p of currentProducts) {
-    if (!groups[p.brand]) groups[p.brand] = {};
-    if (!groups[p.brand][p.name]) groups[p.brand][p.name] = [];
-    groups[p.brand][p.name].push(p);
+async function doBatchStockIn() {
+  const date = document.getElementById('in_date').value;
+  const bill = document.getElementById('in_bill').value;
+
+  if (!date) {
+    showToast('❌ 请选择入库日期', 'error');
+    return;
   }
-  
-  const container = document.getElementById('productTree');
-  container.innerHTML = '';
-  
-  for (let brand in groups) {
-    const packDiv = document.createElement('div');
-    packDiv.className = 'pack-group';
-    const summary = document.createElement('div');
-    summary.className = 'pack-summary';
-    summary.innerHTML = `<span>🏷️ ${brand}</span><span>▼</span>`;
-    const content = document.createElement('div');
-    content.className = 'pack-content';
-    content.style.display = 'block';
-    summary.onclick = () => {
-      const isOpen = content.style.display !== 'none';
-      content.style.display = isOpen ? 'none' : 'block';
-      summary.querySelector('span:last-child').innerHTML = isOpen ? '▶' : '▼';
-    };
-    packDiv.appendChild(summary);
-    
-    for (let name in groups[brand]) {
-      const catDiv = document.createElement('div');
-      catDiv.className = 'product-category';
-      const catTitle = document.createElement('div');
-      catTitle.className = 'category-title';
-      catTitle.innerHTML = `<span>🦐 ${name}</span><span>▼</span>`;
-      const specList = document.createElement('div');
-      specList.className = 'spec-list';
-      specList.style.display = 'block';
-      catTitle.onclick = (e) => {
-        e.stopPropagation();
-        const isOpen = specList.style.display !== 'none';
-        specList.style.display = isOpen ? 'none' : 'block';
-        catTitle.querySelector('span:last-child').innerHTML = isOpen ? '▶' : '▼';
-      };
-      catDiv.appendChild(catTitle);
-      
-      for (let p of groups[brand][name]) {
-        const specItem = document.createElement('div');
-        specItem.className = 'spec-item';
-        specItem.innerHTML = `
-          <div class="spec-info">
-            <span class="spec-name">${p.sku}</span>
-            <span class="spec-meta">净重 ${p.net}kg · ${p.unit}</span>
-          </div>
-          <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 13px;" onclick="editProductFromTree('${p.id}')">编辑</button>
-        `;
-        specList.appendChild(specItem);
-      }
-      catDiv.appendChild(specList);
-      content.appendChild(catDiv);
+
+  const selected = [];
+  document.querySelectorAll('.batch-checkbox[data-type="in"]:checked').forEach(cb => {
+    const id = cb.getAttribute('data-id');
+    const qty = parseInt(document.getElementById(`in-qty-${id}`).value) || 0;
+    if (qty > 0) {
+      const product = currentProducts.find(p => p.id === id);
+      if (product) selected.push({ id, qty, product });
     }
-    packDiv.appendChild(content);
-    container.appendChild(packDiv);
+  });
+
+  if (selected.length === 0) {
+    showToast('❌ 请选择至少一个产品并填写数量', 'error');
+    return;
   }
+
+  // 执行入库
+  for (const item of selected) {
+    currentStock[item.id] = (currentStock[item.id] || 0) + item.qty;
+    currentLogs.push({
+      id: Date.now() + Math.random(),
+      type: 'in',
+      productId: item.id,
+      name: item.product.name,
+      sku: item.product.sku,
+      brand: item.product.brand,
+      net: item.product.net,
+      qty: item.qty,
+      date: date,
+      remark: bill,
+      time: new Date().toISOString()
+    });
+  }
+
+  // 保存数据
+  if (isOnline) {
+    try {
+      await updateData({ products: currentProducts, stock: currentStock, logs: currentLogs });
+      updateSyncStatus('synced', '已同步到云端');
+    } catch (e) {
+      updateSyncStatus('error', '同步失败');
+    }
+  }
+
+  // 显示结果
+  let resultHtml = '<div class="batch-result"><div class="batch-result-title">✅ 入库成功</div>';
+  selected.forEach(item => {
+    resultHtml += `<div class="batch-result-item"><span>${item.product.name} ${item.product.sku}</span><span>+${item.qty}件</span></div>`;
+  });
+  resultHtml += '</div>';
+  document.getElementById('batchInResult').innerHTML = resultHtml;
+
+  showToast(`✅ 成功入库 ${selected.length} 个产品`);
+  updateSummary();
+  renderStockTable(currentProducts);
+  clearBatchIn();
 }
 
-window.editProductFromTree = (id) => {
-  const p = currentProducts.find(x => x.id === id);
-  if (p) {
-    document.getElementById('p_name').value = p.name;
-    document.getElementById('p_sku').value = p.sku;
-    document.getElementById('p_brand').value = p.brand;
-    document.getElementById('p_net').value = p.net;
-    document.getElementById('p_gross').value = p.gross;
-    document.getElementById('p_remark').value = p.remark || '';
-    document.getElementById('edit_product_id').value = p.id;
-    document.querySelectorAll('.nav-item').forEach(tab => {
-      if (tab.dataset.page === 'product') tab.click();
-    });
-    showToast('已加载产品信息，请编辑后保存');
-  }
-};
+function clearBatchOut() {
+  document.getElementById('batchOutResult').innerHTML = '';
+  renderBatchOutList();
+}
 
-async function saveProduct() {
+function clearBatchIn() {
+  document.getElementById('batchInResult').innerHTML = '';
+  renderBatchInList();
+}
+
+// ============================================
+// 今日流水显示
+// ============================================
+
+function renderTodayLogs() {
+  const today = new Date().toISOString().split('T')[0];
+  const todayLogs = currentLogs.filter(l => l.date === today && l.type === 'out').sort((a,b) => b.time.localeCompare(a.time));
+
+  const tbody = document.getElementById('todayOutTable');
+  if (todayLogs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">今日暂无出库记录</td></tr>';
+    document.getElementById('todayOutSummary').innerHTML = '';
+    return;
+  }
+
+  tbody.innerHTML = todayLogs.map(l => `
+    <tr>
+      <td>${new Date(l.time).toLocaleTimeString('zh-CN')}</td>
+      <td>${l.name}</td>
+      <td>${l.sku}</td>
+      <td>${l.brand}</td>
+      <td>${l.qty}</td>
+      <td>${l.remark || '-'}</td>
+      <td><button class="btn-delete" onclick="deleteLog('${l.id}')">删除</button></td>
+    </tr>
+  `).join('');
+
+  const total = todayLogs.reduce((a,l) => a + l.qty, 0);
+  document.getElementById('todayOutSummary').innerHTML = `今日共出库 <strong>${todayLogs.length}</strong> 笔，合计 <strong>${total}</strong> 件`;
+}
+
+async function deleteLog(logId) {
+  if (!confirm('确定要删除这条记录吗？')) return;
+
+  const log = currentLogs.find(l => l.id == logId);
+  if (!log) return;
+
+  // 恢复库存
+  if (log.type === 'out') {
+    currentStock[log.productId] = (currentStock[log.productId] || 0) + log.qty;
+  } else {
+    currentStock[log.productId] = (currentStock[log.productId] || 0) - log.qty;
+  }
+
+  // 删除记录
+  currentLogs = currentLogs.filter(l => l.id != logId);
+
+  // 保存
+  if (isOnline) {
+    try {
+      await updateData({ products: currentProducts, stock: currentStock, logs: currentLogs });
+    } catch (e) {}
+  }
+
+  showToast('✅ 记录已删除');
+  updateSummary();
+  renderStockTable(currentProducts);
+  renderTodayLogs();
+  applyLogFilter();
+}
+
+// ============================================
+// 流水查询与导出
+// ============================================
+
+function applyLogFilter() {
+  const start = document.getElementById('l_start').value;
+  const end = document.getElementById('l_end').value;
+  const product = document.getElementById('l_product').value;
+
+  let filtered = currentLogs.filter(l => {
+    if (start && l.date < start) return false;
+    if (end && l.date > end) return false;
+    if (product && l.productId !== product) return false;
+    return true;
+  }).sort((a,b) => b.time.localeCompare(a.time));
+
+  renderLogTable(filtered);
+  updateLogSummary(filtered);
+}
+
+function resetLogFilter() {
+  document.getElementById('l_start').value = '';
+  document.getElementById('l_end').value = '';
+  document.getElementById('l_product').value = '';
+  applyLogFilter();
+}
+
+function renderLogTable(logs) {
+  const tbody = document.getElementById('logTable');
+  if (logs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">暂无记录</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = logs.map(l => `
+    <tr>
+      <td>${l.date}</td>
+      <td><span class="badge badge-${l.type}">${l.type === 'in' ? '入库' : '出库'}</span></td>
+      <td>${l.name}</td>
+      <td>${l.sku}</td>
+      <td>${l.brand}</td>
+      <td>${l.qty}</td>
+      <td>${l.remark || '-'}</td>
+    </tr>
+  `).join('');
+}
+
+function updateLogSummary(logs) {
+  const totalIn = logs.filter(l => l.type === 'in').reduce((a,l) => a + l.qty, 0);
+  const totalOut = logs.filter(l => l.type === 'out').reduce((a,l) => a + l.qty, 0);
+
+  document.getElementById('logSummary').innerHTML = `
+    <div class="numbers">
+      <span class="in">📥 入库: ${totalIn.toLocaleString()} 件</span>
+      <span class="out">📤 出库: ${totalOut.toLocaleString()} 件</span>
+      <span>📋 共 ${logs.length} 笔</span>
+    </div>
+  `;
+}
+
+function renderProductSelects() {
+  const sel = document.getElementById('l_product');
+  sel.innerHTML = '<option value="">全部产品</option>' + 
+    currentProducts.map(p => `<option value="${p.id}">${p.name} ${p.sku} (${p.brand})</option>`).join('');
+}
+
+function exportLog() {
+  const start = document.getElementById('l_start').value;
+  const end = document.getElementById('l_end').value;
+  const product = document.getElementById('l_product').value;
+
+  let filtered = currentLogs.filter(l => {
+    if (start && l.date < start) return false;
+    if (end && l.date > end) return false;
+    if (product && l.productId !== product) return false;
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    showToast('❌ 没有数据可导出', 'error');
+    return;
+  }
+
+  const data = filtered.map(l => ({
+    '日期': l.date,
+    '类型': l.type === 'in' ? '入库' : '出库',
+    '品名': l.name,
+    '规格': l.sku,
+    '品牌': l.brand,
+    '数量': l.qty,
+    '单号/备注': l.remark || ''
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '出入库流水');
+  XLSX.writeFile(wb, `出入库流水_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+  showToast('✅ Excel导出成功');
+}
+
+// ============================================
+// 产品管理功能
+// ============================================
+
+function saveProduct() {
   const name = document.getElementById('p_name').value.trim();
   const sku = document.getElementById('p_sku').value.trim();
   const brand = document.getElementById('p_brand').value.trim();
   const net = parseFloat(document.getElementById('p_net').value) || 0;
   const gross = parseFloat(document.getElementById('p_gross').value) || 0;
-  const unit = document.getElementById('p_unit').value.trim() || '件';
   const remark = document.getElementById('p_remark').value.trim();
   const editId = document.getElementById('edit_product_id').value;
-  
-  if (!name || !sku || !brand) {
-    showToast('品名、规格、品牌不能为空！', 'error');
+
+  if (!name || !sku || !brand || net <= 0) {
+    showToast('❌ 请填写完整产品信息', 'error');
     return;
   }
-  
-  const key = `${name}|${sku}|${brand}`;
-  if (!editId && currentProducts.some(p => `${p.name}|${p.sku}|${p.brand}` === key)) {
-    showToast('该产品已存在！', 'error');
-    return;
-  }
-  
+
+  const product = {
+    id: editId || Date.now().toString(),
+    name, sku, brand, net, gross, unit: '件', remark
+  };
+
   if (editId) {
     const idx = currentProducts.findIndex(p => p.id === editId);
-    if (idx >= 0) {
-      currentProducts[idx] = { ...currentProducts[idx], name, sku, brand, net, gross, unit, remark };
-    }
-    showToast('✅ 产品更新成功');
+    if (idx >= 0) currentProducts[idx] = product;
   } else {
-    const newId = 'p_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-    const newProduct = { id: newId, name, sku, brand, net, gross, unit, remark };
-    currentProducts.push(newProduct);
-    currentStock[newId] = 0;
-    showToast('✅ 新产品添加成功');
-  }
-  
-  // 同步到云端
-  if (isOnline) {
-    try {
-      await updateData({
-        products: currentProducts,
-        stock: currentStock,
-        logs: currentLogs,
-        initialized: true
-      });
-    } catch (err) {
-      showToast('❌ 云端同步失败', 'error');
+    // 检查是否已存在
+    const exists = currentProducts.find(p => p.name === name && p.sku === sku && p.brand === brand);
+    if (exists) {
+      showToast('❌ 该产品已存在', 'error');
       return;
     }
+    currentProducts.push(product);
   }
-  
+
+  // 保存
+  if (isOnline) {
+    updateData({ products: currentProducts, stock: currentStock, logs: currentLogs }).catch(() => {});
+  }
+
+  showToast(editId ? '✅ 产品已更新' : '✅ 产品已添加');
   clearProductForm();
-  renderProductTree();
-  renderProductSelects();
-  initFilterOptions();
-  queryStock();
+  initUI();
+  initBatchLists();
+  updateHistorySelects();
 }
 
 function clearProductForm() {
@@ -1050,129 +1681,134 @@ function clearProductForm() {
   document.getElementById('edit_product_id').value = '';
 }
 
-function renderProductSelects() {
-  for (let id of ['in_product', 'out_product', 'l_product']) {
-    const sel = document.getElementById(id);
-    const current = sel.value;
-    sel.innerHTML = id === 'l_product' ? '<option value="">全部产品</option>' : '';
-    currentProducts.forEach(p => {
-      const opt = document.createElement('option');
-      opt.value = p.id;
-      opt.textContent = `${p.brand} · ${p.name} · ${p.sku}`;
-      sel.appendChild(opt);
-    });
-    if (current && [...sel.options].some(o => o.value === current)) sel.value = current;
+function fillProductField(field, value) {
+  if (value) document.getElementById(field).value = value;
+}
+
+function updateHistorySelects() {
+  const names = [...new Set(currentProducts.map(p => p.name))];
+  const skus = [...new Set(currentProducts.map(p => p.sku))];
+  const brands = [...new Set(currentProducts.map(p => p.brand))];
+
+  document.getElementById('p_name_history').innerHTML = '<option value="">📋 选择历史品名</option>' + 
+    names.map(n => `<option value="${n}">${n}</option>`).join('');
+  document.getElementById('p_sku_history').innerHTML = '<option value="">📋 选择历史规格</option>' + 
+    skus.map(s => `<option value="${s}">${s}</option>`).join('');
+  document.getElementById('p_brand_history').innerHTML = '<option value="">📋 选择历史品牌</option>' + 
+    brands.map(b => `<option value="${b}">${b}</option>`).join('');
+}
+
+function renderProductTree() {
+  const container = document.getElementById('productTree');
+  if (currentProducts.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📭</div>暂无产品，请先添加</div>';
+    return;
   }
-}
 
-// 流水查询
-function applyLogFilter() {
-  const start = document.getElementById('l_start').value;
-  const end = document.getElementById('l_end').value;
-  const pid = document.getElementById('l_product').value;
-  
-  let filtered = currentLogs.filter(l => {
-    if (start && l.date < start) return false;
-    if (end && l.date > end) return false;
-    if (pid && l.pid !== pid) return false;
-    return true;
+  // 按品牌分组
+  const byBrand = {};
+  currentProducts.forEach(p => {
+    if (!byBrand[p.brand]) byBrand[p.brand] = {};
+    if (!byBrand[p.brand][p.name]) byBrand[p.brand][p.name] = [];
+    byBrand[p.brand][p.name].push(p);
   });
-  
-  filtered.sort((a,b) => b.date.localeCompare(a.date));
-  
-  const tbody = document.getElementById('logTable');
-  tbody.innerHTML = '';
-  
-  if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><div class="icon">📋</div>暂无流水记录</td></tr>';
-  } else {
-    filtered.forEach(l => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${l.date}</td>
-        <td><span class="badge badge-${l.type}">${l.type === 'in' ? '入库' : '出库'}</span></td>
-        <td><strong>${l.name}</strong></td>
-        <td>${l.sku}</td>
-        <td>${l.brand}</td>
-        <td><strong>${l.qty}</strong></td>
-        <td>${l.bill || l.remark || '-'}</td>
-      `;
-      tbody.appendChild(tr);
-    });
+
+  let html = '';
+  for (const [brand, names] of Object.entries(byBrand)) {
+    html += `<div class="pack-group"><div class="pack-summary" onclick="togglePack(this)">${brand} <span>▼</span></div><div class="pack-content">`;
+    for (const [name, products] of Object.entries(names)) {
+      html += `<div class="product-category"><div class="category-title" onclick="toggleCategory(this)">${name} <span>▼</span></div><div class="spec-list">`;
+      products.forEach(p => {
+        const stock = currentStock[p.id] || 0;
+        html += `
+          <div class="spec-item">
+            <div class="spec-info">
+              <div class="spec-name">${p.sku}</div>
+              <div class="spec-meta">净重: ${p.net}kg | 库存: ${stock}件</div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="editProduct('${p.id}')">编辑</button>
+              <button class="btn-delete" onclick="deleteProduct('${p.id}')">删除</button>
+            </div>
+          </div>
+        `;
+      });
+      html += '</div></div>';
+    }
+    html += '</div></div>';
   }
-  
-  let totalIn = 0, totalOut = 0;
-  filtered.forEach(l => {
-    if (l.type === 'in') totalIn += l.qty;
-    else totalOut += l.qty;
-  });
-  
-  document.getElementById('logSummary').innerHTML = `
-    <span>📊 查询结果统计</span>
-    <div class="numbers">
-      <span class="in">入库 ${totalIn} 件</span>
-      <span class="out">出库 ${totalOut} 件</span>
-    </div>
-  `;
+
+  container.innerHTML = html;
+  updateHistorySelects();
 }
 
-function resetLogFilter() {
-  document.getElementById('l_start').value = '';
-  document.getElementById('l_end').value = '';
-  document.getElementById('l_product').value = '';
-  applyLogFilter();
+function togglePack(el) {
+  const content = el.nextElementSibling;
+  content.style.display = content.style.display === 'none' ? 'block' : 'none';
+  el.querySelector('span').textContent = content.style.display === 'none' ? '▶' : '▼';
 }
 
-function exportLog() {
-  const table = document.getElementById('logTable');
-  const rows = table.querySelectorAll('tr');
-  const data = [];
-  rows.forEach(row => {
-    const cols = row.querySelectorAll('td, th');
-    const rowData = [];
-    cols.forEach(col => rowData.push(col.textContent));
-    if (rowData.length) data.push(rowData);
-  });
-  const ws = XLSX.utils.aoa_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, '出入库流水明细');
-  XLSX.writeFile(wb, `佳信水产_流水_${new Date().toISOString().split('T')[0]}.xlsx`);
-  showToast('📎 Excel导出成功');
+function toggleCategory(el) {
+  const content = el.nextElementSibling;
+  content.style.display = content.style.display === 'none' ? 'block' : 'none';
+  el.querySelector('span').textContent = content.style.display === 'none' ? '▶' : '▼';
 }
 
-// 页面切换
-document.querySelectorAll('.nav-item').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    const pageId = tab.dataset.page;
+function editProduct(id) {
+  const p = currentProducts.find(x => x.id === id);
+  if (!p) return;
+
+  document.getElementById('p_name').value = p.name;
+  document.getElementById('p_sku').value = p.sku;
+  document.getElementById('p_brand').value = p.brand;
+  document.getElementById('p_net').value = p.net;
+  document.getElementById('p_gross').value = p.gross || '';
+  document.getElementById('p_remark').value = p.remark || '';
+  document.getElementById('edit_product_id').value = p.id;
+
+  showToast('📝 已加载产品信息到编辑区');
+}
+
+async function deleteProduct(id) {
+  if (!confirm('确定要删除这个产品吗？相关库存和记录将保留但无法继续操作。')) return;
+
+  currentProducts = currentProducts.filter(p => p.id !== id);
+
+  if (isOnline) {
+    try {
+      await updateData({ products: currentProducts, stock: currentStock, logs: currentLogs });
+    } catch (e) {}
+  }
+
+  showToast('✅ 产品已删除');
+  initUI();
+  initBatchLists();
+}
+
+// ============================================
+// 页面导航
+// ============================================
+
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', function() {
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    this.classList.add('active');
+
+    const page = this.getAttribute('data-page');
     document.querySelectorAll('.page').forEach(p => p.classList.remove('show'));
-    document.getElementById(pageId).classList.add('show');
-    
-    if (pageId === 'stock') {
-      initFilterOptions();
-      queryStock();
-      updateSummary();
+    document.getElementById(page).classList.add('show');
+
+    if (page === 'out' || page === 'in') {
+      initBatchLists();
     }
-    if (pageId === 'in') {
-      renderProductSelects();
-      updateInStockDisplay();
-    }
-    if (pageId === 'out') {
-      renderProductSelects();
-      updateOutStockDisplay();
-    }
-    if (pageId === 'log') {
-      renderProductSelects();
-      applyLogFilter();
-    }
-    if (pageId === 'product') renderProductTree();
   });
 });
 
-// 启动
+// ============================================
+// 启动系统
+// ============================================
+
 window.onload = initSystem;
 </script>
 </body>
 </html>
-
