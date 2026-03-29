@@ -187,7 +187,7 @@
         /* 批量操作项基础样式 */
     .batch-item {
       display: grid;
-      grid-template-columns: 40px 1fr 100px 80px;
+      grid-template-columns: 40px 1fr 80px 100px;
       gap: 12px;
       align-items: center;
       padding: 12px;
@@ -197,6 +197,7 @@
       border: 2px solid transparent;
       transition: all 0.3s;
       cursor: pointer;
+      min-height: 64px;
     }
     .batch-item:hover { background: #f1f5f9; }
     .batch-item.selected { 
@@ -355,11 +356,12 @@
       }
 
       .batch-item {
-        grid-template-columns: 36px 1fr 70px 90px;
+        grid-template-columns: 36px 1fr 60px 90px;
         gap: 8px;
         padding: 10px;
         margin-bottom: 6px;
         border-radius: 10px;
+        min-height: 56px;
       }
 
       .batch-name {
@@ -528,7 +530,52 @@
       height: 20px;
     }
   
-  </style>
+  
+
+    /* 库存预警弹窗样式 */
+    .stock-alert-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 10000;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .stock-alert-modal.show { display: block !important; }
+    .stock-alert-content {
+      background: white;
+      border-radius: 24px;
+      padding: 28px;
+      max-width: 340px;
+      width: 85%;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+      animation: modalSlideIn 0.3s ease-out;
+      text-align: center;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      -webkit-transform: translate(-50%, -50%);
+      margin: 0;
+    }
+    @keyframes modalSlideIn {
+      from { opacity: 0; transform: translate(-50%, -45%) scale(0.95); }
+      to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+    .stock-alert-icon { font-size: 56px; margin-bottom: 12px; }
+    .stock-alert-title { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; }
+    .stock-alert-message { font-size: 15px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 20px; }
+    .stock-alert-info { background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 2px solid #ef4444; border-radius: 16px; padding: 16px; margin-bottom: 24px; text-align: left; }
+    .stock-alert-info-row { display: flex; justify-content: space-between; margin: 8px 0; font-size: 15px; }
+    .stock-alert-info-label { color: var(--text-secondary); font-weight: 500; }
+    .stock-alert-info-value { font-weight: 700; color: var(--danger); }
+    .stock-alert-btn { background: linear-gradient(135deg, var(--danger) 0%, #f87171 100%); color: white; border: none; padding: 14px 32px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); width: 100%; }
+    .stock-alert-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5); }
+</style>
 </head>
 <body>
 <body>
@@ -585,14 +632,75 @@
         <table>
           <thead>
             <tr>
-              <th>品名</th>
-              <th>规格</th>
               <th>品牌</th>
+              <th>品名</th>
+              <th>净重(kg)</th>
+              <th>规格</th>
               <th>库存(件)</th>
-              <th>累计入库</th>
               <th>累计出库</th>
-              <th>净重/件</th>
-              <th>总净重</th>
+              <th>累计入库</th>
+              <th>总净重(kg)</th>
+            </tr>
+          </thead>
+          <tbody id="todayOutTable"></tbody>
+        </table>
+      </div>
+      <div id="todayOutSummary" style="margin-top: 12px; font-size: 13px; color: var(--text-secondary);"></div>
+    </div>
+  </div>
+
+  <!-- 入库登记 -->
+    <!-- 出库登记 -->
+    <!-- 库存看板 -->
+  <div class="page show" id="stock">
+    <div class="stats-grid" id="summaryCards"></div>
+
+    <div class="card">
+      <div class="card-title">筛选查询</div>
+      <div class="filter-bar" id="stockFilters">
+        <div class="form-group">
+          <label>品牌</label>
+          <select id="filterPack"><option value="">全部品牌</option></select>
+        </div>
+        <div class="form-group">
+          <label>净重(kg)</label>
+          <select id="filterNet"><option value="">全部净重</option></select>
+        </div>
+        <div class="form-group">
+          <label>品类</label>
+          <select id="filterName"><option value="">全部品类</option></select>
+        </div>
+        <div class="form-group">
+          <label>规格</label>
+          <select id="filterSku"><option value="">全部规格</option></select>
+        </div>
+      </div>
+
+      <!-- 查询按钮区域 -->
+      <div class="query-btn-container">
+        <button class="btn btn-primary" onclick="queryStock()">
+          <span>🔍</span> 查询
+        </button>
+        <button class="btn btn-secondary" onclick="resetStockFilters()">
+          <span>🔄</span> 重置
+        </button>
+        <button class="btn btn-success" onclick="showBalanceStock()">
+          <span>📦</span> 结余库存
+        </button>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>品牌</th>
+              <th>品名</th>
+              <th>净重(kg)</th>
+              <th>规格</th>
+              <th>库存(件)</th>
+              <th>累计出库</th>
+              <th>累计入库</th>
+              <th>总净重(kg)</th>
             </tr>
           </thead>
           <tbody id="stockTable"></tbody>
@@ -601,11 +709,10 @@
     </div>
   </div>
 
-  <!-- 出库登记 -->
-  <div class="page" id="out">
+<div class="page" id="out">
     <div class="card">
       <div class="card-title">📤 批量出库登记</div>
-      
+
       <div class="form-row">
         <div class="form-group">
           <label>出库日期</label>
@@ -616,7 +723,7 @@
           <input type="text" id="out_remark" placeholder="可选填客户名称或其他信息...">
         </div>
       </div>
-      
+
       <div class="card-title" style="margin-top: 20px; font-size: 16px;">📝 选择出库产品</div>
 
       <!-- 批量出库筛选栏 -->
@@ -643,7 +750,7 @@
       <div id="batchOutList" style="max-height: 400px; overflow-y: auto;">
         <!-- 动态生成产品列表 -->
       </div>
-      
+
       <div style="display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap;">
         <button class="btn btn-danger" onclick="doBatchStockOut()">
           <span>📤</span> 一键批量出库
@@ -652,10 +759,10 @@
           <span>🔄</span> 清空
         </button>
       </div>
-      
+
       <div id="batchOutResult" style="margin-top: 16px;"></div>
     </div>
-    
+
     <!-- 当天出库流水 -->
     <div class="card" style="margin-top: 20px;">
       <div class="card-title">📋 今日出库流水</div>
@@ -679,8 +786,7 @@
     </div>
   </div>
 
-  <!-- 入库登记 -->
-  <div class="page" id="in">
+<div class="page" id="in">
     <div class="card">
       <div class="card-title">📥 批量入库登记</div>
 
@@ -732,6 +838,23 @@
       </div>
 
       <div id="batchInResult" style="margin-top: 16px;"></div>
+
+      <!-- Excel导入区域 -->
+      <div style="margin-top: 20px; padding-top: 20px; border-top: 2px dashed var(--border);">
+        <div class="card-title" style="font-size: 16px;">📄 Excel批量导入</div>
+        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px dashed var(--success); border-radius: 16px; padding: 20px; text-align: center;">
+          <div style="font-size: 48px; margin-bottom: 12px;">📊</div>
+          <div style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;">
+            支持导入格式：日期、序号、品名、规格、包装方式、净重(kg)、毛重(kg)、入库数量(件)、备注、入库单号、收购原单<br>
+            <span style="color: var(--success); font-weight: 600;">若产品不存在，将自动添加到产品列表</span>
+          </div>
+          <input type="file" id="excelImport" accept=".xlsx,.xls" style="display: none;" onchange="handleExcelImport(event)">
+          <button class="btn btn-success" onclick="document.getElementById('excelImport').click()">
+            <span>📁</span> 选择Excel文件导入
+          </button>
+        </div>
+        <div id="importResult" style="margin-top: 16px;"></div>
+      </div>
     </div>
 
     <!-- 当天入库流水 -->
@@ -1082,9 +1205,6 @@ function initUI() {
 
 function initFilterOptions() {
   const brands = [...new Set(currentProducts.map(p => p.brand))].sort();
-  const nets = [...new Set(currentProducts.map(p => p.net))].sort((a,b) => a-b);
-  const names = [...new Set(currentProducts.map(p => p.name))].sort();
-  const skus = [...new Set(currentProducts.map(p => p.sku))].sort();
 
   const brandSel = document.getElementById('filterPack');
   const netSel = document.getElementById('filterNet');
@@ -1094,15 +1214,58 @@ function initFilterOptions() {
   brandSel.innerHTML = '<option value="">全部品牌</option>' + 
     brands.map(v => `<option value="${v}">${v}</option>`).join('');
 
-  netSel.innerHTML = '<option value="">全部净重</option>' + 
-    nets.map(v => `<option value="${v}">${v}kg</option>`).join('');
+  // 初始化其他筛选选项
+  updateFilterOptions();
 
-  nameSel.innerHTML = '<option value="">全部品类</option>' + 
-    names.map(v => `<option value="${v}">${v}</option>`).join('');
-
-  skuSel.innerHTML = '<option value="">全部规格</option>' + 
-    skus.map(v => `<option value="${v}">${v}</option>`).join('');
+  // 绑定品牌筛选变化事件
+  brandSel.addEventListener('change', updateFilterOptions);
+  nameSel.addEventListener('change', updateFilterOptions);
 }
+
+// 根据当前筛选条件更新其他筛选选项
+function updateFilterOptions() {
+  const brandSel = document.getElementById('filterPack');
+  const netSel = document.getElementById('filterNet');
+  const nameSel = document.getElementById('filterName');
+  const skuSel = document.getElementById('filterSku');
+
+  const selectedBrand = brandSel.value;
+  const selectedName = nameSel.value;
+
+  // 根据已选条件过滤产品
+  let filtered = currentProducts;
+  if (selectedBrand) {
+    filtered = filtered.filter(p => p.brand === selectedBrand);
+  }
+  if (selectedName) {
+    filtered = filtered.filter(p => p.name === selectedName);
+  }
+
+  // 获取可用的净重、品类、规格
+  const availableNets = [...new Set(filtered.map(p => p.net))].sort((a,b) => a-b);
+  const availableNames = [...new Set(currentProducts.map(p => p.name))].sort();
+  const availableSkus = [...new Set(filtered.map(p => p.sku))].sort();
+
+  // 保存当前选择
+  const currentNet = netSel.value;
+  const currentName = nameSel.value;
+  const currentSku = skuSel.value;
+
+  // 更新净重选项（如果选了品牌，只显示该品牌下的净重）
+  netSel.innerHTML = '<option value="">全部净重</option>' + 
+    availableNets.map(v => `<option value="${v}" ${v == currentNet ? 'selected' : ''}>${v}kg</option>`).join('');
+
+  // 更新品类选项（始终显示全部，但可根据品牌筛选）
+  if (!selectedName) {
+    nameSel.innerHTML = '<option value="">全部品类</option>' + 
+      availableNames.map(v => `<option value="${v}" ${v == currentName ? 'selected' : ''}>${v}</option>`).join('');
+  }
+
+  // 更新规格选项
+  skuSel.innerHTML = '<option value="">全部规格</option>' + 
+    availableSkus.map(v => `<option value="${v}" ${v == currentSku ? 'selected' : ''}>${v}</option>`).join('');
+}
+
 
 // ============================================
 // 核心功能函数
@@ -1197,18 +1360,19 @@ function renderStockTable(products) {
 
     return `
       <tr>
-        <td>${p.name}</td>
-        <td>${p.sku}</td>
         <td>${p.brand}</td>
+        <td>${p.name}</td>
+        <td>${p.net}</td>
+        <td>${p.sku}</td>
         <td class="${stock < 0 ? 'stock-negative' : ''}">${stock}</td>
-        <td>${totalIn}</td>
         <td>${totalOut}</td>
-        <td>${p.net}kg</td>
-        <td>${totalNet}kg</td>
+        <td>${totalIn}</td>
+        <td>${totalNet}</td>
       </tr>
     `;
   }).join('');
 }
+
 
 // ============================================
 // 批量出入库功能
@@ -1599,11 +1763,20 @@ function validateBatchQty(id, type) {
 
 function showStockAlert(productId, requestQty, currentQty) {
   const p = currentProducts.find(x => x.id === productId);
+  if (!p) return;
+
+  // 更新弹窗标题，显示具体产品
+  document.getElementById('stockAlertTitle').textContent = `⚠️ ${p.brand} ${p.name} 库存不足`;
+  document.getElementById('stockAlertMessage').innerHTML = `
+    <strong>${p.sku}</strong>（${p.net}kg/件）<br>
+    您尝试出库的数量超过了当前可用库存。
+  `;
   document.getElementById('stockAlertCurrent').textContent = `${currentQty} 件`;
   document.getElementById('stockAlertRequest').textContent = `${requestQty} 件`;
   document.getElementById('stockAlertShortage').textContent = `${requestQty - currentQty} 件`;
   document.getElementById('stockAlertModal').classList.add('show');
 }
+
 
 function closeStockAlert() {
   document.getElementById('stockAlertModal').classList.remove('show');
@@ -2068,23 +2241,58 @@ function renderLogTable(logs) {
     return;
   }
 
-  tbody.innerHTML = logs.map(l => `
-    <tr id="log-row-${l.id}">
-      <td>${l.date}</td>
-      <td><span class="badge badge-${l.type}">${l.type === 'in' ? '入库' : '出库'}</span></td>
-      <td>${l.name}</td>
-      <td>${l.sku}</td>
-      <td>${l.brand}</td>
-      <td>${l.qty}</td>
-      <td>${l.remark || '-'}</td>
-      <td>
-        <button class="btn-delete" onclick="deleteLogEntry('${l.id}')" title="删除此记录并恢复库存">
-          🗑️ 删除
-        </button>
-      </td>
-    </tr>
-  `).join('');
+  // 按日期分组
+  const grouped = {};
+  logs.forEach(l => {
+    if (!grouped[l.date]) grouped[l.date] = [];
+    grouped[l.date].push(l);
+  });
+
+  // 按日期排序（降序）
+  const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+
+  let html = '';
+  sortedDates.forEach(date => {
+    const dateLogs = grouped[date];
+    const inQty = dateLogs.filter(l => l.type === 'in').reduce((a, l) => a + l.qty, 0);
+    const outQty = dateLogs.filter(l => l.type === 'out').reduce((a, l) => a + l.qty, 0);
+
+    // 日期分组标题行
+    html += `
+      <tr style="background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); font-weight: 700;">
+        <td colspan="8" style="padding: 12px; text-align: left; border-left: 4px solid var(--primary);">
+          <span style="font-size: 15px;">📅 ${date}</span>
+          <span style="margin-left: 20px; font-size: 13px; color: var(--text-secondary); font-weight: 500;">
+            ${inQty > 0 ? `<span style="color: var(--success);">📥 ${inQty}件</span>` : ''}
+            ${outQty > 0 ? `<span style="color: var(--danger); margin-left: 12px;">📤 ${outQty}件</span>` : ''}
+            <span style="margin-left: 12px;">共 ${dateLogs.length} 笔</span>
+          </span>
+        </td>
+      </tr>
+    `;
+
+    // 该日期的记录
+    html += dateLogs.map(l => `
+      <tr id="log-row-${l.id}">
+        <td style="color: var(--text-secondary); font-size: 12px;">${new Date(l.time).toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'})}</td>
+        <td><span class="badge badge-${l.type}">${l.type === 'in' ? '入库' : '出库'}</span></td>
+        <td>${l.name}</td>
+        <td>${l.sku}</td>
+        <td>${l.brand}</td>
+        <td>${l.qty}</td>
+        <td>${l.remark || '-'}</td>
+        <td>
+          <button class="btn-delete" onclick="deleteLogEntry('${l.id}')" title="删除此记录并恢复库存">
+            🗑️ 删除
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  });
+
+  tbody.innerHTML = html;
 }
+
 
 function updateLogSummary(logs) {
   // 使用单次遍历提高性能
@@ -2463,26 +2671,224 @@ async function deleteProduct(id) {
 // 页面导航
 // ============================================
 
+// 导航栏事件处理 - 优化版
 document.querySelectorAll('.nav-item').forEach(item => {
-  item.addEventListener('click', function() {
+  // 使用 touchstart 和 click 双重绑定，提升移动端响应速度
+  const handleNav = function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // 防止重复点击
+    if (this.classList.contains('active')) return;
+
+    // 立即更新UI，提升感知速度
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
     this.classList.add('active');
 
     const page = this.getAttribute('data-page');
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('show'));
-    document.getElementById(page).classList.add('show');
 
+    // 使用 requestAnimationFrame 优化页面切换
+    requestAnimationFrame(() => {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('show'));
+      const targetPage = document.getElementById(page);
+      if (targetPage) {
+        targetPage.classList.add('show');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+
+    // 延迟初始化批量列表，避免阻塞UI
     if (page === 'out' || page === 'in') {
-      initBatchLists();
+      setTimeout(() => initBatchLists(), 50);
     }
-  });
+  };
+
+  // 同时绑定 touchstart（移动端更快响应）和 click
+  item.addEventListener('touchstart', handleNav, { passive: false });
+  item.addEventListener('click', handleNav);
 });
+);
 
 // ============================================
 // 启动系统
 // ============================================
 
 window.onload = initSystem;
+
+
+// ============================================
+// Excel导入功能
+// ============================================
+
+async function handleExcelImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const resultDiv = document.getElementById('importResult');
+  resultDiv.innerHTML = '<div style="text-align: center; padding: 20px;">📊 正在解析Excel文件...</div>';
+
+  try {
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data, { type: 'array' });
+    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+    if (jsonData.length < 2) {
+      resultDiv.innerHTML = '<div style="color: var(--danger); text-align: center;">❌ Excel文件数据不足</div>';
+      return;
+    }
+
+    // 解析表头
+    const headers = jsonData[0].map(h => String(h).trim());
+    const rows = jsonData.slice(1).filter(row => row.length > 0);
+
+    // 查找列索引
+    const colIndex = {
+      date: headers.findIndex(h => h.includes('日期')),
+      name: headers.findIndex(h => h.includes('品名')),
+      sku: headers.findIndex(h => h.includes('规格')),
+      brand: headers.findIndex(h => h.includes('包装方式') || h.includes('品牌')),
+      net: headers.findIndex(h => h.includes('净重')),
+      gross: headers.findIndex(h => h.includes('毛重')),
+      qty: headers.findIndex(h => h.includes('入库数量')),
+      remark: headers.findIndex(h => h.includes('备注')),
+      bill: headers.findIndex(h => h.includes('入库单号') || h.includes('收购原单'))
+    };
+
+    // 检查必需列
+    if (colIndex.name === -1 || colIndex.sku === -1 || colIndex.qty === -1) {
+      resultDiv.innerHTML = '<div style="color: var(--danger); text-align: center;">❌ 缺少必需列：品名、规格、入库数量</div>';
+      return;
+    }
+
+    // 处理数据
+    let successCount = 0;
+    let skipCount = 0;
+    let newProducts = [];
+    let importLogs = [];
+
+    for (const row of rows) {
+      const name = String(row[colIndex.name] || '').trim();
+      const sku = String(row[colIndex.sku] || '').trim();
+      const qty = parseFloat(row[colIndex.qty]) || 0;
+
+      if (!name || !sku || qty <= 0) {
+        skipCount++;
+        continue;
+      }
+
+      const brand = String(row[colIndex.brand] || '佳信').trim();
+      const net = parseFloat(row[colIndex.net]) || 0;
+      const gross = parseFloat(row[colIndex.gross]) || 0;
+      const date = formatExcelDate(row[colIndex.date]) || new Date().toISOString().split('T')[0];
+      const remark = String(row[colIndex.remark] || row[colIndex.bill] || '').trim();
+
+      // 查找或创建产品
+      let product = currentProducts.find(p => 
+        p.name === name && p.sku === sku && p.brand === brand
+      );
+
+      if (!product) {
+        // 创建新产品
+        product = {
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          name,
+          sku,
+          brand,
+          net: net > 0 ? net : 0,
+          gross: gross > 0 ? gross : 0,
+          unit: '件',
+          remark: ''
+        };
+        currentProducts.push(product);
+        newProducts.push(product);
+      }
+
+      // 更新库存
+      currentStock[product.id] = (currentStock[product.id] || 0) + qty;
+
+      // 添加日志
+      importLogs.push({
+        id: Date.now() + Math.random(),
+        type: 'in',
+        productId: product.id,
+        name: product.name,
+        sku: product.sku,
+        brand: product.brand,
+        net: product.net,
+        qty: qty,
+        date: date,
+        remark: remark,
+        time: new Date().toISOString()
+      });
+
+      successCount++;
+    }
+
+    // 添加所有日志
+    currentLogs.push(...importLogs);
+
+    // 保存数据
+    if (isOnline) {
+      try {
+        await updateData({ products: currentProducts, stock: currentStock, logs: currentLogs });
+        updateSyncStatus('synced', '已同步到云端');
+      } catch (e) {
+        updateSyncStatus('error', '同步失败');
+      }
+    }
+
+    // 显示结果
+    let resultHtml = '<div class="batch-result"><div class="batch-result-title">✅ 导入完成</div>';
+    resultHtml += `<div class="batch-result-item"><span>成功导入</span><span>${successCount} 条</span></div>`;
+    resultHtml += `<div class="batch-result-item"><span>跳过</span><span>${skipCount} 条</span></div>`;
+    resultHtml += `<div class="batch-result-item"><span>新增产品</span><span>${newProducts.length} 个</span></div>`;
+
+    if (newProducts.length > 0) {
+      resultHtml += '<div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);"><strong>新增产品：</strong></div>';
+      newProducts.forEach(p => {
+        resultHtml += `<div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">${p.brand} ${p.name} ${p.sku} (${p.net}kg)</div>`;
+      });
+    }
+    resultHtml += '</div>';
+
+    resultDiv.innerHTML = resultHtml;
+
+    // 刷新界面
+    initUI();
+    showToast(`✅ Excel导入完成，成功导入 ${successCount} 条记录`);
+
+  } catch (err) {
+    console.error('导入失败:', err);
+    resultDiv.innerHTML = `<div style="color: var(--danger); text-align: center;">❌ 导入失败：${err.message}</div>`;
+  }
+
+  // 清空文件输入，允许重复导入同一文件
+  event.target.value = '';
+}
+
+// 格式化Excel日期
+function formatExcelDate(excelDate) {
+  if (!excelDate) return null;
+
+  // 如果是数字（Excel日期序列）
+  if (typeof excelDate === 'number') {
+    const epoch = new Date(1899, 11, 30);
+    const date = new Date(epoch.getTime() + excelDate * 24 * 60 * 60 * 1000);
+    return date.toISOString().split('T')[0];
+  }
+
+  // 如果是字符串
+  if (typeof excelDate === 'string') {
+    const date = new Date(excelDate);
+    if (!isNaN(date.getTime())) {
+      return date.toISOString().split('T')[0];
+    }
+  }
+
+  return null;
+}
+
 </script>
 </body>
 </html>
