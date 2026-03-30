@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>佳信水产仓库管理系统 v3.1</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; }
+    :root { --primary: #2563eb; --primary-dark: #1d4ed8; --success: #059669; --success-light: #d1fae5; --danger: #dc2626; --danger-light: #fee2e2; --warning: #d97706; --bg: #f1f5f9; --card-bg: #ffffff; --text-primary: #0f172a; --text-secondary: #475569; --text-tertiary: #94a3b8; --border: #e2e8f0; --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1); --radius: 8px; --radius-lg: 12px; --radius-xl: 16px; }
+    body { background: var(--bg); min-height: 100vh; color: var(--text-primary); line-height: 1.5; overflow-x: hidden; padding-bottom: 80px; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 16px; width: 100%; }
+    @media (min-width: 768px) { .container { padding: 24px; } }
+    .header { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border-radius: var(--radius-xl); padding: 24px; margin-bottom: 20px; color: white; box-shadow: var(--shadow-lg); position: relative; overflow: hidden; }
+    .header h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 12px; }
+    .header p { opacity: 0.9; font-size: 14px; }
+    .sync-status { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); padding: 6px 12px; border-radius: 20px; font-size: 12px; display: flex; align-items: center; gap: 6px; border: 1px solid rgba(255,255,255,0.3); font-weight: 500; }
+    .sync-status.syncing { background: rgba(245, 158, 11, 0.3); }
+    .sync-status.synced { background: rgba(16, 185, 129, 0.3); }
+    .sync-status.error { background: rgba(239, 68, 68, 0.3); }
+    .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .sync-status.syncing .sync-dot { animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(20px); border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); box-shadow: 0 -4px 20px rgba(0,0,0,0.08); z-index: 1000; }
+    .nav-item { flex: 1; max-width: 100px; padding: 8px 4px; border-radius: 12px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; transition: all 0.2s ease; color: var(--text-secondary); font-size: 11px; font-weight: 500; user-select: none; -webkit-user-select: none; }
+    .nav-item .icon { font-size: 22px; transition: transform 0.2s; line-height: 1; }
+    .nav-item:active { transform: scale(0.92); background: var(--bg); }
+    .nav-item.active { color: var(--primary); background: rgba(37, 99, 235, 0.08); }
+    .nav-item.active .icon { transform: translateY(-2px); }
+    .page { display: none; animation: fadeIn 0.3s ease-out; }
+    .page.show { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .card { background: var(--card-bg); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+    @media (min-width: 768px) { .card { padding: 24px; } }
+    .card-title { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; padding-bottom: 12px; border-bottom: 2px solid var(--bg); }
+    .card-title::before { content: ''; width: 4px; height: 20px; background: var(--primary); border-radius: 2px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+    .stat-card { background: var(--card-bg); border-radius: var(--radius-lg); padding: 16px 12px; box-shadow: var(--shadow); border: 1px solid var(--border); text-align: center; }
+    .stat-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 500; }
+    .stat-value { font-size: 24px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+    .stat-card:nth-child(1) .stat-value { color: var(--success); }
+    .stat-card:nth-child(2) .stat-value { color: var(--danger); }
+    .stat-card:nth-child(3) .stat-value { color: var(--primary); }
+    .stat-unit { font-size: 11px; color: var(--text-tertiary); margin-top: 4px; font-weight: 500; }
+    .form-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px; }
+    @media (min-width: 768px) { .form-row { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 1024px) { .form-row { grid-template-columns: repeat(4, 1fr); } }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    label { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+    input, select, textarea { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px; background: white; color: var(--text-primary); transition: all 0.2s; min-height: 40px; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+    select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m19.5 8.25-7.5 7.5-7.5-7.5' /%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; background-size: 16px; padding-right: 32px; }
+    .btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+    .btn { padding: 10px 16px; border: none; border-radius: var(--radius); font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; min-height: 40px; flex: 1; min-width: fit-content; }
+    @media (min-width: 768px) { .btn { flex: 0 0 auto; padding: 10px 20px; } }
+    .btn:active { transform: scale(0.96); }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-success { background: var(--success); color: white; }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-secondary { background: white; color: var(--text-primary); border: 1.5px solid var(--border); }
+    .btn-secondary:hover { background: var(--bg); }
+    .table-wrapper { overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid var(--border); background: white; margin-top: 16px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 800px; }
+    th { background: var(--bg); font-weight: 600; color: var(--text-primary); padding: 12px; text-align: left; border-bottom: 2px solid var(--border); white-space: nowrap; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); color: var(--text-primary); vertical-align: middle; }
+    tr:hover td { background: rgba(37, 99, 235, 0.02); }
+    tr:last-child td { border-bottom: none; }
+    .stock-negative { color: var(--danger); font-weight: 700; background: var(--danger-light); padding: 4px 8px; border-radius: 4px; display: inline-block; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+    .badge-in { background: var(--success-light); color: var(--success); }
+    .badge-out { background: var(--danger-light); color: var(--danger); }
+    .batch-list { max-height: 50vh; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius-lg); background: white; }
+    .batch-item { display: grid; grid-template-columns: 40px 1fr 100px 120px; gap: 12px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); transition: all 0.2s; cursor: pointer; }
+    @media (max-width: 640px) { .batch-item { grid-template-columns: 36px 1fr 80px 100px; gap: 8px; padding: 10px 12px; } }
+    .batch-item:last-child { border-bottom: none; }
+    .batch-item:hover { background: var(--bg); }
+    .batch-item.selected { background: rgba(37, 99, 235, 0.05); }
+    .batch-item.error { background: var(--danger-light); animation: shake 0.4s; }
+    .batch-item.success { background: var(--success-light); }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+    .batch-checkbox-wrapper { display: flex; align-items: center; justify-content: center; }
+    .batch-checkbox { width: 20px; height: 20px; cursor: pointer; accent-color: var(--primary); }
+    .batch-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow: hidden; }
+    .batch-name { font-weight: 600; color: var(--text-primary); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .batch-meta { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .batch-stock { text-align: center; font-size: 13px; }
+    .batch-stock-label { color: var(--text-tertiary); font-size: 11px; font-weight: 500; }
+    .batch-stock-value { font-weight: 700; color: var(--primary); font-size: 16px; font-variant-numeric: tabular-nums; }
+    .batch-stock-value.low { color: var(--danger); }
+    .batch-input-group { display: flex; align-items: center; gap: 4px; }
+    .batch-input { width: 60px; padding: 6px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px; text-align: center; font-variant-numeric: tabular-nums; }
+    .batch-input:focus { outline: none; border-color: var(--primary); }
+    .batch-input:disabled { background: var(--bg); cursor: not-allowed; }
+    .batch-btn { width: 28px; height: 28px; border: 1.5px solid var(--border); background: white; border-radius: var(--radius); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--text-secondary); transition: all 0.2s; padding: 0; flex-shrink: 0; }
+    .batch-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+    .batch-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .select-all-bar { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--bg); border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 500; color: var(--text-secondary); cursor: pointer; user-select: none; }
+    .select-all-bar:hover { background: #e2e8f0; }
+    .log-date-group { margin-bottom: 16px; border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: white; }
+    .log-date-header { background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-bottom: 1px solid var(--border); }
+    .log-date-header:hover { background: #e2e8f0; }
+    .log-date-title { font-weight: 700; color: var(--text-primary); font-size: 15px; display: flex; align-items: center; gap: 8px; }
+    .log-date-stats { display: flex; gap: 16px; font-size: 13px; font-weight: 500; }
+    .log-date-stats .in { color: var(--success); }
+    .log-date-stats .out { color: var(--danger); }
+    .log-date-toggle { font-size: 12px; color: var(--text-tertiary); transition: transform 0.2s; }
+    .log-date-group.collapsed .log-date-toggle { transform: rotate(-90deg); }
+    .log-date-content { max-height: 600px; overflow-y: auto; transition: max-height 0.3s ease; }
+    .log-date-group.collapsed .log-date-content { max-height: 0; overflow: hidden; }
+    .log-item { display: grid; grid-template-columns: 60px 1fr 80px 100px; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--border); align-items: center; font-size: 13px; }
+    .log-item:last-child { border-bottom: none; }
+    .log-time { color: var(--text-tertiary); font-size: 12px; font-variant-numeric: tabular-nums; }
+    .log-product { display: flex; flex-direction: column; gap: 2px; }
+    .log-product-name { font-weight: 600; color: var(--text-primary); }
+    .log-product-meta { font-size: 12px; color: var(--text-secondary); }
+    .log-qty { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+    .log-qty.in { color: var(--success); }
+    .log-qty.out { color: var(--danger); }
+    .product-tree { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .brand-group { border-bottom: 1px solid var(--border); }
+    .brand-group:last-child { border-bottom: none; }
+    .brand-header { background: var(--bg); padding: 12px 16px; font-weight: 700; color: var(--text-primary); display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 15px; }
+    .brand-content { background: white; }
+    .category-group { border-bottom: 1px solid var(--border); }
+    .category-group:last-child { border-bottom: none; }
+    .category-header { padding: 10px 16px 10px 32px; font-weight: 600; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 14px; background: rgba(241, 245, 249, 0.5); }
+    .category-content { padding: 8px 16px 8px 48px; }
+    .spec-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .spec-item:last-child { border-bottom: none; }
+    .spec-info { display: flex; flex-direction: column; gap: 2px; }
+    .spec-name { font-weight: 600; color: var(--text-primary); }
+    .spec-meta { font-size: 12px; color: var(--text-secondary); }
+    .spec-actions { display: flex; gap: 8px; }
+    .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: var(--text-primary); color: white; padding: 12px 24px; border-radius: 50px; font-weight: 600; z-index: 10000; box-shadow: var(--shadow-lg); opacity: 0; transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); max-width: 90%; text-align: center; font-size: 14px; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.success { background: var(--success); }
+    .toast.error { background: var(--danger); }
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 16px; opacity: 0; transition: opacity 0.3s; }
+    .modal-overlay.show { display: flex; opacity: 1; }
+    .modal-content { background: white; border-radius: var(--radius-xl); width: 100%; max-width: 480px; max-height: 90vh; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); transform: scale(0.9) translateY(20px); transition: transform 0.3s; }
+    .modal-overlay.show .modal-content { transform: scale(1) translateY(0); }
+    .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+    .modal-icon { width: 48px; height: 48px; border-radius: 50%; background: var(--danger-light); color: var(--danger); display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+    .modal-title { font-size: 18px; font-weight: 700; color: var(--text-primary); }
+    .modal-body { padding: 20px 24px; }
+    .modal-product-info { background: var(--bg); border-radius: var(--radius); padding: 16px; margin-bottom: 20px; }
+    .modal-product-name { font-weight: 700; font-size: 16px; color: var(--text-primary); margin-bottom: 8px; }
+    .modal-product-meta { font-size: 13px; color: var(--text-secondary); display: flex; gap: 12px; flex-wrap: wrap; }
+    .modal-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+    .modal-stat { text-align: center; padding: 12px; background: var(--bg); border-radius: var(--radius); }
+    .modal-stat-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+    .modal-stat-value { font-size: 20px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .modal-stat-value.danger { color: var(--danger); }
+    .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; }
+    .modal-btn { padding: 10px 24px; border-radius: var(--radius); font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; font-size: 14px; }
+    .modal-btn-primary { background: var(--primary); color: white; }
+    .modal-btn-primary:hover { background: var(--primary-dark); }
+    .empty-state { text-align: center; padding: 48px 20px; color: var(--text-secondary); }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
+    .empty-state p { font-size: 14px; }
+    .import-area { border: 2px dashed var(--border); border-radius: var(--radius-lg); padding: 32px; text-align: center; background: var(--bg); transition: all 0.2s; cursor: pointer; }
+    .import-area:hover { border-color: var(--primary); background: rgba(37, 99, 235, 0.02); }
+    .import-area.dragover { border-color: var(--primary); background: rgba(37, 99, 235, 0.05); }
+    .import-icon { font-size: 40px; margin-bottom: 12px; }
+    .import-text { font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6; }
+    .import-input { display: none; }
+    .result-box { background: var(--bg); border-radius: var(--radius-lg); padding: 16px; margin-top: 16px; border-left: 4px solid var(--success); }
+    .result-title { font-weight: 700; color: var(--text-primary); margin-bottom: 12px; font-size: 14px; }
+    .result-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .result-item:last-child { border-bottom: none; }
+    .hidden { display: none !important; }
+    @media (max-width: 640px) { .header h1 { font-size: 20px; } .stats-grid { gap: 8px; } .stat-card { padding: 12px 8px; } .stat-value { font-size: 20px; } .card { padding: 16px; } .modal-stats { grid-template-columns: 1fr; } }
+    .btn-delete { padding: 6px 12px; background: var(--danger-light); color: var(--danger); border: none; border-radius: var(--radius); font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-delete:hover { background: var(--danger); color: white; }
+    .tag { display: inline-block; padding: 2px 8px; background: var(--bg); border-radius: 4px; font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <div class="sync-status" id="syncStatus">
+        <span class="sync-dot"></span>
+        <span id="syncText">正在连接...</span>
+      </div>
+      <div style="position: relative; z-index: 1;">
+        <h1>🦐 佳信水产 v3.1</h1>
+        <p>智能仓库管理系统 · 实时库存监控</p>
+      </div>
+    </div>
+
+    <div class="page show" id="stock">
+      <div class="stats-grid" id="summaryCards"></div>
+      <div class="card">
+        <div class="card-title">筛选查询</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>品牌</label>
+            <select id="filterBrand" onchange="updateCascadeFilters('brand')"><option value="">全部品牌</option></select>
+          </div>
+          <div class="form-group">
+            <label>品名</label>
+            <select id="filterName" onchange="updateCascadeFilters('name')"><option value="">全部品名</option></select>
+          </div>
+          <div class="form-group">
+            <label>净重(kg)</label>
+            <select id="filterNet" onchange="updateCascadeFilters('net')"><option value="">全部净重</option></select>
+          </div>
+          <div class="form-group">
+            <label>规格</label>
+            <select id="filterSku"><option value="">全部规格</option></select>
+          </div>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="queryStock()">🔍 查询</button>
+          <button class="btn btn-secondary" onclick="resetStockFilters()">🔄 重置</button>
+          <button class="btn btn-success" onclick="showBalanceStock()">📦 结余库存</button>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr><th>品牌</th><th>品名</th><th>净重/件</th><th>规格</th><th>当前库存</th><th>累计出库</th><th>累计入库</th><th>总净重</th></tr>
+            </thead>
+            <tbody id="stockTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="out">
+      <div class="card">
+        <div class="card-title">📤 批量出库登记</div>
+        <div class="form-row">
+          <div class="form-group"><label>开始日期</label><input type="date" id="out_start_date"></div>
+          <div class="form-group"><label>结束日期</label><input type="date" id="out_end_date"></div>
+          <div class="form-group" style="grid-column: span 2;"><label>备注（统一）</label><input type="text" id="out_remark" placeholder="可选填客户名称或其他信息"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>品牌筛选</label>
+            <select id="batchOutFilterBrand" onchange="filterBatchOutList()"><option value="">全部品牌</option></select>
+          </div>
+          <div class="form-group">
+            <label>品类筛选</label>
+            <select id="batchOutFilterName" onchange="filterBatchOutList()"><option value="">全部品类</option></select>
+          </div>
+          <div class="form-group" style="display: flex; align-items: flex-end;">
+            <button class="btn btn-secondary" onclick="resetBatchOutFilters()" style="width: 100%;">🔄 重置筛选</button>
+          </div>
+        </div>
+        <div class="batch-list" id="batchOutList"></div>
+        <div class="btn-group">
+          <button class="btn btn-danger" onclick="doBatchStockOut()">📤 一键批量出库</button>
+          <button class="btn btn-secondary" onclick="clearBatchOut()">🔄 清空</button>
+        </div>
+        <div id="batchOutResult"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📥 Excel批量导入出库</div>
+        <div class="import-area" onclick="document.getElementById('outExcelInput').click()" ondrop="handleExcelDrop(event, 'out')" ondragover="handleExcelDragOver(event)" ondragleave="handleExcelDragLeave(event)">
+          <div class="import-icon">📄</div>
+          <div class="import-text">点击或拖拽上传Excel文件<br>支持格式：日期、序号、品名、规格、包装方式、净重、毛重、出库数量、备注</div>
+          <button class="btn btn-primary">选择文件</button>
+          <input type="file" id="outExcelInput" class="import-input" accept=".xlsx,.xls" onchange="handleExcelImport(this, 'out')">
+        </div>
+        <div class="btn-group" style="margin-top: 12px;">
+          <button class="btn btn-secondary" onclick="downloadTemplate('out')">📋 下载出库模板</button>
+        </div>
+        <div id="outExcelResult"></div>
+      </div>
+
+      
+    </div>
+
+    <div class="page" id="in">
+      <div class="card">
+        <div class="card-title">📥 批量入库登记</div>
+        <div class="form-row">
+          <div class="form-group"><label>开始日期</label><input type="date" id="in_start_date"></div>
+          <div class="form-group"><label>结束日期</label><input type="date" id="in_end_date"></div>
+          <div class="form-group" style="grid-column: span 2;"><label>收购单号（统一）</label><input type="text" id="in_bill" placeholder="如：001"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>品牌筛选</label>
+            <select id="batchInFilterBrand" onchange="filterBatchInList()"><option value="">全部品牌</option></select>
+          </div>
+          <div class="form-group">
+            <label>品类筛选</label>
+            <select id="batchInFilterName" onchange="filterBatchInList()"><option value="">全部品类</option></select>
+          </div>
+          <div class="form-group" style="display: flex; align-items: flex-end;">
+            <button class="btn btn-secondary" onclick="resetBatchInFilters()" style="width: 100%;">🔄 重置筛选</button>
+          </div>
+        </div>
+        <div class="batch-list" id="batchInList"></div>
+        <div class="btn-group">
+          <button class="btn btn-success" onclick="doBatchStockIn()">📥 一键批量入库</button>
+          <button class="btn btn-secondary" onclick="clearBatchIn()">🔄 清空</button>
+        </div>
+        <div id="batchInResult"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📥 Excel批量导入入库</div>
+        <div class="import-area" onclick="document.getElementById('inExcelInput').click()" ondrop="handleExcelDrop(event, 'in')" ondragover="handleExcelDragOver(event)" ondragleave="handleExcelDragLeave(event)">
+          <div class="import-icon">📄</div>
+          <div class="import-text">点击或拖拽上传Excel文件<br>支持表头：日期、序号、品名、规格、包装方式、净重、毛重、入库数量、备注、入库单号、收购原单</div>
+          <button class="btn btn-primary">选择文件</button>
+          <input type="file" id="inExcelInput" class="import-input" accept=".xlsx,.xls" onchange="handleExcelImport(this, 'in')">
+        </div>
+        <div class="btn-group" style="margin-top: 12px;">
+          <button class="btn btn-secondary" onclick="downloadTemplate('in')">📋 下载入库模板</button>
+        </div>
+        <div id="inExcelResult"></div>
+      </div>
+
+      
+    </div>
+
+    <div class="page" id="log">
+      <div class="card">
+        <div class="card-title">出入库流水明细</div>
+        <div class="form-row">
+          <div class="form-group"><label>开始日期</label><input type="date" id="l_start"></div>
+          <div class="form-group"><label>结束日期</label><input type="date" id="l_end"></div>
+          <div class="form-group" style="grid-column: span 2;">
+            <label>产品</label>
+            <select id="l_product"><option value="">全部产品</option></select>
+          </div>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="applyLogFilter()">🔍 查询</button>
+          <button class="btn btn-secondary" onclick="resetLogFilter()">🔄 重置</button>
+          <button class="btn btn-success" onclick="exportLog()">📎 导出Excel</button>
+        </div>
+        <div id="logCount" style="margin: 12px 0; font-size: 13px; color: var(--text-secondary);"></div>
+        <div id="logContainer"></div>
+      </div>
+    </div>
+
+    <div class="page" id="product">
+      <div class="card">
+        <div class="card-title">📦 批量添加产品</div>
+        <div class="form-row">
+          <div class="form-group"><label>品牌 *</label><input type="text" id="batch_brand" placeholder="例：佳信"></div>
+          <div class="form-group"><label>品名 *</label><input type="text" id="batch_name" placeholder="例：盒装白灼虾"></div>
+        </div>
+        <div class="card-title" style="margin-top: 16px; font-size: 15px;">添加规格和净重</div>
+        <div id="batchSpecContainer"></div>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="addBatchSpecRow()">➕ 添加规格行</button>
+          <button class="btn btn-primary" onclick="saveBatchProducts()">💾 批量保存</button>
+          <button class="btn btn-secondary" onclick="clearBatchProductForm()">🗑️ 清空</button>
+        </div>
+        <div id="batchProductResult"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">新增/编辑产品（单个）</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>品名</label>
+            <input type="text" id="p_name" placeholder="例：盒装白灼虾">
+            <select id="p_name_history" onchange="fillProductField('p_name', this.value)" style="margin-top: 6px; font-size: 12px;"><option value="">📋 选择历史品名</option></select>
+          </div>
+          <div class="form-group">
+            <label>规格</label>
+            <input type="text" id="p_sku" placeholder="例：16-20">
+            <select id="p_sku_history" onchange="fillProductField('p_sku', this.value)" style="margin-top: 6px; font-size: 12px;"><option value="">📋 选择历史规格</option></select>
+          </div>
+          <div class="form-group">
+            <label>品牌</label>
+            <input type="text" id="p_brand" placeholder="例：佳信">
+            <select id="p_brand_history" onchange="fillProductField('p_brand', this.value)" style="margin-top: 6px; font-size: 12px;"><option value="">📋 选择历史品牌</option></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>单位净重(kg)</label><input type="number" step="0.01" id="p_net" placeholder="0.00"></div>
+          <div class="form-group"><label>毛重(kg)</label><input type="number" step="0.01" id="p_gross" placeholder="0.00"></div>
+          <div class="form-group"><label>单位</label><input type="text" id="p_unit" value="件" readonly></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="grid-column: 1 / -1;"><label>备注</label><textarea id="p_remark" rows="2"></textarea></div>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="saveProduct()">💾 保存产品</button>
+          <button class="btn btn-secondary" onclick="clearProductForm()">🗑️ 清空</button>
+        </div>
+        <input type="hidden" id="edit_product_id">
+      </div>
+
+      <div class="card">
+        <div class="card-title">产品列表</div>
+        <div id="productTree"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-bar">
+    <div class="nav-item active" data-page="stock" onclick="switchPage('stock')"><span class="icon">📊</span><span>库存</span></div>
+    <div class="nav-item" data-page="out" onclick="switchPage('out')"><span class="icon">📤</span><span>出库</span></div>
+    <div class="nav-item" data-page="in" onclick="switchPage('in')"><span class="icon">📥</span><span>入库</span></div>
+    <div class="nav-item" data-page="log" onclick="switchPage('log')"><span class="icon">📋</span><span>流水</span></div>
+    <div class="nav-item" data-page="product" onclick="switchPage('product')"><span class="icon">📦</span><span>产品</span></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="modal-overlay" id="stockAlertModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-icon">⚠️</div>
+        <div class="modal-title">库存不足提醒</div>
+      </div>
+      <div class="modal-body">
+        <div class="modal-product-info">
+          <div class="modal-product-name" id="alertProductName">-</div>
+          <div class="modal-product-meta">
+            <span id="alertProductBrand">-</span>
+            <span id="alertProductSku">-</span>
+            <span id="alertProductNet">-</span>
+          </div>
+        </div>
+        <div class="modal-stats">
+          <div class="modal-stat"><div class="modal-stat-label">当前库存</div><div class="modal-stat-value" id="alertCurrentStock">0</div></div>
+          <div class="modal-stat"><div class="modal-stat-label">尝试出库</div><div class="modal-stat-value" id="alertRequestQty">0</div></div>
+          <div class="modal-stat"><div class="modal-stat-label">缺少数量</div><div class="modal-stat-value danger" id="alertShortage">0</div></div>
+        </div>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-top: 12px;">您尝试出库的数量超过了当前可用库存，请调整数量或先进行入库操作。</p>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-primary" onclick="closeStockAlert()">我知道了</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+
+const BIN_ID = '69c7eeb45fdde574550ab18e';
+const MASTER_KEY = '$2a$10$42R1HUnhc8El3s8IEf4sO.j6KnDq9wF/7gkHB1trcltILhKXafovu';
+const API_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
+let currentProducts = [];
+let currentStock = {};
+let currentLogs = [];
+let isOnline = false;
+let isNavigating = false;
+let filteredOutProducts = [];
+let filteredInProducts = [];
+let batchSpecRows = 0;
+
+async function initSystem() {
+  updateSyncStatus('syncing', '正在连接云端...');
+
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('out_start_date').value = today;
+  document.getElementById('out_end_date').value = today;
+  document.getElementById('in_start_date').value = today;
+  document.getElementById('in_end_date').value = today;
+  document.getElementById('l_start').value = today;
+  document.getElementById('l_end').value = today;
+
+  try {
+    const data = await fetchData();
+    currentProducts = data.products || [];
+    currentStock = data.stock || {};
+    currentLogs = data.logs || [];
+    isOnline = true;
+
+    updateSyncStatus('synced', '已同步到云端');
+    showToast('✅ 数据加载成功');
+    initUI();
+  } catch (err) {
+    console.error('初始化失败:', err);
+    updateSyncStatus('error', '连接失败，使用本地模式');
+    isOnline = false;
+    currentProducts = [];
+    currentStock = {};
+    currentLogs = [];
+    initUI();
+  }
+}
+
+async function fetchData() {
+  const response = await fetch(API_URL, {
+    method: 'GET',
+    headers: { 'X-Master-Key': MASTER_KEY }
+  });
+  if (!response.ok) throw new Error('获取数据失败');
+  const result = await response.json();
+  return result.record;
+}
+
+async function updateData(data) {
+  const response = await fetch(API_URL, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Master-Key': MASTER_KEY
+    },
+    body: JSON.stringify(data)
+  });
+  if (!response.ok) throw new Error('更新数据失败');
+  return await response.json();
+}
+
+function updateSyncStatus(status, text) {
+  const el = document.getElementById('syncStatus');
+  const txt = document.getElementById('syncText');
+  el.className = 'sync-status ' + status;
+  txt.textContent = text;
+}
+
+function initUI() {
+  initFilterOptions();
+  renderStockTable(currentProducts);
+  updateSummary();
+  renderProductSelects();
+  renderProductTree();
+  applyLogFilter();
+  renderTodayLogs();
+  renderTodayInLogs();
+  initBatchLists();
+  initBatchSpecContainer();
+  updateHistorySelects();
+}
+
+function showToast(msg, type = 'success') {
+  const toast = document.getElementById('toast');
+  toast.className = `toast ${type}`;
+  toast.innerText = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+function updateSummary() {
+  let totalIn = 0, totalOut = 0;
+  currentLogs.forEach(l => { 
+    if (l.type === 'in') totalIn += l.qty; 
+    else totalOut += l.qty; 
+  });
+  const totalStock = Object.values(currentStock).reduce((a,b) => a+b, 0);
+
+  document.getElementById('summaryCards').innerHTML = `
+    <div class="stat-card"><div class="stat-label">📥 总入库</div><div class="stat-value">${totalIn.toLocaleString()}</div><div class="stat-unit">件</div></div>
+    <div class="stat-card"><div class="stat-label">📤 总出库</div><div class="stat-value">${totalOut.toLocaleString()}</div><div class="stat-unit">件</div></div>
+    <div class="stat-card"><div class="stat-label">📦 当前库存</div><div class="stat-value">${totalStock.toLocaleString()}</div><div class="stat-unit">件</div></div>
+  `;
+}
+
+function switchPage(page) {
+  if (isNavigating) return;
+  isNavigating = true;
+
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.classList.remove('active');
+      if (item.getAttribute('data-page') === page) item.classList.add('active');
+    });
+
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('show'));
+    document.getElementById(page).classList.add('show');
+
+    if (page === 'out' || page === 'in') initBatchLists();
+    if (page === 'stock') renderStockTable(currentProducts);
+    if (page === 'log') applyLogFilter();
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => { isNavigating = false; }, 100);
+  });
+}
+
+function initFilterOptions() {
+  updateBrandFilter();
+  updateNameFilter();
+  updateNetFilter();
+  updateSkuFilter();
+}
+
+function updateBrandFilter() {
+  const brands = [...new Set(currentProducts.map(p => p.brand))].sort();
+  const selects = ['filterBrand', 'batchOutFilterBrand', 'batchInFilterBrand'];
+  selects.forEach(id => {
+    const sel = document.getElementById(id);
+    if (sel) {
+      const currentVal = sel.value;
+      sel.innerHTML = '<option value="">全部品牌</option>' + brands.map(v => `<option value="${v}">${v}</option>`).join('');
+      sel.value = currentVal;
+    }
+  });
+}
+
+function updateNameFilter(brand) {
+  let products = brand ? currentProducts.filter(p => p.brand === brand) : currentProducts;
+  const names = [...new Set(products.map(p => p.name))].sort();
+
+  const selects = ['filterName', 'batchOutFilterName', 'batchInFilterName'];
+  selects.forEach(id => {
+    const sel = document.getElementById(id);
+    if (sel) {
+      const currentVal = sel.value;
+      sel.innerHTML = '<option value="">全部品名</option>' + names.map(v => `<option value="${v}">${v}</option>`).join('');
+      if (names.includes(currentVal)) sel.value = currentVal;
+    }
+  });
+}
+
+function updateNetFilter(brand, name) {
+  let products = currentProducts;
+  if (brand) products = products.filter(p => p.brand === brand);
+  if (name) products = products.filter(p => p.name === name);
+  const nets = [...new Set(products.map(p => p.net))].sort((a,b) => a-b);
+
+  const sel = document.getElementById('filterNet');
+  if (sel) {
+    const currentVal = sel.value;
+    sel.innerHTML = '<option value="">全部净重</option>' + nets.map(v => `<option value="${v}">${v}kg</option>`).join('');
+    if (nets.includes(parseFloat(currentVal))) sel.value = currentVal;
+  }
+}
+
+function updateSkuFilter(brand, name, net) {
+  let products = currentProducts;
+  if (brand) products = products.filter(p => p.brand === brand);
+  if (name) products = products.filter(p => p.name === name);
+  if (net) products = products.filter(p => p.net == net);
+  const skus = [...new Set(products.map(p => p.sku))].sort();
+
+  const sel = document.getElementById('filterSku');
+  if (sel) {
+    const currentVal = sel.value;
+    sel.innerHTML = '<option value="">全部规格</option>' + skus.map(v => `<option value="${v}">${v}</option>`).join('');
+    if (skus.includes(currentVal)) sel.value = currentVal;
+  }
+}
+
+function updateCascadeFilters(changedField) {
+  const brand = document.getElementById('filterBrand').value;
+  const name = document.getElementById('filterName').value;
+  const net = document.getElementById('filterNet').value;
+
+  if (changedField === 'brand') {
+    updateNameFilter(brand);
+    updateNetFilter(brand, '');
+    updateSkuFilter(brand, '', '');
+  } else if (changedField === 'name') {
+    updateNetFilter(brand, name);
+    updateSkuFilter(brand, name, '');
+  } else if (changedField === 'net') {
+    updateSkuFilter(brand, name, net);
+  }
+}
+
+function queryStock() {
+  const brand = document.getElementById('filterBrand').value;
+  const name = document.getElementById('filterName').value;
+  const net = document.getElementById('filterNet').value;
+  const sku = document.getElementById('filterSku').value;
+
+  let filtered = currentProducts.filter(p => {
+    return (!brand || p.brand === brand) && (!name || p.name === name) && (!net || p.net == net) && (!sku || p.sku === sku);
+  });
+
+  renderStockTable(filtered);
+  showToast(`✅ 查询完成，找到 ${filtered.length} 个产品`);
+}
+
+function resetStockFilters() {
+  document.getElementById('filterBrand').value = '';
+  document.getElementById('filterName').value = '';
+  document.getElementById('filterNet').value = '';
+  document.getElementById('filterSku').value = '';
+  initFilterOptions();
+  renderStockTable(currentProducts);
+  showToast('🔄 筛选已重置');
+}
+
+function showBalanceStock() {
+  let filtered = currentProducts.filter(p => (currentStock[p.id] || 0) > 0);
+  renderStockTable(filtered);
+  showToast(`📦 显示 ${filtered.length} 个有库存产品`);
+}
+
+function renderStockTable(products) {
+  const tbody = document.getElementById('stockTable');
+  if (products.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><div class="icon">📭</div><p>暂无数据</p></td></tr>';
+    return;
+  }
+
+  const sorted = [...products].sort((a, b) => {
+    if (a.brand !== b.brand) return a.brand.localeCompare(b.brand);
+    return a.name.localeCompare(b.name);
+  });
+
+  tbody.innerHTML = sorted.map(p => {
+    const stock = currentStock[p.id] || 0;
+    const totalIn = currentLogs.filter(l => l.productId === p.id && l.type === 'in').reduce((a,l) => a + l.qty, 0);
+    const totalOut = currentLogs.filter(l => l.productId === p.id && l.type === 'out').reduce((a,l) => a + l.qty, 0);
+    const totalNet = (stock * p.net).toFixed(2);
+
+    return `<tr>
+      <td><strong>${p.brand}</strong></td>
+      <td>${p.name}</td>
+      <td>${p.net}kg</td>
+      <td><span class="tag">${p.sku}</span></td>
+      <td class="${stock < 0 ? 'stock-negative' : ''}">${stock}</td>
+      <td style="color: var(--danger); font-weight: 600;">${totalOut}</td>
+      <td style="color: var(--success); font-weight: 600;">${totalIn}</td>
+      <td>${totalNet}kg</td>
+    </tr>`;
+  }).join('');
+}
+
+function initBatchLists() {
+  filteredOutProducts = [...currentProducts];
+  filteredInProducts = [...currentProducts];
+  renderBatchOutList();
+  renderBatchInList();
+}
+
+function renderBatchOutList() {
+  const container = document.getElementById('batchOutList');
+  const products = filteredOutProducts.length > 0 ? filteredOutProducts : currentProducts;
+
+  if (products.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>请先添加产品</p></div>';
+    return;
+  }
+
+  let html = `<div class="select-all-bar" onclick="toggleSelectAll('out')">
+    <input type="checkbox" class="batch-checkbox" id="selectAllOut" style="pointer-events: none;">
+    <span>全选当前 (${products.length}个)</span>
+  </div>`;
+
+  html += products.map(p => {
+    const stock = currentStock[p.id] || 0;
+    const isLow = stock <= 0;
+    return `<div class="batch-item" id="out-item-${p.id}" onclick="toggleBatchItem('${p.id}', 'out')">
+      <div class="batch-checkbox-wrapper" onclick="event.stopPropagation()">
+        <input type="checkbox" class="batch-checkbox" id="out-cb-${p.id}" data-id="${p.id}" data-type="out" onclick="event.stopPropagation(); updateBatchItem('${p.id}', 'out')">
+      </div>
+      <div class="batch-info">
+        <div class="batch-name">${p.name}</div>
+        <div class="batch-meta">${p.brand} · ${p.sku} · ${p.net}kg/件</div>
+      </div>
+      <div class="batch-stock">
+        <div class="batch-stock-label">库存</div>
+        <div class="batch-stock-value ${isLow ? 'low' : ''}">${stock}</div>
+      </div>
+      <div class="batch-input-group" onclick="event.stopPropagation()">
+        <button class="batch-btn" onclick="event.stopPropagation(); adjustQty('${p.id}', 'out', -1)" disabled id="out-minus-${p.id}">−</button>
+        <input type="number" class="batch-input" id="out-qty-${p.id}" placeholder="0" min="0" value="0" disabled onchange="validateBatchQty('${p.id}', 'out')" onfocus="this.select()">
+        <button class="batch-btn" onclick="event.stopPropagation(); adjustQty('${p.id}', 'out', 1)" disabled id="out-plus-${p.id}">+</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  container.innerHTML = html;
+}
+
+function renderBatchInList() {
+  const container = document.getElementById('batchInList');
+  const products = filteredInProducts.length > 0 ? filteredInProducts : currentProducts;
+
+  if (products.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>请先添加产品</p></div>';
+    return;
+  }
+
+  let html = `<div class="select-all-bar" onclick="toggleSelectAll('in')">
+    <input type="checkbox" class="batch-checkbox" id="selectAllIn" style="pointer-events: none;">
+    <span>全选当前 (${products.length}个)</span>
+  </div>`;
+
+  html += products.map(p => {
+    const stock = currentStock[p.id] || 0;
+    return `<div class="batch-item" id="in-item-${p.id}" onclick="toggleBatchItem('${p.id}', 'in')">
+      <div class="batch-checkbox-wrapper" onclick="event.stopPropagation()">
+        <input type="checkbox" class="batch-checkbox" id="in-cb-${p.id}" data-id="${p.id}" data-type="in" onclick="event.stopPropagation(); updateBatchItem('${p.id}', 'in')">
+      </div>
+      <div class="batch-info">
+        <div class="batch-name">${p.name}</div>
+        <div class="batch-meta">${p.brand} · ${p.sku} · ${p.net}kg/件</div>
+      </div>
+      <div class="batch-stock">
+        <div class="batch-stock-label">库存</div>
+        <div class="batch-stock-value">${stock}</div>
+      </div>
+      <div class="batch-input-group" onclick="event.stopPropagation()">
+        <button class="batch-btn" onclick="event.stopPropagation(); adjustQty('${p.id}', 'in', -1)" disabled id="in-minus-${p.id}">−</button>
+        <input type="number" class="batch-input" id="in-qty-${p.id}" placeholder="0" min="0" value="0" disabled onfocus="this.select()">
+        <button class="batch-btn" onclick="event.stopPropagation(); adjustQty('${p.id}', 'in', 1)" disabled id="in-plus-${p.id}">+</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  container.innerHTML = html;
+}
+
+function filterBatchOutList() {
+  const brand = document.getElementById('batchOutFilterBrand').value;
+  const name = document.getElementById('batchOutFilterName').value;
+  filteredOutProducts = currentProducts.filter(p => (!brand || p.brand === brand) && (!name || p.name === name));
+  renderBatchOutList();
+  showToast(`🔍 筛选结果: ${filteredOutProducts.length} 个产品`);
+}
+
+function filterBatchInList() {
+  const brand = document.getElementById('batchInFilterBrand').value;
+  const name = document.getElementById('batchInFilterName').value;
+  filteredInProducts = currentProducts.filter(p => (!brand || p.brand === brand) && (!name || p.name === name));
+  renderBatchInList();
+  showToast(`🔍 筛选结果: ${filteredInProducts.length} 个产品`);
+}
+
+function resetBatchOutFilters() {
+  document.getElementById('batchOutFilterBrand').value = '';
+  document.getElementById('batchOutFilterName').value = '';
+  filteredOutProducts = [...currentProducts];
+  renderBatchOutList();
+  showToast('🔄 筛选已重置');
+}
+
+function resetBatchInFilters() {
+  document.getElementById('batchInFilterBrand').value = '';
+  document.getElementById('batchInFilterName').value = '';
+  filteredInProducts = [...currentProducts];
+  renderBatchInList();
+  showToast('🔄 筛选已重置');
+}
+
+function toggleSelectAll(type) {
+  const checkboxes = document.querySelectorAll(`.batch-checkbox[data-type="${type}"]`);
+  const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+  checkboxes.forEach(cb => {
+    cb.checked = !allChecked;
+    updateBatchItem(cb.getAttribute('data-id'), type);
+  });
+  document.getElementById(`selectAll${type === 'out' ? 'Out' : 'In'}`).checked = !allChecked;
+}
+
+function toggleBatchItem(id, type) {
+  const checkbox = document.getElementById(`${type}-cb-${id}`);
+  if (checkbox) {
+    checkbox.checked = !checkbox.checked;
+    updateBatchItem(id, type);
+  }
+}
+
+function updateBatchItem(id, type) {
+  const checkbox = document.getElementById(`${type}-cb-${id}`);
+  const input = document.getElementById(`${type}-qty-${id}`);
+  const minusBtn = document.getElementById(`${type}-minus-${id}`);
+  const plusBtn = document.getElementById(`${type}-plus-${id}`);
+  const item = document.getElementById(`${type}-item-${id}`);
+
+  if (checkbox.checked) {
+    input.disabled = false;
+    minusBtn.disabled = false;
+    plusBtn.disabled = false;
+    item.classList.add('selected');
+    setTimeout(() => { input.focus(); input.select(); }, 10);
+  } else {
+    input.disabled = true;
+    minusBtn.disabled = true;
+    plusBtn.disabled = true;
+    input.value = '0';
+    item.classList.remove('selected', 'error', 'success');
+  }
+}
+
+function adjustQty(id, type, delta) {
+  const input = document.getElementById(`${type}-qty-${id}`);
+  let newVal = (parseInt(input.value) || 0) + delta;
+  if (newVal < 0) newVal = 0;
+  input.value = newVal;
+
+  if (type === 'out') validateBatchQty(id, type);
+  else {
+    const item = document.getElementById(`${type}-item-${id}`);
+    item.classList.toggle('success', newVal > 0);
+  }
+}
+
+function validateBatchQty(id, type) {
+  const input = document.getElementById(`out-qty-${id}`);
+  const item = document.getElementById(`out-item-${id}`);
+  const stock = currentStock[id] || 0;
+  const qty = parseInt(input.value) || 0;
+
+  if (qty > stock) {
+    item.classList.add('error');
+    item.classList.remove('success');
+    showStockAlert(currentProducts.find(p => p.id === id), qty, stock);
+    return false;
+  } else if (qty > 0) {
+    item.classList.remove('error');
+    item.classList.add('success');
+    return true;
+  }
+  return false;
+}
+
+function showStockAlert(product, requestQty, currentQty) {
+  document.getElementById('alertProductName').textContent = product.name;
+  document.getElementById('alertProductBrand').textContent = product.brand;
+  document.getElementById('alertProductSku').textContent = product.sku;
+  document.getElementById('alertProductNet').textContent = product.net + 'kg/件';
+  document.getElementById('alertCurrentStock').textContent = currentQty;
+  document.getElementById('alertRequestQty').textContent = requestQty;
+  document.getElementById('alertShortage').textContent = requestQty - currentQty;
+  document.getElementById('stockAlertModal').classList.add('show');
+}
+
+function closeStockAlert() {
+  document.getElementById('stockAlertModal').classList.remove('show');
+}
+
+async function doBatchStockOut() {
+  const startDate = document.getElementById('out_start_date').value;
+  const endDate = document.getElementById('out_end_date').value;
+  const remark = document.getElementById('out_remark').value;
+
+  if (!startDate || !endDate) { showToast('❌ 请选择出库日期范围', 'error'); return; }
+  if (startDate > endDate) { showToast('❌ 开始日期不能大于结束日期', 'error'); return; }
+
+  const selected = [];
+  document.querySelectorAll('.batch-checkbox[data-type="out"]:checked').forEach(cb => {
+    const id = cb.getAttribute('data-id');
+    const qty = parseInt(document.getElementById(`out-qty-${id}`).value) || 0;
+    const product = currentProducts.find(p => p.id === id);
+    if (qty > 0 && qty <= (currentStock[id] || 0)) selected.push({ id, qty, product });
+  });
+
+  if (selected.length === 0) { showToast('❌ 请选择至少一个产品并填写有效数量', 'error'); return; }
+
+  for (const item of selected) {
+    currentStock[item.id] = (currentStock[item.id] || 0) - item.qty;
+    currentLogs.push({
+      id: Date.now() + Math.random(), type: 'out', productId: item.id,
+      name: item.product.name, sku: item.product.sku, brand: item.product.brand, net: item.product.net,
+      qty: item.qty, date: startDate, remark: remark, time: new Date().toISOString()
+    });
+  }
+
+  if (isOnline) {
+    try { await updateData({ products: currentProducts, stock: currentStock, logs: currentLogs }); updateSyncStatus('synced', '已同步到云端'); }
+    catch (e) { updateSyncStatus('error', '同步失败'); }
+  }
+
+  let resultHtml = '<div class="result-box"><div class="result-title">✅ 出库成功</div>';
+  selected.forEach(item => { resultHtml += `<div class="result-item"><span>${item.product.brand} ${item.product.name} ${item.product.sku}</span><span style="color: var(--danger); font-weight: 600;">-${item.qty}件</span></div>`; });
+  resultHtml += '</div>';
+  document.getElementById('batchOutResult').innerHTML = resultHtml;
+
+  showToast(`✅ 成功出库 ${selected.length} 个产品`);
+  updateSummary(); renderStockTable(currentProducts); renderTodayLogs(); clearBatchOut();
+}
+
+async function doBatchStockIn() {
+  const startDate = document.getElementById('in_start_date').value;
+  const endDate = document.getElementById('in_end_date').value;
+  const bill = document.getElementById('in_bill').value;
+
+  if (!startDate || !endDate) { showToast('❌ 请选择入库日期范围', 'error'); return; }
+  if (startDate > endDate) { showToast('❌ 开始日期不能大于结束日期', 'error'); return; }
+
+  const selected = [];
+  document.querySelectorAll('.batch-checkbox[data-type="in"]:checked').forEach(cb => {
+    const id = cb.getAttribute('data-id');
+    const qty = parseInt(document.getElementById(`in-qty-${id}`).value) || 0;
+    const product = currentProducts.find(p => p.id === id);
+    if (qty > 0) selected.push({ id, qty, product });
+  });
+
+  if (selected.length === 0) { showToast('❌ 请选择至少一个产品并填写数量', 'error'); return; }
+
+  for (const item of selected) {
+    currentStock[item.id] = (currentStock[item.id] || 0) + item.qty;
+    currentLogs.push({
+      id: Date.now() + Math.random(), type: 'in', productId: item.id,
+      name: item.product.name, sku: item.product.sku, brand: item.product.brand, net: item.product.net,
+      qty: item.qty, date: startDate, remark: bill, time: new Date().toISOString()
+    });
+  }
+
+  if (isOnline) {
+    try { await updateData({ products: currentProducts, stock: currentStock, logs: currentLogs }); updateSyncStatus('synced', '已同步到云端'); }
+    catch (e) { updateSyncStatus('error', '同步失败'); }
+  }
+
+  let resultHtml = '<div class="result-box"><div class="result-title">✅ 入库成功</div>';
+  selected.forEach(item => { resultHtml += `<div class="result-item"><span>${item.product.brand} ${item.product.name} ${item.product.sku}</span><span style="color: var(--success); font-weight: 600;">+${item.qty}件</span></div>`; });
+  resultHtml += '</div>';
+  document.getElementById('batchInResult').innerHTML = resultHtml;
+
+  showToast(`✅ 成功入库 ${selected.length} 个产品`);
+  updateSummary(); renderStockTable(currentProducts); renderTodayInLogs(); clearBatchIn();
+}
+
+function clearBatchOut() { document.getElementById('batchOutResult').innerHTML = ''; renderBatchOutList(); }
+function clearBatchIn() { document.getElementById('batchInResult').innerHTML = ''; renderBatchInList(); }
+
+function handleExcelDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('dragover'); }
+function handleExcelDragLeave(e) { e.currentTarget.classList.remove('dragover'); }
+function handleExcelDrop(e, type) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('dragover');
+  if (e.dataTransfer.files.length > 0) processExcelFile(e.dataTransfer.files[0], type);
+}
+function handleExcelImport(input, type) { if (input.files.length > 0) processExcelFile(input.files[0], type); }
+
+async function processExcelFile(file, type) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+      processImportData(jsonData, type);
+    } catch (err) { showToast('❌ Excel解析失败: ' + err.message, 'error'); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function processImportData(data, type) {
+  let success = 0, skipped = 0, newProducts = 0;
+  const errors = [];
+  const details = [];
+
+  // 智能列名映射 - 支持多种变体
+  const columnMapping = {
+    date: ['日期', 'date', 'Date', '时间', 'time'],
+    name: ['品名', 'name', '产品名称', '产品', 'product', '货物名称', '商品名'],
+    sku: ['规格', 'sku', '规格型号', '型号', 'size', '规格大小'],
+    brand: ['品牌', 'brand', '包装方式', '厂商', '供应商', '厂家'],
+    net: ['净重', 'net', '净重(kg)', '净重（kg）', '净重kg', '单重'],
+    gross: ['毛重', 'gross', '毛重(kg)', '毛重（kg）', '总重'],
+    qty: type === 'in' 
+      ? ['入库数量', '数量', 'qty', 'quantity', '入库数', '进货数量', '收购数量', '入库量']
+      : ['出库数量', '数量', 'qty', 'quantity', '出库数', '发货数量', '销售数量', '出库量'],
+    remark: ['备注', 'remark', 'note', '注释', '说明', '附注'],
+    billNo: ['入库单号', '单号', 'bill', '单号/备注', '收购原单', '原单号', '订单号']
+  };
+
+  function findColumn(row, possibleNames) {
+    for (const name of possibleNames) {
+      if (row[name] !== undefined) return row[name];
+    }
+    return undefined;
+  }
+
+  function getUsedColumnName(row, possibleNames) {
+    for (const name of possibleNames) {
+      if (row[name] !== undefined) return name;
+    }
+    return null;
+  }
+
+  if (data.length === 0) {
+    showToast('❌ Excel文件为空', 'error');
+    return;
+  }
+
+  const firstRow = data[0];
+  const detectedCols = [];
+  for (const [key, names] of Object.entries(columnMapping)) {
+    const usedName = getUsedColumnName(firstRow, names);
+    if (usedName) detectedCols.push(`${key}: "${usedName}"`);
+  }
+  console.log('检测到的列映射:', detectedCols.join(', '));
+
+  const qtyColName = getUsedColumnName(firstRow, columnMapping.qty);
+  if (!qtyColName) {
+    const resultId = type === 'in' ? 'inExcelResult' : 'outExcelResult';
+    let errorHtml = `<div class="result-box" style="border-left-color: var(--danger);">`;
+    errorHtml += `<div class="result-title">❌ 导入失败 - 无法识别数量列</div>`;
+    errorHtml += `<div style="color: var(--danger); margin-bottom: 12px;">`;
+    errorHtml += `未检测到${type === 'in' ? '入库' : '出库'}数量列。<br>`;
+    errorHtml += `请确保Excel包含以下任一列名：<br>`;
+    errorHtml += `<strong>${columnMapping.qty.join('、')}</strong>`;
+    errorHtml += `</div>`;
+    errorHtml += `<div style="font-size: 12px; color: var(--text-secondary);">`;
+    errorHtml += `您当前文件中的列名: ${Object.keys(firstRow).join(', ')}`;
+    errorHtml += `</div></div>`;
+    document.getElementById(resultId).innerHTML = errorHtml;
+    showToast('❌ 导入失败: 无法识别数量列', 'error');
+    return;
+  }
+
+  data.forEach((row, index) => {
+    try {
+      const date = findColumn(row, columnMapping.date) || new Date().toISOString().split('T')[0];
+      const name = findColumn(row, columnMapping.name);
+      const sku = findColumn(row, columnMapping.sku);
+      const brand = findColumn(row, columnMapping.brand) || '未分类';
+      const net = parseFloat(findColumn(row, columnMapping.net)) || 0;
+      const qty = parseInt(findColumn(row, columnMapping.qty)) || 0;
+      const remark = findColumn(row, columnMapping.remark) || findColumn(row, columnMapping.billNo) || '';
+
+      if (!name) { errors.push(`第${index + 2}行: 缺少品名`); skipped++; return; }
+      if (!sku) { errors.push(`第${index + 2}行: 缺少规格`); skipped++; return; }
+      if (qty <= 0) { errors.push(`第${index + 2}行: 数量无效`); skipped++; return; }
+
+      let product = currentProducts.find(p => p.name === name && p.sku === sku && (brand === '未分类' || p.brand === brand));
+
+      if (!product) {
+        product = {
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          name: String(name).trim(),
+          sku: String(sku).trim(),
+          brand: brand === '未分类' ? '默认品牌' : String(brand).trim(),
+          net: net || 0,
+          gross: parseFloat(findColumn(row, columnMapping.gross)) || 0,
+          unit: '件',
+          remark: ''
+        };
+        currentProducts.push(product);
+        newProducts++;
+        details.push(`🆕 新增: ${product.brand} ${product.name} ${product.sku}`);
+      }
+
+      if (type === 'out') {
+        const currentQty = currentStock[product.id] || 0;
+        if (qty > currentQty) {
+          errors.push(`第${index + 2}行: ${name} ${sku} 库存不足(当前${currentQty}件)`);
+          return;
+        }
+        currentStock[product.id] = currentQty - qty;
+      } else {
+        currentStock[product.id] = (currentStock[product.id] || 0) + qty;
+      }
+
+      currentLogs.push({
+        id: Date.now() + Math.random(),
+        type,
+        productId: product.id,
+        name: product.name,
+        sku: product.sku,
+        brand: product.brand,
+        net: product.net,
+        qty,
+        date: String(date).trim(),
+        remark: String(remark || '').trim(),
+        time: new Date().toISOString()
+      });
+
+      success++;
+      details.push(`${type === 'in' ? '📥' : '📤'} ${product.brand} ${product.name}: ${qty}件`);
+    } catch (err) {
+      errors.push(`第${index + 2}行错误: ${err.message}`);
+    }
+  });
+
+  if (isOnline && (success > 0 || newProducts > 0)) {
+    updateData({ products: currentProducts, stock: currentStock, logs: currentLogs })
+      .then(() => updateSyncStatus('synced', '已同步到云端'))
+      .catch(() => updateSyncStatus('error', '同步失败'));
+  }
+
+  const resultId = type === 'in' ? 'inExcelResult' : 'outExcelResult';
+  let resultHtml = `<div class="result-box" style="border-left-color: ${errors.length > 0 ? 'var(--warning)' : 'var(--success)'};">`;
+  resultHtml += `<div class="result-title">📊 导入结果: ${success}成功, ${newProducts}新产品, ${errors.length}错误</div>`;
+
+  if (details.length > 0) {
+    resultHtml += `<div style="margin: 8px 0; font-size: 13px;">${details.slice(0, 5).join('<br>')}${details.length > 5 ? '<br>...还有' + (details.length - 5) + '条' : ''}</div>`;
+  }
+
+  if (errors.length > 0) {
+    resultHtml += `<div style="margin-top: 8px; padding: 8px; background: var(--danger-light); border-radius: var(--radius); color: var(--danger); font-size: 12px;">`;
+    resultHtml += errors.slice(0, 3).join('<br>');
+    if (errors.length > 3) resultHtml += `<br>...还有${errors.length - 3}条错误`;
+    resultHtml += `</div>`;
+  }
+
+  resultHtml += `<div style="margin-top: 8px; padding: 8px; background: #f8fafc; border-radius: var(--radius); font-size: 11px; color: var(--text-secondary);">`;
+  resultHtml += `<strong>检测到的列:</strong> ${detectedCols.join(', ')}`;
+  resultHtml += `</div></div>`;
+
+  document.getElementById(resultId).innerHTML = resultHtml;
+
+  if (success > 0) {
+    showToast(`✅ 导入完成: ${success}条成功`, 'success');
+    updateSummary();
+    initUI();
+  } else {
+    showToast(`❌ 导入失败`, 'error');
+  }
+}
+
+function downloadTemplate(type) {
+  const headers = type === 'in' ? ['日期', '序号', '品名', '规格', '包装方式', '净重', '毛重', '入库数量', '备注', '入库单号', '收购原单'] : ['日期', '序号', '品名', '规格', '包装方式', '净重', '毛重', '出库数量', '备注'];
+  const sampleData = type === 'in' ? [['2024-01-15', '1', '盒装白灼虾', '16-20', '佳信', '0.5', '0.6', '100', '新到货品', '001', '原单001']] : [['2024-01-15', '1', '盒装白灼虾', '16-20', '佳信', '0.5', '0.6', '50', '客户A']];
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleData]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, type === 'in' ? '入库模板' : '出库模板');
+  XLSX.writeFile(wb, `${type === 'in' ? '入库' : '出库'}导入模板.xlsx`);
+  showToast('✅ 模板下载成功');
+}
+
+function renderTodayLogs() {
+  const today = new Date().toISOString().split('T')[0];
+  const todayLogs = currentLogs.filter(l => l.date === today && l.type === 'out').sort((a,b) => new Date(b.time) - new Date(a.time));
+  const container = document.getElementById('todayOutContainer');
+
+  if (todayLogs.length === 0) { container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>今日暂无出库记录</p></div>'; return; }
+
+  const total = todayLogs.reduce((a,l) => a + l.qty, 0);
+  let html = `<div class="log-date-group"><div class="log-date-header"><div class="log-date-title">📅 ${today}</div><div class="log-date-stats"><span class="out">📤 ${todayLogs.length}笔</span><span class="out">共 ${total}件</span></div></div><div class="log-date-content">`;
+  todayLogs.forEach(l => {
+    const time = new Date(l.time).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    html += `<div class="log-item"><div class="log-time">${time}</div><div class="log-product"><div class="log-product-name">${l.name}</div><div class="log-product-meta">${l.brand} · ${l.sku} · 净重:${l.net}kg · 毛重:${l.gross || 0}kg</div></div><div class="log-qty out">-${l.qty}</div><div><button class="btn-delete" onclick="deleteLog('${l.id}')">删除</button></div></div>`;
+  });
+  html += '</div></div>';
+  container.innerHTML = html;
+}
+
+function renderTodayInLogs() {
+  const today = new Date().toISOString().split('T')[0];
+  const todayLogs = currentLogs.filter(l => l.date === today && l.type === 'in').sort((a,b) => new Date(b.time) - new Date(a.time));
+  const container = document.getElementById('todayInContainer');
+
+  if (todayLogs.length === 0) { container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>今日暂无入库记录</p></div>'; return; }
+
+  const total = todayLogs.reduce((a,l) => a + l.qty, 0);
+  let html = `<div class="log-date-group"><div class="log-date-header"><div class="log-date-title">📅 ${today}</div><div class="log-date-stats"><span class="in">📥 ${todayLogs.length}笔</span><span class="in">共 ${total}件</span></div></div><div class="log-date-content">`;
+  todayLogs.forEach(l => {
+    const time = new Date(l.time).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    html += `<div class="log-item"><div class="log-time">${time}</div><div class="log-product"><div class="log-product-name">${l.name}</div><div class="log-product-meta">${l.brand} · ${l.sku} · 净重:${l.net}kg · 毛重:${l.gross || 0}kg</div></div><div class="log-qty in">+${l.qty}</div><div><button class="btn-delete" onclick="deleteInLog('${l.id}')">撤销</button></div></div>`;
+  });
+  html += '</div></div>';
+  container.innerHTML = html;
+}
+
+async function deleteLog(logId) {
+  const log = currentLogs.find(l => l.id == logId);
+  const currentProductStock = currentStock[log.productId] || 0;
+  const restoredStock = currentProductStock + (log ? log.qty : 0);
+  if (!confirm(`删除提示：确定是否删除？\n删除之后库存恢复为${restoredStock}件`)) return;
+  const log = currentLogs.find(l => l.id == logId);
+  if (!log) return;
+  currentStock[log.productId] = (currentStock[log.productId] || 0) + log.qty;
+  currentLogs = currentLogs.filter(l => l.id != logId);
+  if (isOnline) { try { await updateData({ products: currentProducts, stock: currentStock, logs: currentLogs }); updateSyncStatus('synced', '已同步到云端'); } catch (e) { updateSyncStatus('error', '同步失败'); } }
+  showToast(`✅ 已删除出库记录，库存恢复${log.qty}件`);
+  updateSummary(); renderStockTable(currentProducts); renderTodayLogs();
+}
+
+async function deleteInLog(logId) {
+  const log = currentLogs.find(l => l.id == logId);
+  const currentProductStock = currentStock[log.productId] || 0;
+  const deductedStock = currentProductStock - (log ? log.qty : 0);
+  if (!confirm(`删除提示：确定是否撤销？\n删除之后库存扣除为${deductedStock}件`)) return;
+  const log = currentLogs.find(l => l.id == logId);
+  if (!log) return;
+  const newStock = (currentStock[log.productId] || 0) - log.qty;
+  if (newStock < 0) { showToast('❌ 撤销后库存将为负数，无法撤销', 'error'); return; }
+  currentStock[log.productId] = newStock;
+  currentLogs = currentLogs.filter(l => l.id != logId);
+  if (isOnline) { try { await updateData({ products: currentProducts, stock: currentStock, logs: currentLogs }); updateSyncStatus('synced', '已同步到云端'); } catch (e) { updateSyncStatus('error', '同步失败'); } }
+  showToast(`✅ 已撤销入库记录，库存扣除${log.qty}件`);
+  updateSummary(); renderStockTable(currentProducts); renderTodayInLogs();
+}
+
+function applyLogFilter() {
+  const start = document.getElementById('l_start').value;
+  const end = document.getElementById('l_end').value;
+  const product = document.getElementById('l_product').value;
+
+  let filtered = currentLogs.filter(l => {
+    if (start && l.date < start) return false;
+    if (end && l.date > end) return false;
+    if (product && l.productId !== product) return false;
+    return true;
+  });
+  filtered.sort((a,b) => b.date.localeCompare(a.date) || new Date(b.time) - new Date(a.time));
+  renderLogByDate(filtered);
+  document.getElementById('logCount').textContent = `📊 当前共 ${filtered.length} 条记录`;
+}
+
+function renderLogByDate(logs) {
+  const container = document.getElementById('logContainer');
+  if (logs.length === 0) { container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>暂无记录</p></div>'; return; }
+
+  const byDate = {};
+  logs.forEach(l => { if (!byDate[l.date]) byDate[l.date] = []; byDate[l.date].push(l); });
+
+  let html = '';
+  for (const [date, dayLogs] of Object.entries(byDate)) {
+    const dayIn = dayLogs.filter(l => l.type === 'in').reduce((a,l) => a + l.qty, 0);
+    const dayOut = dayLogs.filter(l => l.type === 'out').reduce((a,l) => a + l.qty, 0);
+    html += `<div class="log-date-group"><div class="log-date-header" onclick="this.parentElement.classList.toggle('collapsed')"><div class="log-date-title">📅 ${date}</div><div class="log-date-stats">${dayIn > 0 ? `<span class="in">📥 ${dayIn}件</span>` : ''}${dayOut > 0 ? `<span class="out">📤 ${dayOut}件</span>` : ''}<span class="log-date-toggle">▼</span></div></div><div class="log-date-content">`;
+    dayLogs.forEach(l => {
+      const time = new Date(l.time).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+      html += `<div class="log-item"><div class="log-time">${time}</div><div class="log-product"><div class="log-product-name">${l.name}</div><div class="log-product-meta">${l.brand} · ${l.sku} · 净重:${l.net}kg · 毛重:${l.gross || 0}kg</div></div><div class="log-qty ${l.type}">${l.type === 'in' ? '+' : '-'}${l.qty}</div><div><button class="btn-delete" onclick="deleteLogEntry('${l.id}')">删除</button></div></div>`;
+    });
+    html += '</div></div>';
+  }
+  container.innerHTML = html;
+}
+
+function resetLogFilter() {
+  document.getElementById('l_start').value = '';
+  document.getElementById('l_end').value = '';
+  document.getElementById('l_product').value = '';
+  applyLogFilter();
+}
+
+async function deleteLogEntry(logId) {
+  const log = currentLogs.find(l => l.id == logId);
+  if (!log) return;
+  const typeText = log.type === 'in' ? '入库' : '出库';
+  const currentProductStock = currentStock[log.productId] || 0;
+  let stockMsg = '';
+  if (log.type === 'out') {
+    const restoredStock = currentProductStock + log.qty;
+    stockMsg = `\n删除后库存将恢复为: ${restoredStock}件`;
+  } else {
+    const deductedStock = currentProductStock - log.qty;
+    stockMsg = `\n删除后库存将扣除为: ${deductedStock}件`;
+  }
+  if (!confirm(`删除提示：确定是否删除这条${typeText}记录？${stockMsg}`)) return;
+  if (log.type === 'out') currentStock[log.productId] = (currentStock[log.productId] || 0) + log.qty;
+  else {
+    const newStock = (currentStock[log.productId] || 0) - log.qty;
+    if (newStock < 0) { showToast('❌ 删除后库存将为负数', 'error'); return; }
+    currentStock[log.productId] = newStock;
+  }
+  currentLogs = currentLogs.filter(l => l.id != logId);
+  if (isOnline) { try { await updateData({ products: currentProducts, stock: currentStock, logs: currentLogs }); updateSyncStatus('synced', '已同步到云端'); } catch (e) { updateSyncStatus('error', '同步失败'); } }
+  showToast(`✅ 已删除${typeText}记录`);
+  applyLogFilter(); updateSummary(); renderStockTable(currentProducts);
+}
+
+function exportLog() {
+  const start = document.getElementById('l_start').value;
+  const end = document.getElementById('l_end').value;
+  const product = document.getElementById('l_product').value;
+  let filtered = currentLogs.filter(l => {
+    if (start && l.date < start) return false;
+    if (end && l.date > end) return false;
+    if (product && l.productId !== product) return false;
+    return true;
+  });
+  if (filtered.length === 0) { showToast('❌ 没有数据可导出', 'error'); return; }
+  const data = filtered.map(l => ({ '日期': l.date, '时间': new Date(l.time).toLocaleTimeString('zh-CN'), '类型': l.type === 'in' ? '入库' : '出库', '品牌': l.brand, '品名': l.name, '规格': l.sku, '净重(kg)': l.net, '数量': l.qty, '单号/备注': l.remark || '' }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '出入库流水');
+  XLSX.writeFile(wb, `出入库流水_${new Date().toISOString().split('T')[0]}.xlsx`);
+  showToast('✅ Excel导出成功');
+}
+
+function renderProductSelects() {
+  const sel = document.getElementById('l_product');
+  sel.innerHTML = '<option value="">全部产品</option>' + currentProducts.map(p => `<option value="${p.id}">${p.brand} ${p.name} ${p.sku}</option>`).join('');
+}
+
+function initBatchSpecContainer() {
+  const container = document.getElementById('batchSpecContainer');
+  if (container && container.children.length === 0) { addBatchSpecRow(); addBatchSpecRow(); }
+}
+
+function addBatchSpecRow() {
+  const container = document.getElementById('batchSpecContainer');
+  batchSpecRows++;
+  const row = document.createElement('div');
+  row.className = 'form-row';
+  row.id = `batch-row-${batchSpecRows}`;
+  row.style.cssText = 'margin-bottom: 8px;';
+  row.innerHTML = `<div class="form-group" style="flex: 1;"><input type="text" class="batch-sku" placeholder="规格，例：16-20" style="width: 100%;"></div><div class="form-group" style="flex: 1;"><input type="number" step="0.01" class="batch-net" placeholder="净重(kg)" style="width: 100%;"></div><div class="form-group" style="flex: 0 0 40px;"><button class="btn btn-secondary" onclick="removeBatchSpecRow('batch-row-${batchSpecRows}')" style="padding: 10px; min-width: 40px;">❌</button></div>`;
+  container.appendChild(row);
+}
+
+function removeBatchSpecRow(rowId) {
+  const row = document.getElementById(rowId);
+  if (row) {
+    const container = document.getElementById('batchSpecContainer');
+    if (container.children.length > 1) row.remove();
+    else showToast('❌ 至少需要保留一行', 'error');
+  }
+}
+
+async function saveBatchProducts() {
+  const brand = document.getElementById('batch_brand').value.trim();
+  const name = document.getElementById('batch_name').value.trim();
+  if (!brand || !name) { showToast('❌ 请填写品牌和品名', 'error'); return; }
+
+  const rows = document.querySelectorAll('#batchSpecContainer .form-row');
+  const products = [];
+  const errors = [];
+
+  rows.forEach((row, index) => {
+    const sku = row.querySelector('.batch-sku').value.trim();
+    const net = parseFloat(row.querySelector('.batch-net').value) || 0;
+    if (!sku || net <= 0) { if (sku || net > 0) errors.push(`第${index + 1}行：规格或净重填写不完整`); return; }
+    const exists = currentProducts.find(p => p.name === name && p.sku === sku && p.brand === brand);
+    if (exists) { errors.push(`第${index + 1}行：${sku} ${net}kg 已存在`); return; }
+    products.push({ id: Date.now().toString() + Math.random().toString(36).substr(2, 9), name, sku, brand, net, gross: 0, unit: '件', remark: '' });
+  });
+
+  if (errors.length > 0) { showToast(`❌ ${errors[0]}`, 'error'); return; }
+  if (products.length === 0) { showToast('❌ 没有可添加的产品', 'error'); return; }
+
+  currentProducts.push(...products);
+  if (isOnline) { try { await updateData({ products: currentProducts, stock: currentStock, logs: currentLogs }); updateSyncStatus('synced', '已同步到云端'); } catch (e) { updateSyncStatus('error', '同步失败'); } }
+
+  let resultHtml = `<div class="result-box"><div class="result-title">✅ 成功添加 ${products.length} 个产品</div>`;
+  products.forEach(p => { resultHtml += `<div class="result-item"><span>${p.brand} ${p.name} ${p.sku}</span><span>${p.net}kg</span></div>`; });
+  resultHtml += '</div>';
+  document.getElementById('batchProductResult').innerHTML = resultHtml;
+  showToast(`✅ 成功添加 ${products.length} 个产品`);
+  initUI();
+}
+
+function clearBatchProductForm() {
+  document.getElementById('batch_brand').value = '';
+  document.getElementById('batch_name').value = '';
+  document.getElementById('batchProductResult').innerHTML = '';
+  document.getElementById('batchSpecContainer').innerHTML = '';
+  batchSpecRows = 0;
+  addBatchSpecRow(); addBatchSpecRow();
+}
+
+function saveProduct() {
+  const name = document.getElementById('p_name').value.trim();
+  const sku = document.getElementById('p_sku').value.trim();
+  const brand = document.getElementById('p_brand').value.trim();
+  const net = parseFloat(document.getElementById('p_net').value) || 0;
+  const gross = parseFloat(document.getElementById('p_gross').value) || 0;
+  const remark = document.getElementById('p_remark').value.trim();
+  const editId = document.getElementById('edit_product_id').value;
+
+  if (!name || !sku || !brand || net <= 0) { showToast('❌ 请填写完整产品信息', 'error'); return; }
+
+  const product = { id: editId || Date.now().toString(), name, sku, brand, net, gross, unit: '件', remark };
+
+  if (editId) {
+    const idx = currentProducts.findIndex(p => p.id === editId);
+    if (idx >= 0) currentProducts[idx] = product;
+  } else {
+    const exists = currentProducts.find(p => p.name === name && p.sku === sku && p.brand === brand);
+    if (exists) { showToast('❌ 该产品已存在', 'error'); return; }
+    currentProducts.push(product);
+  }
+
+  if (isOnline) { updateData({ products: currentProducts, stock: currentStock, logs: currentLogs }).catch(() => {}); }
+  showToast(editId ? '✅ 产品已更新' : '✅ 产品已添加');
+  clearProductForm();
+  initUI();
+}
+
+function clearProductForm() {
+  document.getElementById('p_name').value = '';
+  document.getElementById('p_sku').value = '';
+  document.getElementById('p_brand').value = '';
+  document.getElementById('p_net').value = '';
+  document.getElementById('p_gross').value = '';
+  document.getElementById('p_remark').value = '';
+  document.getElementById('edit_product_id').value = '';
+}
+
+function fillProductField(field, value) { if (value) document.getElementById(field).value = value; }
+
+function updateHistorySelects() {
+  const names = [...new Set(currentProducts.map(p => p.name))].sort();
+  const skus = [...new Set(currentProducts.map(p => p.sku))].sort();
+  const brands = [...new Set(currentProducts.map(p => p.brand))].sort();
+  document.getElementById('p_name_history').innerHTML = '<option value="">📋 选择历史品名</option>' + names.map(n => `<option value="${n}">${n}</option>`).join('');
+  document.getElementById('p_sku_history').innerHTML = '<option value="">📋 选择历史规格</option>' + skus.map(s => `<option value="${s}">${s}</option>`).join('');
+  document.getElementById('p_brand_history').innerHTML = '<option value="">📋 选择历史品牌</option>' + brands.map(b => `<option value="${b}">${b}</option>`).join('');
+}
+
+function renderProductTree() {
+  const container = document.getElementById('productTree');
+  if (currentProducts.length === 0) { container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>暂无产品，请先添加</p></div>'; return; }
+
+  const byBrand = {};
+  currentProducts.forEach(p => { if (!byBrand[p.brand]) byBrand[p.brand] = {}; if (!byBrand[p.brand][p.name]) byBrand[p.brand][p.name] = []; byBrand[p.brand][p.name].push(p); });
+
+  let html = '<div class="product-tree">';
+  for (const [brand, names] of Object.entries(byBrand)) {
+    html += `<div class="brand-group"><div class="brand-header" onclick="toggleBrand(this)"><span>📁 ${brand}</span><span class="toggle-icon">▼</span></div><div class="brand-content">`;
+    for (const [name, products] of Object.entries(names)) {
+      html += `<div class="category-group"><div class="category-header" onclick="toggleCategory(this)"><span>${name}</span><span class="toggle-icon">▼</span></div><div class="category-content">`;
+      products.forEach(p => {
+        const stock = currentStock[p.id] || 0;
+        html += `<div class="spec-item"><div class="spec-info"><div class="spec-name">${p.sku}</div><div class="spec-meta">净重: ${p.net}kg | 库存: ${stock}件</div></div><div class="spec-actions"><button class="btn btn-primary btn-sm" onclick="editProduct('${p.id}')">编辑</button><button class="btn-delete" onclick="deleteProduct('${p.id}')">删除</button></div></div>`;
+      });
+      html += '</div></div>';
+    }
+    html += '</div></div>';
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function toggleBrand(el) {
+  const content = el.nextElementSibling;
+  const isCollapsed = content.style.display === 'none';
+  content.style.display = isCollapsed ? 'block' : 'none';
+  el.classList.toggle('collapsed', !isCollapsed);
+}
+
+function toggleCategory(el) {
+  const content = el.nextElementSibling;
+  const isCollapsed = content.style.display === 'none';
+  content.style.display = isCollapsed ? 'block' : 'none';
+  el.classList.toggle('collapsed', !isCollapsed);
+}
+
+function editProduct(id) {
+  const p = currentProducts.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('p_name').value = p.name;
+  document.getElementById('p_sku').value = p.sku;
+  document.getElementById('p_brand').value = p.brand;
+  document.getElementById('p_net').value = p.net;
+  document.getElementById('p_gross').value = p.gross || '';
+  document.getElementById('p_remark').value = p.remark || '';
+  document.getElementById('edit_product_id').value = p.id;
+  showToast('📝 已加载产品信息');
+  window.scrollTo({ top: document.getElementById('product').offsetTop, behavior: 'smooth' });
+}
+
+async function deleteProduct(id) {
+  if (!confirm('确定要删除这个产品吗？相关库存和记录将保留但无法继续操作。')) return;
+  currentProducts = currentProducts.filter(p => p.id !== id);
+  if (isOnline) { try { await updateData({ products: currentProducts, stock: currentStock, logs: currentLogs }); } catch (e) {} }
+  showToast('✅ 产品已删除');
+  initUI();
+}
+
+window.onload = initSystem;
+</script>
+</body>
+</html>
