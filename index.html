@@ -106,15 +106,14 @@
     tr:hover td { background: rgba(37, 99, 235, 0.03); }
     tr:last-child td { border-bottom: none; }
 
-    /* 库存表格列宽 */
-    th:nth-child(1), td:nth-child(1) { width: 15%; } /* 品牌 */
-    th:nth-child(2), td:nth-child(2) { width: 25%; } /* 品名 - 加宽 */ 
-    th:nth-child(3), td:nth-child(3) { width: 12%; } /* 规格 */
-    th:nth-child(4), td:nth-child(4) { width: 11%; } /* 净重 */
-    th:nth-child(5), td:nth-child(5) { width: 12%; } /* 当前库存 */
-    th:nth-child(6), td:nth-child(6) { width: 11%; } /* 累计入库 */
-    th:nth-child(7), td:nth-child(7) { width: 11%; } /* 累计出库 */
-    th:nth-child(8), td:nth-child(8) { width: 10%; } /* 状态 */
+    /* 库存表格列宽 - 新格式：净重 | 品牌/品名 | 规格 | 库存 | 入库 | 出库 | 状态 */
+    th:nth-child(1), td:nth-child(1) { width: 12%; } /* 净重 */
+    th:nth-child(2), td:nth-child(2) { width: 30%; } /* 品牌/品名 - 加宽显示 */ 
+    th:nth-child(3), td:nth-child(3) { width: 14%; } /* 规格 */
+    th:nth-child(4), td:nth-child(4) { width: 12%; } /* 当前库存 */
+    th:nth-child(5), td:nth-child(5) { width: 12%; } /* 累计入库 */
+    th:nth-child(6), td:nth-child(6) { width: 12%; } /* 累计出库 */
+    th:nth-child(7), td:nth-child(7) { width: 10%; } /* 状态 */
 
     /* 品名单元格换行 */
     td:nth-child(2) { white-space: normal; word-break: break-word; line-height: 1.4; }
@@ -237,14 +236,14 @@
       table { font-size: 11px; }
       th, td { padding: 8px 4px; font-size: 11px; }
       th { font-size: 10px; }
-      th:nth-child(1), td:nth-child(1) { width: 14%; }
-      th:nth-child(2), td:nth-child(2) { width: 26%; }
-      th:nth-child(3), td:nth-child(3) { width: 11%; }
-      th:nth-child(4), td:nth-child(4) { width: 10%; }
-      th:nth-child(5), td:nth-child(5) { width: 11%; }
-      th:nth-child(6), td:nth-child(6) { width: 10%; }
-      th:nth-child(7), td:nth-child(7) { width: 10%; }
-      th:nth-child(8), td:nth-child(8) { width: 10%; }
+      /* 移动端新格式列宽：净重 | 品牌/品名 | 规格 | 库存 | 入库 | 出库 | 状态 */
+      th:nth-child(1), td:nth-child(1) { width: 12%; } /* 净重 */
+      th:nth-child(2), td:nth-child(2) { width: 28%; } /* 品牌/品名 */
+      th:nth-child(3), td:nth-child(3) { width: 12%; } /* 规格 */
+      th:nth-child(4), td:nth-child(4) { width: 11%; } /* 库存 */
+      th:nth-child(5), td:nth-child(5) { width: 11%; } /* 入库 */
+      th:nth-child(6), td:nth-child(6) { width: 11%; } /* 出库 */
+      th:nth-child(7), td:nth-child(7) { width: 10%; } /* 状态 */
       td:nth-child(2) { font-size: 10px; line-height: 1.3; }
       .product-tag { font-size: 10px; padding: 2px 6px; }
       .stock-badge { font-size: 10px; padding: 2px 4px; }
@@ -257,6 +256,14 @@
       .product-tag { font-size: 9px; padding: 2px 4px; }
       .stock-badge { font-size: 9px; padding: 2px 4px; }
       td:nth-child(2) { font-size: 9px; }
+      /* 超小屏幕新格式列宽 */
+      th:nth-child(1), td:nth-child(1) { width: 11%; }
+      th:nth-child(2), td:nth-child(2) { width: 30%; }
+      th:nth-child(3), td:nth-child(3) { width: 11%; }
+      th:nth-child(4), td:nth-child(4) { width: 11%; }
+      th:nth-child(5), td:nth-child(5) { width: 11%; }
+      th:nth-child(6), td:nth-child(6) { width: 11%; }
+      th:nth-child(7), td:nth-child(7) { width: 9%; }
     }
 
     .product-tag { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--primary-light); color: var(--primary); border-radius: 20px; font-size: 12px; font-weight: 600; }
@@ -266,6 +273,25 @@
     .stock-badge.empty { background: var(--danger-light); color: var(--danger); }
     .date-range { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--bg); border-radius: var(--radius); font-size: 14px; color: var(--text-secondary); }
     .date-range strong { color: var(--text-primary); }
+
+    /* 流水表格样式 */
+    #flowContainer .table-wrapper { margin-top: 0; }
+    #flowContainer table { table-layout: fixed; }
+    #flowContainer th:nth-child(1), #flowContainer td:nth-child(1) { width: 12%; } /* 净重 */
+    #flowContainer th:nth-child(2), #flowContainer td:nth-child(2) { width: 30%; } /* 品牌/品名 */
+    #flowContainer th:nth-child(3), #flowContainer td:nth-child(3) { width: 14%; } /* 规格 */
+    #flowContainer th:nth-child(4), #flowContainer td:nth-child(4) { width: 12%; } /* 入库 */
+    #flowContainer th:nth-child(5), #flowContainer td:nth-child(5) { width: 12%; } /* 出库 */
+    #flowContainer th:nth-child(6), #flowContainer td:nth-child(6) { width: 15%; } /* 时间 */
+
+    @media (max-width: 640px) {
+      #flowContainer th:nth-child(1), #flowContainer td:nth-child(1) { width: 11%; }
+      #flowContainer th:nth-child(2), #flowContainer td:nth-child(2) { width: 28%; }
+      #flowContainer th:nth-child(3), #flowContainer td:nth-child(3) { width: 12%; }
+      #flowContainer th:nth-child(4), #flowContainer td:nth-child(4) { width: 11%; }
+      #flowContainer th:nth-child(5), #flowContainer td:nth-child(5) { width: 11%; }
+      #flowContainer th:nth-child(6), #flowContainer td:nth-child(6) { width: 16%; }
+    }
   </style>
 </head>
 <body>
@@ -289,15 +315,15 @@
       <div class="card">
         <div class="card-title">📊 库存查询</div>
         <div class="stock-filter">
-          <div class="form-group"><label>净重(kg)</label><select id="filterNet" onchange="updateFilters()"><option value="">全部净重</option></select></div>
-          <div class="form-group"><label>品牌</label><select id="filterBrand" onchange="updateFilters()"><option value="">全部品牌</option></select></div>
-          <div class="form-group"><label>品名</label><select id="filterName" onchange="updateFilters()"><option value="">全部品名</option></select></div>
-          <div class="form-group"><label>规格</label><select id="filterSku" onchange="updateFilters()"><option value="">全部规格</option></select></div>
-          <div class="form-group" style="grid-column: span 2;"><label>操作</label><div class="btn-group" style="margin-top: 0;"><button class="btn btn-primary" onclick="queryStock()">🔍 查询</button><button class="btn btn-secondary" onclick="resetStockFilters()">🔄 重置</button></div></div>
+          <div class="form-group"><label>净重(kg)</label><select id="filterNet" onchange="updateFilters('net')"><option value="">全部净重</option></select></div>
+          <div class="form-group"><label>品牌</label><select id="filterBrand" onchange="updateFilters('brand')"><option value="">全部品牌</option></select></div>
+          <div class="form-group"><label>品名</label><select id="filterName" onchange="updateFilters('name')"><option value="">全部品名</option></select></div>
+          <div class="form-group"><label>规格</label><select id="filterSku" onchange="updateFilters('sku')"><option value="">全部规格</option></select></div>
+          <div class="form-group" style="grid-column: span 2;"><label>操作</label><div class="btn-group" style="margin-top: 0;"><button class="btn btn-primary" onclick="queryStock()">🔍 查询</button><button class="btn btn-secondary" onclick="resetStockFilters()">🔄 重置</button><button class="btn btn-success" onclick="showPositiveStock()">📦 结余库存</button></div></div>
         </div>
         <div class="table-wrapper">
           <table>
-            <thead><tr><th>品牌</th><th>品名</th><th>规格</th><th>净重</th><th>当前库存</th><th>累计入库</th><th>累计出库</th><th>状态</th></tr></thead>
+            <thead><tr><th>净重</th><th>品牌/品名</th><th>规格</th><th>当前库存</th><th>累计入库</th><th>累计出库</th><th>状态</th></tr></thead>
             <tbody id="stockTable"></tbody>
           </table>
         </div>
@@ -524,22 +550,50 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function updateFilters() {
-      const nets = [...new Set(products.map(p => p.net))].sort((a, b) => a - b);
-      const brands = [...new Set(products.map(p => p.brand))].sort();
-      const names = [...new Set(products.map(p => p.name))].sort();
-      const skus = [...new Set(products.map(p => p.sku))].sort();
-      updateSelect('filterNet', nets.map(n => n.toFixed(2)), '净重');
-      updateSelect('filterBrand', brands, '品牌');
-      updateSelect('filterName', names, '品名');
-      updateSelect('filterSku', skus, '规格');
+    function updateFilters(changedFilter) {
+      // 获取当前筛选值
+      const currentNet = document.getElementById('filterNet').value;
+      const currentBrand = document.getElementById('filterBrand').value;
+      const currentName = document.getElementById('filterName').value;
+      const currentSku = document.getElementById('filterSku').value;
+
+      // 根据当前筛选条件过滤产品
+      let filtered = products.filter(p => {
+        return (!currentNet || Math.abs(p.net - parseFloat(currentNet)) < 0.001) && 
+               (!currentBrand || normalizeString(p.brand) === normalizeString(currentBrand)) && 
+               (!currentName || normalizeString(p.name) === normalizeString(currentName)) && 
+               (!currentSku || normalizeString(p.sku) === normalizeString(currentSku));
+      });
+
+      // 联动更新其他筛选器选项
+      const nets = [...new Set(filtered.map(p => p.net))].sort((a, b) => a - b);
+      const brands = [...new Set(filtered.map(p => p.brand))].sort();
+      const names = [...new Set(filtered.map(p => p.name))].sort();
+
+      // 规格排序：使用自然排序（数字小的在前）
+      const skus = [...new Set(filtered.map(p => p.sku))].sort((a, b) => {
+        return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+      });
+
+      // 更新下拉选项（保留当前选择）
+      if (changedFilter !== 'net') updateSelect('filterNet', nets.map(n => n.toFixed(2)), '净重', currentNet);
+      if (changedFilter !== 'brand') updateSelect('filterBrand', brands, '品牌', currentBrand);
+      if (changedFilter !== 'name') updateSelect('filterName', names, '品名', currentName);
+      if (changedFilter !== 'sku') updateSelect('filterSku', skus, '规格', currentSku);
     }
 
-    function updateSelect(id, options, label) {
+    function showPositiveStock() {
+      // 显示所有库存大于0的产品
+      renderStockTable(true);
+      showToast('📦 显示所有结余库存产品（库存>0）');
+    }
+
+    function updateSelect(id, options, label, currentVal) {
       const sel = document.getElementById(id);
-      const currentVal = sel.value;
-      sel.innerHTML = `<option value="">全部${label}</option>` + options.map(v => `<option value="${v}">${v}</option>`).join('');
-      if (options.includes(currentVal)) sel.value = currentVal;
+      sel.innerHTML = `<option value="">全部${label}</option>` + options.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+      if (currentVal && options.some(v => String(v) === String(currentVal))) {
+        sel.value = currentVal;
+      }
     }
 
     function queryStock() { renderStockTable(); }
@@ -548,28 +602,38 @@
       document.getElementById('filterBrand').value = '';
       document.getElementById('filterName').value = '';
       document.getElementById('filterSku').value = '';
-      renderStockTable();
+      // 重置后更新所有筛选器选项
+      updateFilters();
+      renderStockTable(false);
+      showToast('🔄 筛选条件已重置');
     }
 
-    function renderStockTable() {
+    function renderStockTable(positiveOnly = false) {
       const net = document.getElementById('filterNet').value;
       const brand = document.getElementById('filterBrand').value;
       const name = document.getElementById('filterName').value;
       const sku = document.getElementById('filterSku').value;
       let filtered = products.filter(p => {
+        const currentQty = stock[p.id] || 0;
+        // 结余库存模式：只显示库存>0的产品
+        if (positiveOnly && currentQty <= 0) return false;
         return (!net || Math.abs(p.net - parseFloat(net)) < 0.001) && 
                (!brand || normalizeString(p.brand) === normalizeString(brand)) && 
                (!name || normalizeString(p.name) === normalizeString(name)) && 
                (!sku || normalizeString(p.sku) === normalizeString(sku));
       });
+
+      // 排序：先按净重，再按品牌，再按品名
       filtered.sort((a, b) => { 
+        if (a.net !== b.net) return a.net - b.net;
         if (normalizeString(a.brand) !== normalizeString(b.brand)) 
           return normalizeString(a.brand).localeCompare(normalizeString(b.brand)); 
         return normalizeString(a.name).localeCompare(normalizeString(b.name)); 
       });
+
       const tbody = document.getElementById('stockTable');
       if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="empty-state" style="padding: 40px;"><div class="icon">📭</div><p>暂无数据</p></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state" style="padding: 40px;"><div class="icon">📭</div><p>暂无数据</p></td></tr>';
         return;
       }
       tbody.innerHTML = filtered.map(p => {
@@ -579,7 +643,20 @@
         let statusClass = 'ok', statusText = '充足';
         if (currentQty <= 0) { statusClass = 'empty'; statusText = '缺货'; }
         else if (currentQty < 20) { statusClass = 'low'; statusText = '偏低'; }
-        return `<tr><td style="font-weight:600;">${escapeHtml(p.brand)}</td><td>${escapeHtml(p.name)}</td><td><span class="product-tag">${escapeHtml(p.sku)}</span></td><td>${p.net}<span style="font-size:10px;color:var(--text-tertiary)">kg</span></td><td class="stock-value ${currentQty > 0 ? 'positive' : currentQty < 0 ? 'negative' : 'zero'}">${currentQty}</td><td style="color:var(--success);font-weight:600;">${totalIn}</td><td style="color:var(--danger);font-weight:600;">${totalOut}</td><td><span class="stock-badge ${statusClass}">${statusText}</span></td></tr>`;
+
+        // 新格式：净重 | 品牌/品名(换行) | 规格 | 库存 | 入库 | 出库 | 状态
+        return `<tr>
+          <td style="font-weight:600;white-space:nowrap;">${p.net}<span style="font-size:10px;color:var(--text-tertiary)">kg</span></td>
+          <td style="text-align:left;line-height:1.4;">
+            <div style="font-weight:600;color:var(--primary);">${escapeHtml(p.brand)}</div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">${escapeHtml(p.name)}</div>
+          </td>
+          <td><span class="product-tag">${escapeHtml(p.sku)}</span></td>
+          <td class="stock-value ${currentQty > 0 ? 'positive' : currentQty < 0 ? 'negative' : 'zero'}" style="font-size:14px;font-weight:700;">${currentQty}</td>
+          <td style="color:var(--success);font-weight:600;">${totalIn}</td>
+          <td style="color:var(--danger);font-weight:600;">${totalOut}</td>
+          <td><span class="stock-badge ${statusClass}">${statusText}</span></td>
+        </tr>`;
       }).join('');
     }
 
@@ -872,34 +949,110 @@
       showToast('✅ 模板下载成功');
     }
 
-    function filterFlow() { renderFlow(); }
+    function filterFlow() { 
+      const start = document.getElementById('flowStartDate').value;
+      const end = document.getElementById('flowEndDate').value;
+      const type = document.getElementById('flowType').value;
+
+      renderFlow();
+
+      if (start || end || type) {
+        showToast(`🔍 已按条件筛选: ${start || '全部'} 至 ${end || '全部'} ${type ? (type === 'in' ? '入库' : '出库') : '全部类型'}`);
+      }
+    }
     function resetFlowFilter() { 
       document.getElementById('flowStartDate').value = ''; 
       document.getElementById('flowEndDate').value = ''; 
       document.getElementById('flowType').value = ''; 
-      renderFlow(); 
+      renderFlow();
+      showToast('🔄 流水筛选已重置');
     }
 
     function renderFlow() {
       const start = document.getElementById('flowStartDate').value;
       const end = document.getElementById('flowEndDate').value;
       const type = document.getElementById('flowType').value;
-      let filtered = batches.filter(b => { 
-        if (type && b.type !== type) return false; 
-        if (start && b.dateRange.max < start) return false; 
-        if (end && b.dateRange.min > end) return false; 
-        return true; 
+
+      // 收集所有符合条件的明细项（按入库/出库日期筛选）
+      let filteredItems = [];
+
+      batches.forEach(batch => {
+        if (type && batch.type !== type) return;
+
+        batch.items.forEach(item => {
+          // 按入库时间筛选：检查每条明细的日期
+          if (start || end) {
+            if (start && item.date < start) return;
+            if (end && item.date > end) return;
+          }
+
+          filteredItems.push({
+            ...item,
+            batchId: batch.id,
+            batchType: batch.type,
+            batchDate: batch.date
+          });
+        });
       });
+
+      // 按日期倒序排列（最新的在前）
+      filteredItems.sort((a, b) => new Date(b.date) - new Date(a.date));
+
       const container = document.getElementById('flowContainer');
-      if (filtered.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><h3>暂无流水记录</h3><p>请先进行入库或出库操作</p></div>';
+
+      // 显示筛选条件提示
+      let filterInfo = '';
+      if (start || end || type) {
+        const dateRange = start && end ? `${start} 至 ${end}` : (start ? `从 ${start} 开始` : (end ? `到 ${end} 结束` : ''));
+        const typeText = type ? (type === 'in' ? '入库' : '出库') : '';
+        filterInfo = `<div style="margin-bottom: 16px; padding: 12px 16px; background: var(--primary-light); border-radius: var(--radius); color: var(--primary); font-size: 14px; font-weight: 500;">
+          🔍 当前筛选条件：${dateRange} ${typeText} | 共 ${filteredItems.length} 条记录
+        </div>`;
+      }
+
+      if (filteredItems.length === 0) {
+        container.innerHTML = filterInfo + '<div class="empty-state"><div class="icon">📭</div><h3>暂无符合条件的流水记录</h3><p>请调整筛选条件或先进行入库/出库操作</p></div>';
         return;
       }
-      container.innerHTML = filtered.map(batch => {
-        const dateStr = new Date(batch.date).toLocaleString('zh-CN');
-        const dateRangeStr = batch.dateRange.min === batch.dateRange.max ? batch.dateRange.min : `${batch.dateRange.min} 至 ${batch.dateRange.max}`;
-        return `<div class="batch-card" id="batch-${batch.id}"><div class="batch-header" onclick="toggleBatch('${batch.id}')"><div class="batch-info"><div class="batch-title">${batch.type === 'in' ? '📥' : '📤'} 批次 #${batch.id.substr(-6)}<span class="badge badge-${batch.type}">${batch.type === 'in' ? '入库' : '出库'}</span></div><div class="batch-meta"><span>📅 ${dateRangeStr}</span><span>🕐 ${dateStr}</span>${batch.newProductsCount > 0 ? `<span>🆕 ${batch.newProductsCount}个新产品</span>` : ''}</div></div><div class="batch-stats"><div class="batch-stat"><div class="batch-stat-value ${batch.type}">${batch.totalQty}</div><div class="batch-stat-label">件</div></div><div class="batch-actions" onclick="event.stopPropagation()"><button class="btn btn-revoke btn-sm" onclick="showRevokeModal('${batch.id}')">↩️ 撤销</button></div><div class="batch-toggle">▼</div></div></div><div class="batch-content"><div class="batch-items">${batch.items.map(item => { const currentQty = stock[item.productId] || 0; return `<div class="batch-item"><div class="batch-item-info"><div class="batch-item-name">${item.brand} ${item.name}</div><div class="batch-item-spec">${item.sku} · 净重${item.net}kg</div></div><div class="batch-item-qty ${batch.type}">${batch.type === 'in' ? '+' : '-'}${item.qty}</div><div class="batch-item-stock">当前库存<br><strong>${currentQty}</strong></div><div class="batch-item-stock">日期<br>${item.date}</div></div>`; }).join('')}</div></div></div>`;
-      }).join('');
+
+      // 新格式：按明细项显示，格式为 净重+品牌+品名+规格+入库+出库+时间
+      container.innerHTML = filterInfo + `
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>净重</th>
+                <th>品牌/品名</th>
+                <th>规格</th>
+                <th>入库</th>
+                <th>出库</th>
+                <th>时间</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredItems.map(item => {
+                const product = products.find(p => p.id === item.productId);
+                const net = item.net || (product ? product.net : 0);
+                const brand = item.brand || (product ? product.brand : '');
+                const name = item.name || (product ? product.name : '');
+                const sku = item.sku || (product ? product.sku : '');
+
+                return `<tr>
+                  <td style="font-weight:600;white-space:nowrap;">${net}<span style="font-size:10px;color:var(--text-tertiary)">kg</span></td>
+                  <td style="text-align:left;line-height:1.4;">
+                    <div style="font-weight:600;color:var(--primary);">${escapeHtml(brand)}</div>
+                    <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">${escapeHtml(name)}</div>
+                  </td>
+                  <td><span class="product-tag">${escapeHtml(sku)}</span></td>
+                  <td style="color:var(--success);font-weight:600;">${item.batchType === 'in' ? item.qty : '-'}</td>
+                  <td style="color:var(--danger);font-weight:600;">${item.batchType === 'out' ? item.qty : '-'}</td>
+                  <td style="font-size:12px;white-space:nowrap;">${item.date}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
     }
 
     function toggleBatch(batchId) { 
