@@ -1038,36 +1038,130 @@ async function processExcelFile(file, type) {
 function processImportData(data, type) {
   let success = 0, skipped = 0, newProducts = 0;
   const errors = [];
+  const details = [];
+
+  // 智能列名映射 - 支持多种变体
+  const columnMapping = {
+    date: ['日期', 'date', 'Date', '时间', 'time'],
+    name: ['品名', 'name', '产品名称', '产品', 'product', '货物名称', '商品名'],
+    sku: ['规格', 'sku', '规格型号', '型号', 'size', '规格大小'],
+    brand: ['品牌', 'brand', '包装方式', '厂商', '供应商', '厂家'],
+    net: ['净重', 'net', '净重(kg)', '净重（kg）', '净重kg', '单重'],
+    gross: ['毛重', 'gross', '毛重(kg)', '毛重（kg）', '总重'],
+    qty: type === 'in' 
+      ? ['入库数量', '数量', 'qty', 'quantity', '入库数', '进货数量', '收购数量', '入库量']
+      : ['出库数量', '数量', 'qty', 'quantity', '出库数', '发货数量', '销售数量', '出库量'],
+    remark: ['备注', 'remark', 'note', '注释', '说明', '附注'],
+    billNo: ['入库单号', '单号', 'bill', '单号/备注', '收购原单', '原单号', '订单号']
+  };
+
+  function findColumn(row, possibleNames) {
+    for (const name of possibleNames) {
+      if (row[name] !== undefined) return row[name];
+    }
+    return undefined;
+  }
+
+  function getUsedColumnName(row, possibleNames) {
+    for (const name of possibleNames) {
+      if (row[name] !== undefined) return name;
+    }
+    return null;
+  }
+
+  if (data.length === 0) {
+    showToast('❌ Excel文件为空', 'error');
+    return;
+  }
+
+  const firstRow = data[0];
+  const detectedCols = [];
+  for (const [key, names] of Object.entries(columnMapping)) {
+    const usedName = getUsedColumnName(firstRow, names);
+    if (usedName) detectedCols.push(`${key}: "${usedName}"`);
+  }
+  console.log('检测到的列映射:', detectedCols.join(', '));
+
+  const qtyColName = getUsedColumnName(firstRow, columnMapping.qty);
+  if (!qtyColName) {
+    const resultId = type === 'in' ? 'inExcelResult' : 'outExcelResult';
+    let errorHtml = `<div class="result-box" style="border-left-color: var(--danger);">`;
+    errorHtml += `<div class="result-title">❌ 导入失败 - 无法识别数量列</div>`;
+    errorHtml += `<div style="color: var(--danger); margin-bottom: 12px;">`;
+    errorHtml += `未检测到${type === 'in' ? '入库' : '出库'}数量列。<br>`;
+    errorHtml += `请确保Excel包含以下任一列名：<br>`;
+    errorHtml += `<strong>${columnMapping.qty.join('、')}</strong>`;
+    errorHtml += `</div>`;
+    errorHtml += `<div style="font-size: 12px; color: var(--text-secondary);">`;
+    errorHtml += `您当前文件中的列名: ${Object.keys(firstRow).join(', ')}`;
+    errorHtml += `</div></div>`;
+    document.getElementById(resultId).innerHTML = errorHtml;
+    showToast('❌ 导入失败: 无法识别数量列', 'error');
+    return;
+  }
 
   data.forEach((row, index) => {
     try {
-      const date = row['日期'] || row['date'] || new Date().toISOString().split('T')[0];
-      const name = row['品名'] || row['name'] || row['产品名称'];
-      const sku = row['规格'] || row['sku'] || row['规格型号'];
-      const brand = row['品牌'] || row['brand'] || row['包装方式'] || '未分类';
-      const net = parseFloat(row['净重'] || row['net'] || 0);
-      const qty = parseInt(row[type === 'in' ? '入库数量' : '出库数量'] || row['数量'] || 0);
-      const remark = row['备注'] || row['remark'] || row['入库单号'] || row['收购原单'] || '';
+      const date = findColumn(row, columnMapping.date) || new Date().toISOString().split('T')[0];
+      const name = findColumn(row, columnMapping.name);
+      const sku = findColumn(row, columnMapping.sku);
+      const brand = findColumn(row, columnMapping.brand) || '未分类';
+      const net = parseFloat(findColumn(row, columnMapping.net)) || 0;
+      const qty = parseInt(findColumn(row, columnMapping.qty)) || 0;
+      const remark = findColumn(row, columnMapping.remark) || findColumn(row, columnMapping.billNo) || '';
 
-      if (!name || !sku || qty <= 0) { skipped++; return; }
+      if (!name) { errors.push(`第${index + 2}行: 缺少品名`); skipped++; return; }
+      if (!sku) { errors.push(`第${index + 2}行: 缺少规格`); skipped++; return; }
+      if (qty <= 0) { errors.push(`第${index + 2}行: 数量无效`); skipped++; return; }
 
       let product = currentProducts.find(p => p.name === name && p.sku === sku && (brand === '未分类' || p.brand === brand));
 
       if (!product) {
-        product = { id: Date.now().toString() + Math.random().toString(36).substr(2, 9), name, sku, brand: brand === '未分类' ? '默认品牌' : brand, net: net || 0, gross: 0, unit: '件', remark: '' };
+        product = {
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          name: String(name).trim(),
+          sku: String(sku).trim(),
+          brand: brand === '未分类' ? '默认品牌' : String(brand).trim(),
+          net: net || 0,
+          gross: parseFloat(findColumn(row, columnMapping.gross)) || 0,
+          unit: '件',
+          remark: ''
+        };
         currentProducts.push(product);
         newProducts++;
+        details.push(`🆕 新增: ${product.brand} ${product.name} ${product.sku}`);
       }
 
       if (type === 'out') {
         const currentQty = currentStock[product.id] || 0;
-        if (qty > currentQty) { errors.push(`第${index + 2}行: ${name} ${sku} 库存不足`); return; }
+        if (qty > currentQty) {
+          errors.push(`第${index + 2}行: ${name} ${sku} 库存不足(当前${currentQty}件)`);
+          return;
+        }
         currentStock[product.id] = currentQty - qty;
-      } else currentStock[product.id] = (currentStock[product.id] || 0) + qty;
+      } else {
+        currentStock[product.id] = (currentStock[product.id] || 0) + qty;
+      }
 
-      currentLogs.push({ id: Date.now() + Math.random(), type, productId: product.id, name: product.name, sku: product.sku, brand: product.brand, net: product.net, qty, date, remark, time: new Date().toISOString() });
+      currentLogs.push({
+        id: Date.now() + Math.random(),
+        type,
+        productId: product.id,
+        name: product.name,
+        sku: product.sku,
+        brand: product.brand,
+        net: product.net,
+        qty,
+        date: String(date).trim(),
+        remark: String(remark || '').trim(),
+        time: new Date().toISOString()
+      });
+
       success++;
-    } catch (err) { errors.push(`第${index + 2}行: ${err.message}`); }
+      details.push(`${type === 'in' ? '📥' : '📤'} ${product.brand} ${product.name}: ${qty}件`);
+    } catch (err) {
+      errors.push(`第${index + 2}行错误: ${err.message}`);
+    }
   });
 
   if (isOnline && (success > 0 || newProducts > 0)) {
@@ -1077,16 +1171,33 @@ function processImportData(data, type) {
   }
 
   const resultId = type === 'in' ? 'inExcelResult' : 'outExcelResult';
-  let resultHtml = `<div class="result-box" style="border-left-color: ${errors.length > 0 ? 'var(--warning)' : 'var(--success)'};"><div class="result-title">📊 导入结果</div>`;
-  resultHtml += `<div class="result-item"><span>✅ 成功导入</span><span>${success} 条</span></div>`;
-  resultHtml += `<div class="result-item"><span>⏭️ 跳过</span><span>${skipped} 条</span></div>`;
-  resultHtml += `<div class="result-item"><span>🆕 新增产品</span><span>${newProducts} 个</span></div>`;
-  if (errors.length > 0) resultHtml += `<div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); color: var(--warning); font-size: 13px;"><strong>⚠️ 警告 (${errors.length}条):</strong><br>${errors.slice(0, 5).join('<br>')}${errors.length > 5 ? `<br>...还有${errors.length - 5}条` : ''}</div>`;
-  resultHtml += '</div>';
+  let resultHtml = `<div class="result-box" style="border-left-color: ${errors.length > 0 ? 'var(--warning)' : 'var(--success)'};">`;
+  resultHtml += `<div class="result-title">📊 导入结果: ${success}成功, ${newProducts}新产品, ${errors.length}错误</div>`;
+
+  if (details.length > 0) {
+    resultHtml += `<div style="margin: 8px 0; font-size: 13px;">${details.slice(0, 5).join('<br>')}${details.length > 5 ? '<br>...还有' + (details.length - 5) + '条' : ''}</div>`;
+  }
+
+  if (errors.length > 0) {
+    resultHtml += `<div style="margin-top: 8px; padding: 8px; background: var(--danger-light); border-radius: var(--radius); color: var(--danger); font-size: 12px;">`;
+    resultHtml += errors.slice(0, 3).join('<br>');
+    if (errors.length > 3) resultHtml += `<br>...还有${errors.length - 3}条错误`;
+    resultHtml += `</div>`;
+  }
+
+  resultHtml += `<div style="margin-top: 8px; padding: 8px; background: #f8fafc; border-radius: var(--radius); font-size: 11px; color: var(--text-secondary);">`;
+  resultHtml += `<strong>检测到的列:</strong> ${detectedCols.join(', ')}`;
+  resultHtml += `</div></div>`;
+
   document.getElementById(resultId).innerHTML = resultHtml;
 
-  showToast(`✅ 导入完成: ${success}条成功${newProducts > 0 ? ', ' + newProducts + '个新产品' : ''}`);
-  updateSummary(); initUI();
+  if (success > 0) {
+    showToast(`✅ 导入完成: ${success}条成功`, 'success');
+    updateSummary();
+    initUI();
+  } else {
+    showToast(`❌ 导入失败`, 'error');
+  }
 }
 
 function downloadTemplate(type) {
