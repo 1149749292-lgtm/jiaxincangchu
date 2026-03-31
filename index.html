@@ -1228,8 +1228,12 @@ async function init() {
       if (start || end || type) {
         const dateRange = start && end ? `${start} 至 ${end}` : (start ? `从 ${start} 开始` : (end ? `到 ${end} 结束` : ''));
         const typeText = type ? (type === 'in' ? '入库' : '出库') : '';
-        filterInfo = `<div style="margin-bottom: 16px; padding: 12px 16px; background: var(--primary-light); border-radius: var(--radius); color: var(--primary); font-size: 14px; font-weight: 500;">
-          🔍 当前筛选条件：${dateRange} ${typeText} | 共 ${filteredItems.length} 条记录
+        // 统计入库和出库件数
+      const inQty = filteredItems.filter(i => i.batchType === 'in').reduce((sum, i) => sum + i.qty, 0);
+      const outQty = filteredItems.filter(i => i.batchType === 'out').reduce((sum, i) => sum + i.qty, 0);
+
+      filterInfo = `<div style="margin-bottom: 16px; padding: 12px 16px; background: var(--primary-light); border-radius: var(--radius); color: var(--primary); font-size: 14px; font-weight: 500;">
+          🔍 当前筛选条件：${dateRange} ${typeText} | 共 ${filteredItems.length} 条记录（入库 ${inQty} 件 / 出库 ${outQty} 件）
         </div>`;
       }
 
