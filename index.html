@@ -425,6 +425,74 @@
     </div>
   </div>
 
+  <!-- 流水编辑模态框 -->
+  <div class="modal-overlay" id="editFlowModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-icon warning">✏️</div>
+        <div class="modal-title">编辑流水记录</div>
+      </div>
+      <div class="modal-body">
+        <div class="modal-info">
+          <div class="modal-info-row">
+            <span class="modal-info-label">产品</span>
+            <span class="modal-info-value" id="editFlowProduct" style="font-weight:600;color:var(--primary);">-</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="form-group">
+            <label>日期</label>
+            <input type="date" id="editFlowDate" style="min-height:44px;">
+          </div>
+          <div class="form-group">
+            <label>数量</label>
+            <input type="number" id="editFlowQty" min="1" style="min-height:44px;font-weight:600;">
+          </div>
+          <div class="form-group">
+            <label>备注</label>
+            <input type="text" id="editFlowRemark" placeholder="请输入备注" style="min-height:44px;">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-secondary" onclick="closeEditFlowModal()">取消</button>
+        <button class="modal-btn modal-btn-primary" onclick="saveFlowEdit()">保存修改</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 流水删除确认模态框 -->
+  <div class="modal-overlay" id="deleteFlowModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-icon danger">🗑️</div>
+        <div class="modal-title">确认删除</div>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom:16px;color:var(--text-secondary);">您即将删除以下流水记录，此操作不可恢复：</p>
+        <div class="modal-info">
+          <div class="modal-info-row">
+            <span class="modal-info-label">产品</span>
+            <span class="modal-info-value" id="deleteFlowProduct">-</span>
+          </div>
+          <div class="modal-info-row">
+            <span class="modal-info-label">数量</span>
+            <span class="modal-info-value" id="deleteFlowQty" style="font-weight:700;">-</span>
+          </div>
+          <div class="modal-info-row">
+            <span class="modal-info-label">类型</span>
+            <span class="modal-info-value" id="deleteFlowType">-</span>
+          </div>
+        </div>
+        <p style="font-size:13px;color:var(--danger);font-weight:600;margin-top:16px;">⚠️ 删除后库存将自动调整，请确认是否继续？</p>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-secondary" onclick="closeDeleteFlowModal()">取消</button>
+        <button class="modal-btn modal-btn-danger" onclick="confirmDeleteFlow()">确认删除</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const BIN_ID = '69c7eeb45fdde574550ab18e';
     const MASTER_KEY = '$2a$10$42R1HUnhc8El3s8IEf4sO.j6KnDq9wF/7gkHB1trcltILhKXafovu';
@@ -464,7 +532,162 @@
       return div.innerHTML;
     }
 
-    async function init() {
+    // ========== 流水编辑功能 ==========
+let editingFlowItem = null;
+
+function editFlowItem(batchId, itemIndex) {
+  const batch = batches.find(b => b.id === batchId);
+  if (!batch) return;
+  const item = batch.items[itemIndex];
+  if (!item) return;
+
+  editingFlowItem = { batchId, itemIndex, item };
+
+  // 填充编辑表单
+  document.getElementById('editFlowDate').value = item.date;
+  document.getElementById('editFlowQty').value = item.qty;
+  document.getElementById('editFlowRemark').value = item.remark || '';
+  document.getElementById('editFlowProduct').textContent = `${item.brand} ${item.name} ${item.sku} (${item.net}kg)`;
+
+  // 显示模态框
+  document.getElementById('editFlowModal').classList.add('show');
+}
+
+function closeEditFlowModal() {
+  document.getElementById('editFlowModal').classList.remove('show');
+  editingFlowItem = null;
+}
+
+async function saveFlowEdit() {
+  if (!editingFlowItem) return;
+
+  const { batchId, itemIndex, item: originalItem } = editingFlowItem;
+  const batch = batches.find(b => b.id === batchId);
+  if (!batch) return;
+
+  const newDate = document.getElementById('editFlowDate').value;
+  const newQty = parseInt(document.getElementById('editFlowQty').value) || 0;
+  const newRemark = document.getElementById('editFlowRemark').value;
+
+  if (newQty <= 0) {
+    showToast('❌ 数量必须大于0', 'error');
+    return;
+  }
+
+  const oldQty = originalItem.qty;
+  const qtyDiff = newQty - oldQty;
+
+  // 更新库存
+  if (batch.type === 'in') {
+    stock[originalItem.productId] = (stock[originalItem.productId] || 0) + qtyDiff;
+  } else {
+    const currentStock = stock[originalItem.productId] || 0;
+    if (currentStock - qtyDiff < 0) {
+      showToast('❌ 库存不足，无法修改', 'error');
+      return;
+    }
+    stock[originalItem.productId] = currentStock - qtyDiff;
+  }
+
+  // 更新项目
+  batch.items[itemIndex].date = newDate;
+  batch.items[itemIndex].qty = newQty;
+  batch.items[itemIndex].remark = newRemark;
+
+  // 更新批次总数量
+  batch.totalQty = batch.items.reduce((sum, item) => sum + item.qty, 0);
+
+  // 更新日期范围
+  const dates = batch.items.map(i => i.date);
+  batch.dateRange.min = dates.reduce((a, b) => a < b ? a : b);
+  batch.dateRange.max = dates.reduce((a, b) => a > b ? a : b);
+
+  showLoading('正在保存...');
+  try {
+    await saveData();
+    hideLoading();
+    closeEditFlowModal();
+    showToast('✅ 修改成功');
+    renderFlow();
+    updateStats();
+  } catch (err) {
+    hideLoading();
+    showError('保存失败', err.message);
+  }
+}
+
+let pendingDeleteFlow = null;
+
+function deleteFlowItem(batchId, itemIndex) {
+  const batch = batches.find(b => b.id === batchId);
+  if (!batch) return;
+  const item = batch.items[itemIndex];
+  if (!item) return;
+
+  pendingDeleteFlow = { batchId, itemIndex, item };
+
+  // 填充删除确认信息
+  document.getElementById('deleteFlowProduct').textContent = `${item.brand} ${item.name} ${item.sku}`;
+  document.getElementById('deleteFlowQty').textContent = item.qty;
+  document.getElementById('deleteFlowType').textContent = batch.type === 'in' ? '入库' : '出库';
+  document.getElementById('deleteFlowType').className = batch.type === 'in' ? 'modal-info-value' : 'modal-info-value';
+  document.getElementById('deleteFlowType').style.color = batch.type === 'in' ? 'var(--success)' : 'var(--danger)';
+
+  document.getElementById('deleteFlowModal').classList.add('show');
+}
+
+function closeDeleteFlowModal() {
+  document.getElementById('deleteFlowModal').classList.remove('show');
+  pendingDeleteFlow = null;
+}
+
+async function confirmDeleteFlow() {
+  if (!pendingDeleteFlow) return;
+
+  const { batchId, itemIndex, item } = pendingDeleteFlow;
+  const batch = batches.find(b => b.id === batchId);
+  if (!batch) return;
+
+  // 调整库存
+  if (batch.type === 'in') {
+    stock[item.productId] = (stock[item.productId] || 0) - item.qty;
+  } else {
+    stock[item.productId] = (stock[item.productId] || 0) + item.qty;
+  }
+
+  // 从批次中移除项目
+  batch.items.splice(itemIndex, 1);
+
+  // 更新批次总数量
+  batch.totalQty = batch.items.reduce((sum, item) => sum + item.qty, 0);
+
+  // 如果批次为空，删除整个批次
+  if (batch.items.length === 0) {
+    batches = batches.filter(b => b.id !== batchId);
+  } else {
+    // 更新日期范围
+    const dates = batch.items.map(i => i.date);
+    batch.dateRange.min = dates.reduce((a, b) => a < b ? a : b);
+    batch.dateRange.max = dates.reduce((a, b) => a > b ? a : b);
+  }
+
+  showLoading('正在删除...');
+  try {
+    await saveData();
+    hideLoading();
+    closeDeleteFlowModal();
+    showToast('✅ 删除成功');
+    renderFlow();
+    updateStats();
+  } catch (err) {
+    hideLoading();
+    showError('删除失败', err.message);
+  }
+}
+
+// ========== 结束流水编辑功能 ==========
+
+async function init() {
       showLoading('正在加载数据...');
       updateSyncStatus('syncing', '正在连接云端...');
       const today = new Date().toISOString().split('T')[0];
@@ -1037,6 +1260,14 @@
                 const name = item.name || (product ? product.name : '');
                 const sku = item.sku || (product ? product.sku : '');
 
+                // 找到该批次中的索引
+                const batch = batches.find(b => b.id === item.batchId);
+                const itemIndex = batch.items.findIndex(i => 
+                  i.productId === item.productId && 
+                  i.date === item.date && 
+                  i.qty === item.qty
+                );
+
                 return `<tr>
                   <td style="font-weight:600;white-space:nowrap;">${net}<span style="font-size:10px;color:var(--text-tertiary)">kg</span></td>
                   <td style="text-align:left;line-height:1.4;">
@@ -1046,7 +1277,13 @@
                   <td><span class="product-tag">${escapeHtml(sku)}</span></td>
                   <td style="color:var(--success);font-weight:600;">${item.batchType === 'in' ? item.qty : '-'}</td>
                   <td style="color:var(--danger);font-weight:600;">${item.batchType === 'out' ? item.qty : '-'}</td>
-                  <td style="font-size:12px;white-space:nowrap;">${item.date}</td>
+                  <td style="font-size:12px;white-space:nowrap;">
+                    <div style="margin-bottom:6px;">${item.date}</div>
+                    <div style="display:flex;gap:4px;justify-content:center;">
+                      <button onclick="editFlowItem('${item.batchId}', ${itemIndex})" style="padding:4px 8px;font-size:11px;background:var(--primary);color:white;border:none;border-radius:4px;cursor:pointer;">✏️ 修改</button>
+                      <button onclick="deleteFlowItem('${item.batchId}', ${itemIndex})" style="padding:4px 8px;font-size:11px;background:var(--danger);color:white;border:none;border-radius:4px;cursor:pointer;">🗑️ 删除</button>
+                    </div>
+                  </td>
                 </tr>`;
               }).join('')}
             </tbody>
@@ -1099,6 +1336,14 @@
     }
 
     async function clearAllData() {
+      // 密码验证
+      const password = prompt('⚠️ 危险操作！请输入密码以确认清空所有数据：');
+      if (password !== '0326') {
+        if (password !== null) {
+          showToast('❌ 密码错误，操作已取消', 'error');
+        }
+        return;
+      }
       if (!confirm('⚠️ 确定要清空所有数据吗？\n\n这将删除：\n- 所有产品信息\n- 所有库存数据\n- 所有出入库记录\n\n此操作不可恢复！')) return;
       if (!confirm('再次确认：您真的确定要清空所有数据吗？')) return;
       showLoading('正在清空数据...');
