@@ -390,6 +390,94 @@
         <div id="clearDataResult" style="margin-top: 16px;"></div>
       </div>
     </div>
+    <div class="page" id="manual">
+      <div class="card">
+        <div class="card-title">✏️ 手动出入库</div>
+        <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 20px; border-left: 4px solid var(--primary);">
+          <p style="color: var(--primary); font-size: 13px; margin: 0;">💡 提示：数量为<b>正数</b>时默认<b>入库</b>，为<b>负数</b>时默认<b>出库</b>。点击 +/- 按钮或手动输入数量。</p>
+        </div>
+
+        <!-- 手动出入库列表 -->
+        <div id="manualList" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+          <!-- 序号1 默认显示 -->
+          <div class="manual-item" data-index="1" style="background: white; border: 2px solid var(--border); border-radius: var(--radius-lg); padding: 16px; position: relative;">
+            <div style="position: absolute; top: -10px; left: 12px; background: var(--primary); color: white; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 600;">序号 1</div>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 8px;">
+              <div class="form-group">
+                <label>净重(kg)</label>
+                <select class="manual-net" onchange="updateManualOptions(1, 'net')">
+                  <option value="">选择净重</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>品牌</label>
+                <select class="manual-brand" onchange="updateManualOptions(1, 'brand')">
+                  <option value="">选择品牌</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>品名</label>
+                <select class="manual-name" onchange="updateManualOptions(1, 'name')">
+                  <option value="">选择品名</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>规格</label>
+                <select class="manual-sku" onchange="updateManualOptions(1, 'sku')">
+                  <option value="">选择规格</option>
+                </select>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border);">
+              <button onclick="adjustManualQty(1, -1)" style="width: 44px; height: 44px; border-radius: 50%; border: none; background: var(--danger); color: white; font-size: 20px; font-weight: 700; cursor: pointer;">−</button>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                <input type="number" class="manual-qty" value="0" style="width: 100px; height: 50px; text-align: center; font-size: 24px; font-weight: 700; border: 2px solid var(--primary); border-radius: var(--radius);" onchange="updateManualQty(1)">
+                <span class="manual-type-label" style="font-size: 12px; color: var(--text-secondary); font-weight: 600;">-</span>
+              </div>
+              <button onclick="adjustManualQty(1, 1)" style="width: 44px; height: 44px; border-radius: 50%; border: none; background: var(--success); color: white; font-size: 20px; font-weight: 700; cursor: pointer;">+</button>
+            </div>
+            <div class="manual-product-info" style="margin-top: 12px; padding: 8px 12px; background: var(--bg); border-radius: var(--radius); font-size: 13px; color: var(--text-secondary); display: none;">
+              已选择: <span class="selected-product"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 添加/删除按钮 -->
+        <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+          <button onclick="addManualRow()" style="flex: 1; padding: 12px; background: var(--primary-light); color: var(--primary); border: 2px dashed var(--primary); border-radius: var(--radius); font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span>➕</span> 添加序列
+          </button>
+          <button onclick="removeManualRow()" style="padding: 12px 20px; background: var(--danger-light); color: var(--danger); border: 2px dashed var(--danger); border-radius: var(--radius); font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span>➖</span> 删除
+          </button>
+        </div>
+
+        <!-- 统计信息 -->
+        <div id="manualStats" style="background: var(--bg); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 20px; display: none;">
+          <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px;">📊 操作统计</div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; text-align: center;">
+            <div style="padding: 12px; background: white; border-radius: var(--radius);">
+              <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">有效条目</div>
+              <div id="manualValidCount" style="font-size: 24px; font-weight: 700; color: var(--primary);">0</div>
+            </div>
+            <div style="padding: 12px; background: white; border-radius: var(--radius);">
+              <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">总入库</div>
+              <div id="manualTotalIn" style="font-size: 24px; font-weight: 700; color: var(--success);">0</div>
+            </div>
+            <div style="padding: 12px; background: white; border-radius: var(--radius);">
+              <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">总出库</div>
+              <div id="manualTotalOut" style="font-size: 24px; font-weight: 700; color: var(--danger);">0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 一键操作按钮 -->
+        <button onclick="showManualConfirm()" id="btnManualExecute" style="width: 100%; padding: 16px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; border: none; border-radius: var(--radius); font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: var(--shadow-lg); opacity: 0.5; pointer-events: none;">
+          ⚡ 一键操作
+        </button>
+      </div>
+    </div>
+
     <div class="page" id="flow">
       <div class="card">
         <div class="card-title">📋 出入库流水</div>
@@ -412,6 +500,7 @@
   <div class="nav-bar">
     <div class="nav-item active" data-page="stock" onclick="switchPage('stock')"><span class="icon">📊</span><span>库存</span></div>
     <div class="nav-item" data-page="import" onclick="switchPage('import')"><span class="icon">📁</span><span>导入</span></div>
+    <div class="nav-item" data-page="manual" onclick="switchPage('manual')"><span class="icon">✏️</span><span>手动</span></div>
     <div class="nav-item" data-page="flow" onclick="switchPage('flow')"><span class="icon">📋</span><span>流水</span></div>
   </div>
   <div class="modal-overlay" id="revokeModal">
@@ -644,6 +733,14 @@ async function saveFlowEdit() {
     stock[originalItem.productId] = currentStock - qtyDiff;
   }
 
+  // 同步更新产品仓库信息
+  const product = products.find(p => p.id === originalItem.productId);
+  if (product) {
+    product.brand = newBrand;
+    product.name = newName;
+    product.sku = newSku;
+  }
+
   // 更新项目（包括品牌、品名、规格）
   batch.items[itemIndex].brand = newBrand;
   batch.items[itemIndex].name = newName;
@@ -665,7 +762,7 @@ async function saveFlowEdit() {
     await saveData();
     hideLoading();
     closeEditFlowModal();
-    showToast('✅ 修改成功');
+    showToast('✅ 修改成功（产品信息已同步更新）');
     renderFlow();
     updateStats();
   } catch (err) {
@@ -737,7 +834,7 @@ async function confirmDeleteFlow() {
     await saveData();
     hideLoading();
     closeDeleteFlowModal();
-    showToast('✅ 删除成功');
+    showToast('✅ 删除成功（库存已自动调整）');
     renderFlow();
     updateStats();
   } catch (err) {
@@ -832,6 +929,7 @@ async function init() {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('show'));
       document.getElementById(page).classList.add('show');
       if (page === 'stock') { updateStats(); renderStockTable(); }
+      else if (page === 'manual') { initManualPage(); }
       else if (page === 'flow') { renderFlow(); }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -899,15 +997,51 @@ async function init() {
       const brand = document.getElementById('filterBrand').value;
       const name = document.getElementById('filterName').value;
       const sku = document.getElementById('filterSku').value;
-      let filtered = products.filter(p => {
+
+      // 先按产品特征分组，合并相同产品
+      const productGroups = {};
+
+      products.forEach(p => {
         const currentQty = stock[p.id] || 0;
         // 结余库存模式：只显示库存>0的产品
-        if (positiveOnly && currentQty <= 0) return false;
-        return (!net || Math.abs(p.net - parseFloat(net)) < 0.001) && 
-               (!brand || normalizeString(p.brand) === normalizeString(brand)) && 
-               (!name || normalizeString(p.name) === normalizeString(name)) && 
-               (!sku || normalizeString(p.sku) === normalizeString(sku));
+        if (positiveOnly && currentQty <= 0) return;
+
+        // 应用筛选条件
+        if (net && Math.abs(p.net - parseFloat(net)) >= 0.001) return;
+        if (brand && normalizeString(p.brand) !== normalizeString(brand)) return;
+        if (name && normalizeString(p.name) !== normalizeString(name)) return;
+        if (sku && normalizeString(p.sku) !== normalizeString(sku)) return;
+
+        // 创建分组键（净重+品牌+品名+规格）
+        const groupKey = `${p.net.toFixed(3)}|${normalizeString(p.brand)}|${normalizeString(p.name)}|${normalizeString(p.sku)}`;
+
+        if (!productGroups[groupKey]) {
+          productGroups[groupKey] = {
+            net: p.net,
+            brand: p.brand,
+            name: p.name,
+            sku: p.sku,
+            productIds: [],
+            currentQty: 0,
+            totalIn: 0,
+            totalOut: 0
+          };
+        }
+
+        // 合并同一组的库存数据
+        productGroups[groupKey].productIds.push(p.id);
+        productGroups[groupKey].currentQty += currentQty;
+
+        // 计算该组的总入库和总出库
+        const pTotalIn = batches.filter(b => b.type === 'in').flatMap(b => b.items).filter(item => item.productId === p.id).reduce((sum, item) => sum + item.qty, 0);
+        const pTotalOut = batches.filter(b => b.type === 'out').flatMap(b => b.items).filter(item => item.productId === p.id).reduce((sum, item) => sum + item.qty, 0);
+
+        productGroups[groupKey].totalIn += pTotalIn;
+        productGroups[groupKey].totalOut += pTotalOut;
       });
+
+      // 将分组转换为数组并排序
+      let filtered = Object.values(productGroups);
 
       // 排序：净重 → 品牌 → 品名 → 规格
       filtered.sort((a, b) => { 
@@ -928,13 +1062,14 @@ async function init() {
         tbody.innerHTML = '<tr><td colspan="7" class="empty-state" style="padding: 40px;"><div class="icon">📭</div><p>暂无数据</p></td></tr>';
         return;
       }
+
+      // 计算筛选后的总件数
+      const totalFilteredQty = filtered.reduce((sum, p) => sum + p.currentQty, 0);
+
       tbody.innerHTML = filtered.map(p => {
-        const currentQty = stock[p.id] || 0;
-        const totalIn = batches.filter(b => b.type === 'in').flatMap(b => b.items).filter(item => item.productId === p.id).reduce((sum, item) => sum + item.qty, 0);
-        const totalOut = batches.filter(b => b.type === 'out').flatMap(b => b.items).filter(item => item.productId === p.id).reduce((sum, item) => sum + item.qty, 0);
         let statusClass = 'ok', statusText = '充足';
-        if (currentQty <= 0) { statusClass = 'empty'; statusText = '缺货'; }
-        else if (currentQty < 20) { statusClass = 'low'; statusText = '偏低'; }
+        if (p.currentQty <= 0) { statusClass = 'empty'; statusText = '缺货'; }
+        else if (p.currentQty < 20) { statusClass = 'low'; statusText = '偏低'; }
 
         // 新格式：净重 | 品牌/品名(换行) | 规格 | 库存 | 入库 | 出库 | 状态
         return `<tr>
@@ -944,12 +1079,18 @@ async function init() {
             <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">${escapeHtml(p.name)}</div>
           </td>
           <td><span class="product-tag">${escapeHtml(p.sku)}</span></td>
-          <td class="stock-value" style="font-size:14px;font-weight:700;color:#dc2626;">${currentQty}</td>
-          <td style="color:#2563eb;font-weight:600;">${totalIn}</td>
-          <td style="color:#2563eb;font-weight:600;">${totalOut}</td>
+          <td class="stock-value" style="font-size:14px;font-weight:700;color:#dc2626;">${p.currentQty}</td>
+          <td style="color:#2563eb;font-weight:600;">${p.totalIn}</td>
+          <td style="color:#2563eb;font-weight:600;">${p.totalOut}</td>
           <td><span class="stock-badge ${statusClass}">${statusText}</span></td>
         </tr>`;
-      }).join('');
+      }).join('') + 
+      // 添加合计行
+      `<tr style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); font-weight: 700;">
+        <td colspan="3" style="text-align: right; padding-right: 16px; color: var(--primary);">筛选合计：</td>
+        <td style="color: #dc2626; font-size: 16px;">${totalFilteredQty}</td>
+        <td colspan="3"></td>
+      </tr>`;
     }
 
     function handleImport(input, type) {
@@ -1601,6 +1742,503 @@ async function init() {
     }
 
     
+
+
+    // ========== 手动出入库功能 ==========
+    let manualRowCount = 1;
+
+    // 初始化手动出入库页面
+    function initManualPage() {
+      updateManualOptions(1);
+    }
+
+    // 更新手动出入库的下拉选项
+    function updateManualOptions(index, changedField) {
+      const row = document.querySelector(`.manual-item[data-index="${index}"]`);
+      if (!row) return;
+
+      const netSelect = row.querySelector('.manual-net');
+      const brandSelect = row.querySelector('.manual-brand');
+      const nameSelect = row.querySelector('.manual-name');
+      const skuSelect = row.querySelector('.manual-sku');
+
+      // 获取当前值
+      const currentNet = netSelect.value;
+      const currentBrand = brandSelect.value;
+      const currentName = nameSelect.value;
+      const currentSku = skuSelect.value;
+
+      // 根据当前选择过滤产品
+      let filtered = products;
+
+      if (changedField !== 'net' && currentNet) {
+        filtered = filtered.filter(p => Math.abs(p.net - parseFloat(currentNet)) < 0.001);
+      }
+      if (changedField !== 'brand' && currentBrand) {
+        filtered = filtered.filter(p => normalizeString(p.brand) === normalizeString(currentBrand));
+      }
+      if (changedField !== 'name' && currentName) {
+        filtered = filtered.filter(p => normalizeString(p.name) === normalizeString(currentName));
+      }
+      if (changedField !== 'sku' && currentSku) {
+        filtered = filtered.filter(p => normalizeString(p.sku) === normalizeString(currentSku));
+      }
+
+      // 收集选项
+      const nets = [...new Set(filtered.map(p => p.net))].sort((a, b) => a - b);
+      const brands = [...new Set(filtered.map(p => p.brand))].sort();
+      const names = [...new Set(filtered.map(p => p.name))].sort();
+      const skus = [...new Set(filtered.map(p => p.sku))].sort((a, b) => compareSku(a, b));
+
+      // 更新下拉框
+      if (changedField !== 'net') updateManualSelect(netSelect, nets.map(n => n.toFixed(2)), currentNet);
+      if (changedField !== 'brand') updateManualSelect(brandSelect, brands, currentBrand);
+      if (changedField !== 'name') updateManualSelect(nameSelect, names, currentName);
+      if (changedField !== 'sku') updateManualSelect(skuSelect, skus, currentSku);
+
+      // 检查是否选择了完整产品
+      checkManualProductComplete(index);
+      updateManualStats();
+    }
+
+    // 更新手动选择框
+    function updateManualSelect(select, options, currentVal) {
+      let labelText = '选择';
+      if (select.classList.contains('manual-net')) labelText += '净重';
+      else if (select.classList.contains('manual-brand')) labelText += '品牌';
+      else if (select.classList.contains('manual-name')) labelText += '品名';
+      else labelText += '规格';
+
+      select.innerHTML = '<option value="">' + labelText + '</option>' + 
+                        options.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+      if (currentVal && options.some(v => String(v) === String(currentVal))) {
+        select.value = currentVal;
+      }
+    }
+
+    // 检查是否选择了完整产品
+    function checkManualProductComplete(index) {
+      const row = document.querySelector(`.manual-item[data-index="${index}"]`);
+      if (!row) return;
+
+      const net = row.querySelector('.manual-net').value;
+      const brand = row.querySelector('.manual-brand').value;
+      const name = row.querySelector('.manual-name').value;
+      const sku = row.querySelector('.manual-sku').value;
+      const infoDiv = row.querySelector('.manual-product-info');
+      const productSpan = row.querySelector('.selected-product');
+
+      if (net && brand && name && sku) {
+        const product = products.find(p => 
+          Math.abs(p.net - parseFloat(net)) < 0.001 &&
+          normalizeString(p.brand) === normalizeString(brand) &&
+          normalizeString(p.name) === normalizeString(name) &&
+          normalizeString(p.sku) === normalizeString(sku)
+        );
+        if (product) {
+          productSpan.textContent = `${product.brand} ${product.name} ${product.sku} (${product.net}kg)`;
+          infoDiv.style.display = 'block';
+          row.dataset.productId = product.id;
+        }
+      } else {
+        infoDiv.style.display = 'none';
+        delete row.dataset.productId;
+      }
+    }
+
+    // 调整手动数量
+    function adjustManualQty(index, delta) {
+      const row = document.querySelector(`.manual-item[data-index="${index}"]`);
+      if (!row) return;
+      const input = row.querySelector('.manual-qty');
+      let val = parseInt(input.value) || 0;
+      val += delta;
+      input.value = val;
+      updateManualQty(index);
+    }
+
+    // 更新手动数量显示
+    function updateManualQty(index) {
+      const row = document.querySelector(`.manual-item[data-index="${index}"]`);
+      if (!row) return;
+      const input = row.querySelector('.manual-qty');
+      const label = row.querySelector('.manual-type-label');
+      const val = parseInt(input.value) || 0;
+
+      if (val > 0) {
+        label.textContent = '入库';
+        label.style.color = 'var(--success)';
+      } else if (val < 0) {
+        label.textContent = '出库';
+        label.style.color = 'var(--danger)';
+      } else {
+        label.textContent = '-';
+        label.style.color = 'var(--text-secondary)';
+      }
+
+      updateManualStats();
+    }
+
+    // 添加新行
+    function addManualRow() {
+      manualRowCount++;
+      const list = document.getElementById('manualList');
+      const newRow = document.createElement('div');
+      newRow.className = 'manual-item';
+      newRow.dataset.index = manualRowCount;
+      newRow.style.cssText = 'background: white; border: 2px solid var(--border); border-radius: var(--radius-lg); padding: 16px; position: relative; margin-top: 12px;';
+      newRow.innerHTML = `
+        <div style="position: absolute; top: -10px; left: 12px; background: var(--primary); color: white; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 600;">序号 ${manualRowCount}</div>
+        <button onclick="removeManualRowByIndex(${manualRowCount})" style="position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--danger-light); color: var(--danger); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;">×</button>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 8px;">
+          <div class="form-group">
+            <label>净重(kg)</label>
+            <select class="manual-net" onchange="updateManualOptions(${manualRowCount}, 'net')">
+              <option value="">选择净重</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>品牌</label>
+            <select class="manual-brand" onchange="updateManualOptions(${manualRowCount}, 'brand')">
+              <option value="">选择品牌</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>品名</label>
+            <select class="manual-name" onchange="updateManualOptions(${manualRowCount}, 'name')">
+              <option value="">选择品名</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>规格</label>
+            <select class="manual-sku" onchange="updateManualOptions(${manualRowCount}, 'sku')">
+              <option value="">选择规格</option>
+            </select>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border);">
+          <button onclick="adjustManualQty(${manualRowCount}, -1)" style="width: 44px; height: 44px; border-radius: 50%; border: none; background: var(--danger); color: white; font-size: 20px; font-weight: 700; cursor: pointer;">−</button>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <input type="number" class="manual-qty" value="0" style="width: 100px; height: 50px; text-align: center; font-size: 24px; font-weight: 700; border: 2px solid var(--primary); border-radius: var(--radius);" onchange="updateManualQty(${manualRowCount})">
+            <span class="manual-type-label" style="font-size: 12px; color: var(--text-secondary); font-weight: 600;">-</span>
+          </div>
+          <button onclick="adjustManualQty(${manualRowCount}, 1)" style="width: 44px; height: 44px; border-radius: 50%; border: none; background: var(--success); color: white; font-size: 20px; font-weight: 700; cursor: pointer;">+</button>
+        </div>
+        <div class="manual-product-info" style="margin-top: 12px; padding: 8px 12px; background: var(--bg); border-radius: var(--radius); font-size: 13px; color: var(--text-secondary); display: none;">
+          已选择: <span class="selected-product"></span>
+        </div>
+      `;
+      list.appendChild(newRow);
+      updateManualOptions(manualRowCount);
+    }
+
+    // 删除最后一行
+    function removeManualRow() {
+      if (manualRowCount <= 1) {
+        showToast('❌ 至少保留一行', 'error');
+        return;
+      }
+      const list = document.getElementById('manualList');
+      const lastRow = list.lastElementChild;
+      if (lastRow) {
+        lastRow.remove();
+        manualRowCount--;
+        updateManualStats();
+      }
+    }
+
+    // 按索引删除行
+    function removeManualRowByIndex(index) {
+      const row = document.querySelector(`.manual-item[data-index="${index}"]`);
+      if (row) {
+        row.remove();
+        // 重新计算行数
+        const rows = document.querySelectorAll('.manual-item');
+        manualRowCount = rows.length;
+        // 重新编号
+        rows.forEach((r, i) => {
+          r.dataset.index = i + 1;
+          r.querySelector('div[style*="position: absolute; top: -10px"]').textContent = `序号 ${i + 1}`;
+        });
+        updateManualStats();
+      }
+    }
+
+    // 更新统计信息
+    function updateManualStats() {
+      const rows = document.querySelectorAll('.manual-item');
+      let validCount = 0;
+      let totalIn = 0;
+      let totalOut = 0;
+
+      rows.forEach(row => {
+        const productId = row.dataset.productId;
+        const qty = parseInt(row.querySelector('.manual-qty').value) || 0;
+
+        if (productId && qty !== 0) {
+          validCount++;
+          if (qty > 0) totalIn += qty;
+          else totalOut += Math.abs(qty);
+        }
+      });
+
+      document.getElementById('manualValidCount').textContent = validCount;
+      document.getElementById('manualTotalIn').textContent = totalIn;
+      document.getElementById('manualTotalOut').textContent = totalOut;
+
+      const statsDiv = document.getElementById('manualStats');
+      const btnExecute = document.getElementById('btnManualExecute');
+
+      if (validCount > 0) {
+        statsDiv.style.display = 'block';
+        btnExecute.style.opacity = '1';
+        btnExecute.style.pointerEvents = 'auto';
+      } else {
+        statsDiv.style.display = 'none';
+        btnExecute.style.opacity = '0.5';
+        btnExecute.style.pointerEvents = 'none';
+      }
+    }
+
+    // 显示确认弹窗
+    function showManualConfirm() {
+      const rows = document.querySelectorAll('.manual-item');
+      const validRows = [];
+      let totalIn = 0;
+      let totalOut = 0;
+
+      rows.forEach(row => {
+        const productId = row.dataset.productId;
+        const qty = parseInt(row.querySelector('.manual-qty').value) || 0;
+        if (productId && qty !== 0) {
+          const product = products.find(p => p.id === productId);
+          if (product) {
+            validRows.push({ product, qty });
+            if (qty > 0) totalIn += qty;
+            else totalOut += Math.abs(qty);
+          }
+        }
+      });
+
+      if (validRows.length === 0) return;
+
+      const today = new Date().toISOString().split('T')[0];
+      const modalId = 'manualConfirmModal' + Date.now();
+
+      let rowsHtml = validRows.map((item, i) => `
+        <div style="padding: 8px 12px; background: ${item.qty > 0 ? 'var(--success-light)' : 'var(--danger-light)'}; border-radius: var(--radius); margin-bottom: 8px; font-size: 13px;">
+          <span style="font-weight: 600;">${i + 1}. ${item.product.brand} ${item.product.name}</span>
+          <span style="color: var(--text-secondary);"> ${item.product.sku}</span>
+          <span style="float: right; font-weight: 700; color: ${item.qty > 0 ? 'var(--success)' : 'var(--danger)'}">${item.qty > 0 ? '+' : ''}${item.qty} 件</span>
+        </div>
+      `).join('');
+
+      const modalHtml = `
+        <div class="modal-overlay show" id="${modalId}">
+          <div class="modal-content" style="max-width: 480px;">
+            <div class="modal-header">
+              <div class="modal-icon" style="background: linear-gradient(135deg, var(--success-light) 0%, var(--danger-light) 100%); color: var(--primary);">⚡</div>
+              <div class="modal-title">确认手动出入库</div>
+            </div>
+            <div class="modal-body" style="max-height: 50vh; overflow-y: auto;">
+              <p style="margin-bottom: 12px; color: var(--text-secondary); font-size: 14px;">操作日期: <b>${today}</b></p>
+              <div style="margin-bottom: 16px;">
+                ${rowsHtml}
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                <div style="text-align: center; padding: 12px; background: var(--success-light); border-radius: var(--radius);">
+                  <div style="font-size: 12px; color: var(--success); margin-bottom: 4px;">总入库</div>
+                  <div style="font-size: 24px; font-weight: 700; color: var(--success);">${totalIn}</div>
+                </div>
+                <div style="text-align: center; padding: 12px; background: var(--danger-light); border-radius: var(--radius);">
+                  <div style="font-size: 12px; color: var(--danger); margin-bottom: 4px;">总出库</div>
+                  <div style="font-size: 24px; font-weight: 700; color: var(--danger);">${totalOut}</div>
+                </div>
+              </div>
+              <p style="font-size: 13px; color: var(--warning); font-weight: 600; text-align: center;">⚠️ 请确认以上信息无误后点击确认</p>
+            </div>
+            <div class="modal-footer">
+              <button class="modal-btn modal-btn-secondary" onclick="document.getElementById('${modalId}').remove()">取消</button>
+              <button class="modal-btn modal-btn-primary" onclick="executeManualOperation('${modalId}')">确认操作</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+
+    // 执行手动出入库操作
+    async function executeManualOperation(modalId) {
+      document.getElementById(modalId).remove();
+      showLoading('正在处理...');
+
+      const rows = document.querySelectorAll('.manual-item');
+      const now = new Date();
+      const today = now.toISOString().split('T')[0];
+
+      // 收集所有操作
+      const operations = [];
+      rows.forEach(row => {
+        const productId = row.dataset.productId;
+        const qty = parseInt(row.querySelector('.manual-qty').value) || 0;
+        if (productId && qty !== 0) {
+          const product = products.find(p => p.id === productId);
+          if (product) {
+            operations.push({ product, qty });
+          }
+        }
+      });
+
+      if (operations.length === 0) {
+        hideLoading();
+        showToast('没有有效操作', 'error');
+        return;
+      }
+
+      // 按产品合并数量
+      const productTotals = {};
+      operations.forEach(op => {
+        const id = op.product.id;
+        if (!productTotals[id]) {
+          productTotals[id] = { product: op.product, qty: 0 };
+        }
+        productTotals[id].qty += op.qty;
+      });
+
+      // 分离入库和出库
+      const inItems = [];
+      const outItems = [];
+
+      Object.values(productTotals).forEach(({ product, qty }) => {
+        // 更新库存
+        stock[product.id] = (stock[product.id] || 0) + qty;
+
+        if (qty > 0) {
+          inItems.push({
+            productId: product.id,
+            name: product.name,
+            sku: product.sku,
+            brand: product.brand,
+            net: product.net,
+            gross: product.gross,
+            date: today,
+            qty: qty,
+            remark: '手动入库'
+          });
+        } else if (qty < 0) {
+          outItems.push({
+            productId: product.id,
+            name: product.name,
+            sku: product.sku,
+            brand: product.brand,
+            net: product.net,
+            gross: product.gross,
+            date: today,
+            qty: Math.abs(qty),
+            remark: '手动出库'
+          });
+        }
+      });
+
+      // 查找或创建今日批次（简化逻辑）
+      let inBatch = null;
+      let outBatch = null;
+
+      // 查找今天已有的批次
+      batches.forEach(b => {
+        const batchDate = new Date(b.dateRange.min).toDateString();
+        const todayDate = now.toDateString();
+        if (batchDate === todayDate) {
+          if (b.type === 'in') inBatch = b;
+          if (b.type === 'out') outBatch = b;
+        }
+      });
+
+      // 处理入库
+      if (inItems.length > 0) {
+        if (inBatch) {
+          // 合并到现有批次
+          inItems.forEach(newItem => {
+            const existing = inBatch.items.find(i => i.productId === newItem.productId);
+            if (existing) {
+              existing.qty += newItem.qty;
+            } else {
+              inBatch.items.push(newItem);
+            }
+          });
+          inBatch.totalQty = inBatch.items.reduce((sum, i) => sum + i.qty, 0);
+          // 更新时间
+          inBatch.date = now.toISOString();
+        } else {
+          // 创建新批次
+          batches.unshift({
+            id: Date.now().toString() + '_in',
+            type: 'in',
+            date: now.toISOString(),
+            dateRange: { min: today, max: today },
+            items: inItems,
+            totalQty: inItems.reduce((sum, i) => sum + i.qty, 0),
+            newProductsCount: 0
+          });
+        }
+      }
+
+      // 处理出库
+      if (outItems.length > 0) {
+        if (outBatch) {
+          // 合并到现有批次
+          outItems.forEach(newItem => {
+            const existing = outBatch.items.find(i => i.productId === newItem.productId);
+            if (existing) {
+              existing.qty += newItem.qty;
+            } else {
+              outBatch.items.push(newItem);
+            }
+          });
+          outBatch.totalQty = outBatch.items.reduce((sum, i) => sum + i.qty, 0);
+          // 更新时间
+          outBatch.date = now.toISOString();
+        } else {
+          // 创建新批次
+          batches.unshift({
+            id: Date.now().toString() + '_out',
+            type: 'out',
+            date: now.toISOString(),
+            dateRange: { min: today, max: today },
+            items: outItems,
+            totalQty: outItems.reduce((sum, i) => sum + i.qty, 0),
+            newProductsCount: 0
+          });
+        }
+      }
+
+      try {
+        await saveData();
+        hideLoading();
+        const totalIn = inItems.reduce((s, i) => s + i.qty, 0);
+        const totalOut = outItems.reduce((s, i) => s + i.qty, 0);
+        showToast(`✅ 操作成功！入库 ${totalIn} 件，出库 ${totalOut} 件（已合并）`);
+
+        resetManualPage();
+        updateUI();
+        setTimeout(() => switchPage('flow'), 500);
+      } catch (err) {
+        hideLoading();
+        showError('操作失败', err.message);
+      }
+    }
+
+    // 重置手动页面
+    function resetManualPage() {
+      const list = document.getElementById('manualList');
+      list.innerHTML = '';
+      manualRowCount = 0;
+      addManualRow();
+      updateManualStats();
+    }
+
+    // ========== 手动出入库功能结束 ==========
 
     window.onload = init;
   
