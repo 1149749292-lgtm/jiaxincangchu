@@ -2244,32 +2244,55 @@ async function init() {
   
     // ========== 简洁版库存导出功能（Excel风格双栏表格） ==========
     function exportStockSimple() {
-      // 获取筛选后的产品
+      // 获取筛选条件
       const net = document.getElementById('filterNet').value;
       const brand = document.getElementById('filterBrand').value;
       const name = document.getElementById('filterName').value;
       const sku = document.getElementById('filterSku').value;
 
-      // 先获取有库存的产品（库存>0）
-      let filtered = products.filter(p => {
+      // 使用与 renderStockTable 相同的合并逻辑
+      const productGroups = {};
+
+      products.forEach(p => {
         const currentQty = stock[p.id] || 0;
-        return currentQty > 0; // 只保留有库存的
+        // 只导出有库存的产品
+        if (currentQty <= 0) return;
+
+        // 应用筛选条件
+        if (net && Math.abs(p.net - parseFloat(net)) >= 0.001) return;
+        if (brand && normalizeString(p.brand) !== normalizeString(brand)) return;
+        if (name && normalizeString(p.name) !== normalizeString(name)) return;
+        if (sku && normalizeString(p.sku) !== normalizeString(sku)) return;
+
+        // 创建分组键
+        const groupKey = `${p.net.toFixed(3)}|${normalizeString(p.brand)}|${normalizeString(p.name)}|${normalizeString(p.sku)}`;
+
+        if (!productGroups[groupKey]) {
+          productGroups[groupKey] = {
+            net: p.net,
+            brand: p.brand,
+            name: p.name,
+            sku: p.sku,
+            currentQty: 0
+          };
+        }
+
+        // 累加库存
+        productGroups[groupKey].currentQty += currentQty;
       });
 
-      // 再应用筛选条件
-      filtered = filtered.filter(p => {
-        return (!net || Math.abs(p.net - parseFloat(net)) < 0.001) && 
-               (!brand || normalizeString(p.brand) === normalizeString(brand)) && 
-               (!name || normalizeString(p.name) === normalizeString(name)) && 
-               (!sku || normalizeString(p.sku) === normalizeString(sku));
-      });
+      // 转换为数组
+      let filtered = Object.values(productGroups);
 
       if (filtered.length === 0) {
         showToast('❌ 没有可导出的数据', 'error');
         return;
       }
 
-      // 限制数量确保一屏显示（最多24个产品，双栏每栏12个）
+      // 计算合计数量
+      const totalQty = filtered.reduce((sum, p) => sum + p.currentQty, 0);
+
+      // 限制数量确保一屏显示（最多24个产品）
       const MAX_ITEMS = 24;
       if (filtered.length > MAX_ITEMS) {
         showToast(`⚠️ 仅显示前${MAX_ITEMS}个产品`, 'warning');
@@ -2286,11 +2309,11 @@ async function init() {
         return compareSku(a.sku, b.sku);
       });
 
-      // 生成图片
-      generateSimpleTable(filtered);
+      // 生成图片，传递合计数量
+      generateSimpleTable(filtered, totalQty);
     }
 
-    function generateSimpleTable(items) {
+    function generateSimpleTable(items, totalQty) {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
 
@@ -2304,9 +2327,10 @@ async function init() {
       const headerHeight = 22;
       const rowHeight = 18; // 每行高度（更紧凑）
       const footerHeight = 18;
+      const summaryHeight = 22; // 合计行高度
 
       // 单栏布局：5列（净重、品牌、品名、规格、剩余库存）
-      const totalHeight = padding + titleHeight + headerHeight + (items.length * rowHeight) + footerHeight + padding;
+      const totalHeight = padding + titleHeight + headerHeight + (items.length * rowHeight) + summaryHeight + footerHeight + padding;
 
       canvas.width = width * scale;
       canvas.height = totalHeight * scale;
@@ -2411,6 +2435,36 @@ async function init() {
 
         currentY += rowHeight;
       }
+
+      // 绘制合计行背景
+      ctx.fillStyle = '#e6f3ff';
+      ctx.fillRect(padding + 1, currentY, width - padding * 2 - 2, summaryHeight);
+
+      // 合计行左边框线
+      ctx.beginPath();
+      ctx.moveTo(padding, currentY);
+      ctx.lineTo(width - padding, currentY);
+      ctx.strokeStyle = '#000000';
+      ctx.stroke();
+
+      // 合计行文字
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 10px "Noto Sans SC", sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText('合计：', padding + 45 + 55 + 95 + 10, currentY + 15);
+
+      // 合计数量（红色粗体）
+      ctx.fillStyle = '#dc2626';
+      ctx.font = 'bold 12px "Noto Sans SC", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(totalQty + ' 件', padding + 45 + 55 + 95 + 70 + 65/2, currentY + 15);
+
+      // 合计行右边框线
+      ctx.beginPath();
+      ctx.moveTo(padding, currentY + summaryHeight);
+      ctx.lineTo(width - padding, currentY + summaryHeight);
+      ctx.strokeStyle = '#000000';
+      ctx.stroke();
 
       // 底部日期
       ctx.fillStyle = '#666666';
