@@ -1087,9 +1087,9 @@ async function init() {
       }).join('') + 
       // 添加合计行
       `<tr style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); font-weight: 700;">
-        <td colspan="3" style="text-align: right; padding-right: 16px; color: var(--primary);">筛选合计：</td>
-        <td style="color: #dc2626; font-size: 16px;">${totalFilteredQty}</td>
-        <td colspan="3"></td>
+        <td colspan="3" style="text-align: right; padding-right: 16px; color: var(--primary); white-space: nowrap;">筛选合计：</td>
+        <td style="color: #dc2626; font-size: 16px; white-space: nowrap;">${totalFilteredQty} 件</td>
+        <td colspan="3" style="white-space: nowrap;"></td>
       </tr>`;
     }
 
@@ -2391,7 +2391,8 @@ async function init() {
 
       for (let row = 0; row < items.length; row++) {
         const p = items[row];
-        const currentQty = stock[p.id] || 0;
+        // 使用传入的合并后的库存数据，不再从stock读取
+        const currentQty = p.currentQty || 0;
 
         // 行底线
         ctx.beginPath();
