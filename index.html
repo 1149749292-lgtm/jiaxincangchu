@@ -302,6 +302,9 @@
   <div class="container">
     <div class="header">
       <div class="sync-status" id="syncStatus"><span class="sync-dot"></span><span id="syncText">正在连接云端...</span></div>
+      <div id="adminStatus" style="position:absolute;top:16px;left:16px;z-index:1;padding:8px 14px;border-radius:20px;font-size:12px;font-weight:500;display:none;">
+        <span>🔓 管理模式</span>
+      </div>
       <div style="position: relative; z-index: 1;">
         <h1>🦐 佳信水产</h1>
         <p>智能仓库管理系统 v4.2 · 修复版</p>
@@ -498,10 +501,10 @@
     </div>
   </div>
   <div class="nav-bar">
-    <div class="nav-item active" data-page="stock" onclick="switchPage('stock')"><span class="icon">📊</span><span>库存</span></div>
-    <div class="nav-item" data-page="import" onclick="switchPage('import')"><span class="icon">📁</span><span>导入</span></div>
-    <div class="nav-item" data-page="manual" onclick="switchPage('manual')"><span class="icon">✏️</span><span>手动</span></div>
-    <div class="nav-item" data-page="flow" onclick="switchPage('flow')"><span class="icon">📋</span><span>流水</span></div>
+    <div class="nav-item active" data-page="stock" onclick="switchPageProtected('stock')"><span class="icon">📊</span><span>库存</span></div>
+    <div class="nav-item" data-page="import" onclick="switchPageProtected('import')"><span class="icon">📁</span><span>导入</span></div>
+    <div class="nav-item" data-page="manual" onclick="switchPageProtected('manual')"><span class="icon">✏️</span><span>手动</span></div>
+    <div class="nav-item" data-page="flow" onclick="switchPageProtected('flow')"><span class="icon">📋</span><span>流水</span></div>
   </div>
   <div class="modal-overlay" id="revokeModal">
     <div class="modal-content">
@@ -613,7 +616,50 @@
     let currentPreview = null;
     let isOnline = false;
 
-    function toHalfWidth(str) {
+        const ADMIN_PASSWORD = '0326';
+    let isAdmin = false;
+
+    // 检查登录状态
+    function checkAuth() {
+        return sessionStorage.getItem('isAdmin') === 'true';
+    }
+
+    // 验证密码
+    function verifyPassword() {
+        const pwd = prompt('请输入管理密码：');
+        if (pwd === ADMIN_PASSWORD) {
+            sessionStorage.setItem('isAdmin', 'true');
+            isAdmin = true;
+            showToast('✅ 验证成功，可以操作管理功能');
+            return true;
+        } else if (pwd !== null) {
+            showToast('❌ 密码错误', 'error');
+        }
+        return false;
+    }
+
+    // 需要密码保护的页面切换
+    function switchPageProtected(page) {
+        // 仓库页面不需要密码
+        if (page === 'stock') {
+            switchPage(page);
+            return;
+        }
+
+        // 其他页面需要验证
+        if (!checkAuth()) {
+            if (verifyPassword()) {
+                switchPage(page);
+            }
+        } else {
+            switchPage(page);
+        }
+    }
+
+    // 修改原有的 switchPage 函数，添加权限控制
+    const originalSwitchPage = switchPage;
+
+function toHalfWidth(str) {
       if (!str || typeof str !== 'string') return '';
       let result = '';
       for (let i = 0; i < str.length; i++) {
@@ -846,6 +892,10 @@ async function confirmDeleteFlow() {
 // ========== 结束流水编辑功能 ==========
 
 async function init() {
+      // 初始化登录状态
+      isAdmin = checkAuth();
+
+
       showLoading('正在加载数据...');
       updateSyncStatus('syncing', '正在连接云端...');
       const today = new Date().toISOString().split('T')[0];
@@ -897,7 +947,23 @@ async function init() {
       }
     }
 
+    function updateAdminStatus() {
+        const adminBadge = document.getElementById('adminStatus');
+        if (adminBadge) {
+            if (checkAuth()) {
+                adminBadge.style.display = 'flex';
+                adminBadge.style.background = 'rgba(16, 185, 129, 0.3)';
+                adminBadge.style.color = 'white';
+                adminBadge.style.backdropFilter = 'blur(10px)';
+                adminBadge.style.border = '1px solid rgba(255,255,255,0.3)';
+            } else {
+                adminBadge.style.display = 'none';
+            }
+        }
+    }
+
     function updateUI() {
+      updateAdminStatus();
       updateStats();
       updateFilters();
       renderStockTable();
@@ -2240,7 +2306,16 @@ async function init() {
 
     // ========== 手动出入库功能结束 ==========
 
-    window.onload = init;
+    // 页面加载完成后检查状态
+window.onload = function() {
+    init();
+    // 显示当前权限状态
+    if (checkAuth()) {
+        showToast('🔓 已登录管理模式');
+    } else {
+        showToast('👁️ 浏览模式：点击导入/手动/流水需输入密码');
+    }
+};
   
     // ========== 简洁版库存导出功能（Excel风格双栏表格） ==========
     function exportStockSimple() {
@@ -2517,6 +2592,20 @@ async function init() {
     }
     // ========== 结束简洁版库存导出功能 ==========
 // ========== 结束简洁版库存导出功能 ==========
+
+    // 退出登录功能（用于测试）
+    function logout() {
+        sessionStorage.removeItem('isAdmin');
+        isAdmin = false;
+        updateAdminStatus();
+        showToast('👋 已退出管理模式');
+        // 如果在非仓库页面，切换回仓库
+        const currentPage = document.querySelector('.page.show');
+        if (currentPage && currentPage.id !== 'stock') {
+            switchPage('stock');
+        }
+    }
+
 </script>
 </body>
 </html>
