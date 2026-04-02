@@ -2762,7 +2762,7 @@ async function doExecuteImport() {
     }
 
     // 批量出库
-    function batchOut() {
+    async function batchOut() {
       if (currentBatch.length === 0) {
         showToast('⚠️ 批次为空，请先添加产品', 'warning');
         return;
@@ -2790,113 +2790,127 @@ async function doExecuteImport() {
         return;
       }
 
-      // 执行出库
-      const remark = document.getElementById('batchRemark').value || '批量出库';
-      const totalQty = currentBatch.reduce((sum, item) => sum + item.qty, 0);
+      showLoading('正在处理出库...');
 
-      currentBatch.forEach(item => {
-        stock[item.product.id] = (stock[item.product.id] || 0) - item.qty;
-      });
+      try {
+        // 执行出库
+        const remark = document.getElementById('batchRemark').value || '批量出库';
+        const totalQty = currentBatch.reduce((sum, item) => sum + item.qty, 0);
 
-      // 创建批次记录
-      const batch = {
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-        type: 'out',
-        date: new Date().toISOString(),
-        dateRange: { min: new Date().toISOString().split('T')[0], max: new Date().toISOString().split('T')[0] },
-        items: currentBatch.map(item => ({
-          productId: item.product.id,
-          name: item.product.name,
-          sku: item.product.sku,
-          brand: item.product.brand,
-          net: item.product.net,
-          gross: item.product.gross,
-          date: new Date().toISOString().split('T')[0],
-          qty: item.qty,
+        currentBatch.forEach(item => {
+          stock[item.product.id] = (stock[item.product.id] || 0) - item.qty;
+        });
+
+        // 创建批次记录
+        const batch = {
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+          type: 'out',
+          date: new Date().toISOString(),
+          dateRange: { min: new Date().toISOString().split('T')[0], max: new Date().toISOString().split('T')[0] },
+          items: currentBatch.map(item => ({
+            productId: item.product.id,
+            name: item.product.name,
+            sku: item.product.sku,
+            brand: item.product.brand,
+            net: item.product.net,
+            gross: item.product.gross,
+            date: new Date().toISOString().split('T')[0],
+            qty: item.qty,
+            remark: remark
+          })),
+          totalQty: totalQty,
+          newProductsCount: 0,
           remark: remark
-        })),
-        totalQty: totalQty,
-        newProductsCount: 0,
-        remark: remark
-      };
-      batches.unshift(batch);
+        };
+        batches.unshift(batch);
 
-      // 显示结果
-      showBatchResult('out', totalQty, currentBatch.length, remark);
+        // 保存数据
+        await saveData();
 
-      // 添加到历史
-      addToBatchHistory('out', totalQty, currentBatch.length, remark);
+        // 显示结果
+        showBatchResult('out', totalQty, currentBatch.length, remark);
 
-      // 清空批次
-      currentBatch = [];
-      document.getElementById('batchRemark').value = '';
-      renderBatchList();
+        // 添加到历史
+        addToBatchHistory('out', totalQty, currentBatch.length, remark);
 
-      // 保存
-      saveData().then(() => {
+        // 清空批次
+        currentBatch = [];
+        document.getElementById('batchRemark').value = '';
+        renderBatchList();
+
+        hideLoading();
         showToast(`✅ 批量出库成功！共 ${totalQty} 件`);
         updateStats();
-      }).catch(err => {
-        showError('保存失败', err.message);
-      });
+      } catch (err) {
+        hideLoading();
+        console.error('出库失败:', err);
+        showToast('❌ 操作失败: ' + (err.message || '网络错误'), 'error');
+      }
     }
 
     // 批量入库
-    function batchIn() {
+    async function batchIn() {
       if (currentBatch.length === 0) {
         showToast('⚠️ 批次为空，请先添加产品', 'warning');
         return;
       }
 
-      const remark = document.getElementById('batchRemark').value || '批量入库';
-      const totalQty = currentBatch.reduce((sum, item) => sum + item.qty, 0);
+      showLoading('正在处理入库...');
 
-      // 执行入库
-      currentBatch.forEach(item => {
-        stock[item.product.id] = (stock[item.product.id] || 0) + item.qty;
-      });
+      try {
+        const remark = document.getElementById('batchRemark').value || '批量入库';
+        const totalQty = currentBatch.reduce((sum, item) => sum + item.qty, 0);
 
-      // 创建批次记录
-      const batch = {
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-        type: 'in',
-        date: new Date().toISOString(),
-        dateRange: { min: new Date().toISOString().split('T')[0], max: new Date().toISOString().split('T')[0] },
-        items: currentBatch.map(item => ({
-          productId: item.product.id,
-          name: item.product.name,
-          sku: item.product.sku,
-          brand: item.product.brand,
-          net: item.product.net,
-          gross: item.product.gross,
-          date: new Date().toISOString().split('T')[0],
-          qty: item.qty,
+        // 执行入库
+        currentBatch.forEach(item => {
+          stock[item.product.id] = (stock[item.product.id] || 0) + item.qty;
+        });
+
+        // 创建批次记录
+        const batch = {
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+          type: 'in',
+          date: new Date().toISOString(),
+          dateRange: { min: new Date().toISOString().split('T')[0], max: new Date().toISOString().split('T')[0] },
+          items: currentBatch.map(item => ({
+            productId: item.product.id,
+            name: item.product.name,
+            sku: item.product.sku,
+            brand: item.product.brand,
+            net: item.product.net,
+            gross: item.product.gross,
+            date: new Date().toISOString().split('T')[0],
+            qty: item.qty,
+            remark: remark
+          })),
+          totalQty: totalQty,
+          newProductsCount: 0,
           remark: remark
-        })),
-        totalQty: totalQty,
-        newProductsCount: 0,
-        remark: remark
-      };
-      batches.unshift(batch);
+        };
+        batches.unshift(batch);
 
-      // 显示结果
-      showBatchResult('in', totalQty, currentBatch.length, remark);
+        // 保存数据
+        await saveData();
 
-      // 添加到历史
-      addToBatchHistory('in', totalQty, currentBatch.length, remark);
+        // 显示结果
+        showBatchResult('in', totalQty, currentBatch.length, remark);
 
-      // 清空批次
-      currentBatch = [];
-      document.getElementById('batchRemark').value = '';
-      renderBatchList();
+        // 添加到历史
+        addToBatchHistory('in', totalQty, currentBatch.length, remark);
 
-      // 保存
-      saveData().then(() => {
+        // 清空批次
+        currentBatch = [];
+        document.getElementById('batchRemark').value = '';
+        renderBatchList();
+
+        hideLoading();
         showToast(`✅ 批量入库成功！共 ${totalQty} 件`);
         updateStats();
-      }).catch(err => {
-        showError('保存失败', err.message);
-      });
+      } catch (err) {
+        hideLoading();
+        console.error('入库失败:', err);
+        showToast('❌ 操作失败: ' + (err.message || '网络错误'), 'error');
+      }
     }
 
     // 显示批次操作结果
