@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="timestamp" content="2026-03-30 16:51">
-  <title>佳信水产仓库管理系统 v4.3</title>
+  <title>佳信水产仓库管理系统 v4.4</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
@@ -303,7 +303,54 @@
     .stock-badge.empty { background: var(--danger-light); color: var(--danger); }
     .date-range { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--bg); border-radius: var(--radius); font-size: 14px; color: var(--text-secondary); }
     .date-range strong { color: var(--text-primary); }
-  </style>
+  
+    /* 产品管理页面样式 */
+    #productTable tbody tr:hover {
+      background: rgba(37, 99, 235, 0.03);
+    }
+
+    #productTable th {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    }
+
+    .product-form-group label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .product-form-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    /* 响应式适配 */
+    @media (max-width: 640px) {
+      #products .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      #productTable {
+        font-size: 11px;
+      }
+
+      #productTable th,
+      #productTable td {
+        padding: 8px 4px;
+      }
+
+      #productTable td button {
+        padding: 4px 8px;
+        font-size: 11px;
+      }
+    }
+</style>
 </head>
 <body>
   <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><div class="loading-text">正在处理...</div></div>
@@ -319,7 +366,7 @@
         </div>
       <div style="position: relative; z-index: 1;">
         <h1>🦐 佳信水产</h1>
-        <p>智能仓库管理系统 v4.3 · 图二格式版</p>
+        <p>智能仓库管理系统 v4.4 · 图二格式版</p>
       </div>
     </div>
 
@@ -598,11 +645,211 @@
     </div>
   </div>
 
-  <div class="nav-bar">
+  
+  <!-- 产品管理页面 -->
+  <div class="page" id="products">
+    <div class="card">
+      <div class="card-title">📦 产品管理</div>
+
+      <!-- 统计卡片 -->
+      <div class="stats-grid" style="margin-bottom: 24px;">
+        <div class="stat-card">
+          <div class="stat-label">📦 总产品数</div>
+          <div class="stat-value" id="productTotalCount" style="color: var(--primary);">0</div>
+          <div class="stat-unit">种</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">🏷️ 品牌数</div>
+          <div class="stat-value" id="productBrandCount" style="color: var(--success);">0</div>
+          <div class="stat-unit">个</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">📊 有库存</div>
+          <div class="stat-value" id="productWithStock" style="color: var(--warning);">0</div>
+          <div class="stat-unit">种</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">⚠️ 缺货</div>
+          <div class="stat-value" id="productOutOfStock" style="color: var(--danger);">0</div>
+          <div class="stat-unit">种</div>
+        </div>
+      </div>
+
+      <!-- 搜索和操作栏 -->
+      <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 200px;">
+          <input type="text" id="productSearch" placeholder="🔍 搜索品名、规格、品牌..." 
+                 style="width: 100%; padding: 12px 16px; border: 1.5px solid var(--border); border-radius: var(--radius); 
+                        font-size: 14px; transition: all 0.2s;" 
+                 onkeyup="searchProducts()" onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
+                 onblur="this.style.borderColor='var(--border)'; this.style.boxShadow='none';">
+        </div>
+        <button class="btn btn-primary" onclick="showProductModal()" style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+          <span>➕</span> 新增产品
+        </button>
+        <button class="btn btn-secondary" onclick="exportProducts()" style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+          <span>📊</span> 导出Excel
+        </button>
+      </div>
+
+      <!-- 筛选栏 -->
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label style="font-size: 12px; margin-bottom: 4px;">品牌筛选</label>
+          <select id="productFilterBrand" onchange="filterProducts()" style="min-height: 38px; font-size: 13px;">
+            <option value="">全部品牌</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label style="font-size: 12px; margin-bottom: 4px;">库存状态</label>
+          <select id="productFilterStock" onchange="filterProducts()" style="min-height: 38px; font-size: 13px;">
+            <option value="">全部状态</option>
+            <option value="instock">有库存</option>
+            <option value="outofstock">无库存/缺货</option>
+            <option value="negative">库存为负</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label style="font-size: 12px; margin-bottom: 4px;">排序</label>
+          <select id="productSort" onchange="filterProducts()" style="min-height: 38px; font-size: 13px;">
+            <option value="default">默认排序</option>
+            <option value="brand">按品牌</option>
+            <option value="name">按品名</option>
+            <option value="stockDesc">库存从高到低</option>
+            <option value="stockAsc">库存从低到高</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 产品列表 -->
+      <div class="table-wrapper">
+        <table id="productTable" style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);">
+              <th style="padding: 12px; text-align: center; font-weight: 600; font-size: 13px; border-bottom: 2px solid var(--border);">品牌</th>
+              <th style="padding: 12px; text-align: center; font-weight: 600; font-size: 13px; border-bottom: 2px solid var(--border);">品名</th>
+              <th style="padding: 12px; text-align: center; font-weight: 600; font-size: 13px; border-bottom: 2px solid var(--border);">规格</th>
+              <th style="padding: 12px; text-align: center; font-weight: 600; font-size: 13px; border-bottom: 2px solid var(--border);">净重</th>
+              <th style="padding: 12px; text-align: center; font-weight: 600; font-size: 13px; border-bottom: 2px solid var(--border);">毛重</th>
+              <th style="padding: 12px; text-align: center; font-weight: 600; font-size: 13px; border-bottom: 2px solid var(--border);">当前库存</th>
+              <th style="padding: 12px; text-align: center; font-weight: 600; font-size: 13px; border-bottom: 2px solid var(--border); width: 120px;">操作</th>
+            </tr>
+          </thead>
+          <tbody id="productTableBody">
+            <!-- 动态生成 -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 分页信息 -->
+      <div style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--text-secondary);">
+        <span id="productListInfo">共 0 种产品</span>
+        <span id="productPageInfo"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 产品编辑/添加弹窗 -->
+  <div class="modal-overlay" id="productModal">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <div class="modal-icon" id="productModalIcon" style="background: var(--primary-light); color: var(--primary);">📦</div>
+        <div class="modal-title" id="productModalTitle">新增产品</div>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="productEditId">
+        <div style="display: grid; gap: 16px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">
+              品牌 <span style="color: var(--danger);">*</span>
+            </label>
+            <input type="text" id="productBrand" placeholder="请输入品牌，如：佳信、蓝琼" 
+                   style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px;">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">
+              品名 <span style="color: var(--danger);">*</span>
+            </label>
+            <input type="text" id="productName" placeholder="请输入品名，如：白灼黑虎熟虾" 
+                   style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px;">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">
+              规格 <span style="color: var(--danger);">*</span>
+            </label>
+            <input type="text" id="productSku" placeholder="请输入规格，如：8-10、特大、16-20" 
+                   style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px;">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">
+                净重(kg) <span style="color: var(--danger);">*</span>
+              </label>
+              <input type="number" id="productNet" placeholder="如：2.5" step="0.1" min="0"
+                     style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">
+                毛重(kg)
+              </label>
+              <input type="number" id="productGross" placeholder="如：5.0" step="0.1" min="0"
+                     style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px;">
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">单位</label>
+            <input type="text" id="productUnit" placeholder="默认：件" value="件"
+                   style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px;">
+          </div>
+        </div>
+
+        <!-- 编辑时的提示 -->
+        <div id="productEditWarning" style="display: none; margin-top: 16px; padding: 12px; background: var(--warning-light); border-radius: var(--radius); border-left: 3px solid var(--warning);">
+          <p style="font-size: 13px; color: var(--warning); margin: 0; font-weight: 600;">⚠️ 编辑产品信息将影响所有历史记录中的显示</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-secondary" onclick="closeProductModal()">取消</button>
+        <button class="modal-btn modal-btn-primary" onclick="saveProduct()" style="background: var(--primary);">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 删除确认弹窗 -->
+  <div class="modal-overlay" id="deleteProductModal">
+    <div class="modal-content" style="max-width: 420px;">
+      <div class="modal-header">
+        <div class="modal-icon" style="background: var(--danger-light); color: var(--danger);">🗑️</div>
+        <div class="modal-title">确认删除产品</div>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom: 16px; color: var(--text-secondary); font-size: 14px; line-height: 1.6;">
+          您即将删除产品：<br>
+          <strong id="deleteProductName" style="color: var(--danger); font-size: 16px; display: block; margin: 8px 0;">-</strong>
+        </p>
+        <div style="background: var(--danger-light); padding: 16px; border-radius: var(--radius); margin-bottom: 16px;">
+          <p style="font-size: 13px; color: var(--danger); margin: 0; font-weight: 600;">⚠️ 警告：此操作不可恢复！</p>
+          <ul style="font-size: 12px; color: var(--danger); margin: 8px 0 0 16px; padding-left: 0;">
+            <li>该产品将从库存中移除</li>
+            <li>所有相关的出入库记录将保留但显示为"未知产品"</li>
+            <li>当前库存量将被清零</li>
+          </ul>
+        </div>
+        <p style="font-size: 13px; color: var(--text-secondary);">如需保留历史数据，建议不要删除，仅修改产品信息。</p>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-secondary" onclick="closeDeleteProductModal()">取消</button>
+        <button class="modal-btn modal-btn-danger" onclick="confirmDeleteProduct()" style="background: var(--danger); color: white;">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+<div class="nav-bar">
     <div class="nav-item active" data-page="stock" onclick="switchPage('stock')"><span class="icon">📊</span><span>库存</span></div>
     <div class="nav-item" data-page="import" onclick="switchPage('import')"><span class="icon">📁</span><span>导入</span></div>
     <div class="nav-item" data-page="flow" onclick="switchPage('flow')"><span class="icon">📋</span><span>流水</span></div>
     <div class="nav-item" data-page="manual" onclick="switchPage('manual')"><span class="icon">⚡</span><span>手动出入库</span></div>
+    <div class="nav-item" data-page="products" onclick="switchPage('products')"><span class="icon">📦</span><span>产品</span></div>
   </div>
 
   <!-- 库存超出确认弹窗 -->
@@ -860,7 +1107,7 @@ async function init() {
 
     function switchPage(page) {
       // 需要密码验证的页面
-      const needPassword = ['import', 'flow', 'manual'];
+      const needPassword = ['import', 'flow', 'manual', 'products'];
 
       // 检查是否需要密码且未验证
       if (needPassword.includes(page) && !verifiedPages.has(page)) {
@@ -883,6 +1130,7 @@ async function init() {
       if (page === 'stock') { updateStats(); renderStockTable(); }
       else if (page === 'flow') { renderFlow(); updateFlowCascadeOptions(); }
       else if (page === 'manual') { initManualPage(); }
+    else if (page === 'products') { initProductPage(); }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -2426,7 +2674,395 @@ async function doExecuteImport() {
 
     // ==================== 工具函数 ====================
 
-    function showLoading(text) {
+    
+    // ==================== 产品管理模块 ====================
+
+    let pendingDeleteProductId = null;
+    let filteredProductList = []; // 当前筛选后的产品列表
+
+    // 初始化产品管理页面
+    function initProductPage() {
+      updateProductStats();
+      updateProductBrandFilter();
+      filterProducts();
+    }
+
+    // 更新产品统计
+    function updateProductStats() {
+      const totalCount = products.length;
+      const brands = [...new Set(products.map(p => p.brand).filter(b => b && b !== 'undefined'))];
+      const withStock = products.filter(p => (stock[p.id] || 0) > 0).length;
+      const outOfStock = products.filter(p => (stock[p.id] || 0) <= 0).length;
+
+      document.getElementById('productTotalCount').textContent = totalCount;
+      document.getElementById('productBrandCount').textContent = brands.length;
+      document.getElementById('productWithStock').textContent = withStock;
+      document.getElementById('productOutOfStock').textContent = outOfStock;
+    }
+
+    // 更新品牌筛选下拉菜单
+    function updateProductBrandFilter() {
+      const brands = [...new Set(products.map(p => p.brand).filter(b => b && b !== 'undefined' && String(b).trim() !== ''))].sort();
+      const select = document.getElementById('productFilterBrand');
+      const currentVal = select.value;
+      select.innerHTML = '<option value="">全部品牌</option>' + 
+        brands.map(b => `<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`).join('');
+      if (brands.includes(currentVal)) select.value = currentVal;
+    }
+
+    // 搜索产品
+    function searchProducts() {
+      filterProducts();
+    }
+
+    // 筛选和排序产品
+    function filterProducts() {
+      const searchTerm = normalizeString(document.getElementById('productSearch').value);
+      const brandFilter = document.getElementById('productFilterBrand').value;
+      const stockFilter = document.getElementById('productFilterStock').value;
+      const sortType = document.getElementById('productSort').value;
+
+      filteredProductList = products.filter(p => {
+        // 搜索词匹配
+        if (searchTerm) {
+          const matchBrand = normalizeString(p.brand || '').includes(searchTerm);
+          const matchName = normalizeString(p.name || '').includes(searchTerm);
+          const matchSku = normalizeString(p.sku || '').includes(searchTerm);
+          if (!matchBrand && !matchName && !matchSku) return false;
+        }
+
+        // 品牌筛选
+        if (brandFilter && p.brand !== brandFilter) return false;
+
+        // 库存状态筛选
+        const currentStock = stock[p.id] || 0;
+        if (stockFilter === 'instock' && currentStock <= 0) return false;
+        if (stockFilter === 'outofstock' && currentStock > 0) return false;
+        if (stockFilter === 'negative' && currentStock >= 0) return false;
+
+        return true;
+      });
+
+      // 排序
+      filteredProductList.sort((a, b) => {
+        switch(sortType) {
+          case 'brand':
+            return normalizeString(a.brand).localeCompare(normalizeString(b.brand));
+          case 'name':
+            return normalizeString(a.name).localeCompare(normalizeString(b.name));
+          case 'stockDesc':
+            return (stock[b.id] || 0) - (stock[a.id] || 0);
+          case 'stockAsc':
+            return (stock[a.id] || 0) - (stock[b.id] || 0);
+          default:
+            // 默认按品牌+品名排序
+            const brandCompare = normalizeString(a.brand).localeCompare(normalizeString(b.brand));
+            if (brandCompare !== 0) return brandCompare;
+            return normalizeString(a.name).localeCompare(normalizeString(b.name));
+        }
+      });
+
+      renderProductTable();
+      updateProductStats();
+    }
+
+    // 渲染产品表格
+    function renderProductTable() {
+      const tbody = document.getElementById('productTableBody');
+      const infoSpan = document.getElementById('productListInfo');
+
+      infoSpan.textContent = `共 ${filteredProductList.length} 种产品（总计 ${products.length} 种）`;
+
+      if (filteredProductList.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" style="padding: 60px 20px; text-align: center; color: var(--text-secondary);">
+              <div style="font-size: 48px; margin-bottom: 16px;">📦</div>
+              <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">暂无产品数据</div>
+              <div style="font-size: 14px; color: var(--text-tertiary);">点击"新增产品"按钮添加第一个产品</div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filteredProductList.map(p => {
+        const currentStock = stock[p.id] || 0;
+        let stockClass = 'positive';
+        let stockBadge = '<span style="color: var(--success); font-size: 11px; margin-left: 4px;">充足</span>';
+        if (currentStock <= 0) {
+          stockClass = 'negative';
+          stockBadge = '<span style="color: var(--danger); font-size: 11px; margin-left: 4px;">缺货</span>';
+        } else if (currentStock < 20) {
+          stockClass = '';
+          stockBadge = '<span style="color: var(--warning); font-size: 11px; margin-left: 4px;">偏低</span>';
+        }
+
+        return `
+          <tr style="border-bottom: 1px solid var(--border); transition: background 0.2s;" 
+              onmouseover="this.style.background='rgba(37, 99, 235, 0.03)'" 
+              onmouseout="this.style.background='transparent'">
+            <td style="padding: 12px; text-align: center; font-weight: 600; font-size: 14px;">${escapeHtml(p.brand)}</td>
+            <td style="padding: 12px; text-align: center; font-size: 14px;">${escapeHtml(p.name)}</td>
+            <td style="padding: 12px; text-align: center;">
+              <span class="product-tag" style="font-size: 11px; padding: 2px 8px;">${escapeHtml(p.sku)}</span>
+            </td>
+            <td style="padding: 12px; text-align: center; font-size: 13px; color: var(--text-secondary);">${p.net || 0} kg</td>
+            <td style="padding: 12px; text-align: center; font-size: 13px; color: var(--text-secondary);">${p.gross || 0} kg</td>
+            <td style="padding: 12px; text-align: center;">
+              <span class="stock-value ${stockClass}" style="font-size: 16px; font-weight: 700;">${currentStock}</span>
+              ${stockBadge}
+            </td>
+            <td style="padding: 12px; text-align: center;">
+              <div style="display: flex; gap: 6px; justify-content: center;">
+                <button onclick="editProduct('${p.id}')" 
+                        style="padding: 6px 12px; background: var(--primary-light); color: var(--primary); 
+                               border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;
+                               transition: all 0.2s;"
+                        onmouseover="this.style.background='var(--primary)'; this.style.color='white';"
+                        onmouseout="this.style.background='var(--primary-light)'; this.style.color='var(--primary)';">
+                  编辑
+                </button>
+                <button onclick="deleteProduct('${p.id}')" 
+                        style="padding: 6px 12px; background: var(--danger-light); color: var(--danger); 
+                               border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;
+                               transition: all 0.2s;"
+                        onmouseover="this.style.background='var(--danger)'; this.style.color='white';"
+                        onmouseout="this.style.background='var(--danger-light)'; this.style.color='var(--danger)';">
+                  删除
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 显示产品编辑弹窗（新增模式）
+    function showProductModal() {
+      document.getElementById('productEditId').value = '';
+      document.getElementById('productModalTitle').textContent = '新增产品';
+      document.getElementById('productModalIcon').textContent = '➕';
+      document.getElementById('productBrand').value = '';
+      document.getElementById('productName').value = '';
+      document.getElementById('productSku').value = '';
+      document.getElementById('productNet').value = '';
+      document.getElementById('productGross').value = '';
+      document.getElementById('productUnit').value = '件';
+      document.getElementById('productEditWarning').style.display = 'none';
+
+      document.getElementById('productModal').classList.add('show');
+    }
+
+    // 编辑产品
+    function editProduct(productId) {
+      const p = products.find(p => p.id === productId);
+      if (!p) return;
+
+      document.getElementById('productEditId').value = p.id;
+      document.getElementById('productModalTitle').textContent = '编辑产品';
+      document.getElementById('productModalIcon').textContent = '✏️';
+      document.getElementById('productBrand').value = p.brand || '';
+      document.getElementById('productName').value = p.name || '';
+      document.getElementById('productSku').value = p.sku || '';
+      document.getElementById('productNet').value = p.net || '';
+      document.getElementById('productGross').value = p.gross || '';
+      document.getElementById('productUnit').value = p.unit || '件';
+      document.getElementById('productEditWarning').style.display = 'block';
+
+      document.getElementById('productModal').classList.add('show');
+    }
+
+    // 关闭产品弹窗
+    function closeProductModal() {
+      document.getElementById('productModal').classList.remove('show');
+    }
+
+    // 保存产品
+    async function saveProduct() {
+      const id = document.getElementById('productEditId').value;
+      const brand = document.getElementById('productBrand').value.trim();
+      const name = document.getElementById('productName').value.trim();
+      const sku = document.getElementById('productSku').value.trim();
+      const net = parseFloat(document.getElementById('productNet').value) || 0;
+      const gross = parseFloat(document.getElementById('productGross').value) || 0;
+      const unit = document.getElementById('productUnit').value.trim() || '件';
+
+      // 验证必填项
+      if (!brand || !name || !sku) {
+        showToast('⚠️ 请填写品牌、品名和规格', 'warning');
+        return;
+      }
+      if (net <= 0) {
+        showToast('⚠️ 净重必须大于0', 'warning');
+        return;
+      }
+
+      if (id) {
+        // 编辑模式
+        const p = products.find(p => p.id === id);
+        if (p) {
+          p.brand = brand;
+          p.name = name;
+          p.sku = sku;
+          p.net = net;
+          p.gross = gross;
+          p.unit = unit;
+
+          // 同步更新所有批次中的产品信息
+          batches.forEach(batch => {
+            batch.items.forEach(item => {
+              if (item.productId === id) {
+                item.brand = brand;
+                item.name = name;
+                item.sku = sku;
+                item.net = net;
+                item.gross = gross;
+              }
+            });
+          });
+
+          showToast('✅ 产品信息已更新，所有板块已同步');
+        }
+      } else {
+        // 新增模式
+        // 检查是否已存在相同产品
+        const exists = products.some(p => 
+          normalizeString(p.brand) === normalizeString(brand) && 
+          normalizeString(p.name) === normalizeString(name) && 
+          normalizeString(p.sku) === normalizeString(sku) &&
+          Math.abs((p.net || 0) - net) < 0.001
+        );
+
+        if (exists) {
+          if (!confirm('检测到相似产品已存在，是否继续添加？')) return;
+        }
+
+        const newProduct = {
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          brand: brand,
+          name: name,
+          sku: sku,
+          net: net,
+          gross: gross,
+          unit: unit
+        };
+        products.push(newProduct);
+
+        // 初始化库存为0
+        stock[newProduct.id] = 0;
+
+        showToast('✅ 新产品添加成功');
+      }
+
+      try {
+        await saveData();
+        closeProductModal();
+
+        // 更新所有相关界面
+        updateUI();
+        initProductPage(); // 刷新产品管理页面
+
+        // 更新所有下拉菜单选项
+        updateFlowCascadeOptions();
+        updateManualCascadeOptions();
+      } catch (err) {
+        showError('保存失败', err.message);
+      }
+    }
+
+    // 删除产品
+    function deleteProduct(productId) {
+      const p = products.find(p => p.id === productId);
+      if (!p) return;
+
+      pendingDeleteProductId = productId;
+      document.getElementById('deleteProductName').innerHTML = 
+        `${escapeHtml(p.brand)} ${escapeHtml(p.name)} ${escapeHtml(p.sku)}`;
+      document.getElementById('deleteProductModal').classList.add('show');
+    }
+
+    // 关闭删除确认弹窗
+    function closeDeleteProductModal() {
+      document.getElementById('deleteProductModal').classList.remove('show');
+      pendingDeleteProductId = null;
+    }
+
+    // 确认删除产品
+    async function confirmDeleteProduct() {
+      if (!pendingDeleteProductId) return;
+
+      showLoading('正在删除产品...');
+
+      // 从products数组中移除
+      products = products.filter(p => p.id !== pendingDeleteProductId);
+
+      // 从stock对象中移除
+      delete stock[pendingDeleteProductId];
+
+      // 更新所有批次中的items（保留记录但标记为已删除产品）
+      batches.forEach(batch => {
+        batch.items.forEach(item => {
+          if (item.productId === pendingDeleteProductId) {
+            // 保留记录但清空产品信息，显示为"[已删除产品]"
+            item.brand = '[已删除]';
+            item.name = '[产品已删除]';
+            item.sku = '-';
+            item.net = 0;
+            item.gross = 0;
+          }
+        });
+      });
+
+      try {
+        await saveData();
+        hideLoading();
+        closeDeleteProductModal();
+        showToast('✅ 产品已删除，相关库存已清零');
+
+        // 更新所有界面
+        updateUI();
+        initProductPage();
+        updateFlowCascadeOptions();
+        updateManualCascadeOptions();
+      } catch (err) {
+        hideLoading();
+        showError('删除失败', err.message);
+      }
+    }
+
+    // 导出产品列表
+    function exportProducts() {
+      if (products.length === 0) {
+        showToast('⚠️ 没有产品可导出', 'warning');
+        return;
+      }
+
+      const exportData = products.map(p => ({
+        '品牌': p.brand,
+        '品名': p.name,
+        '规格': p.sku,
+        '净重(kg)': p.net,
+        '毛重(kg)': p.gross,
+        '单位': p.unit,
+        '当前库存': stock[p.id] || 0
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(exportData);
+
+      // 设置列宽
+      ws['!cols'] = [
+        { wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 12 }
+      ];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, '产品列表');
+
+      XLSX.writeFile(wb, `产品列表_${new Date().toISOString().split('T')[0]}.xlsx`);
+      showToast('✅ 产品列表已导出');
+    }
+
+function showLoading(text) {
       document.querySelector('.loading-text').textContent = text;
       document.getElementById('loadingOverlay').classList.add('show');
     }
