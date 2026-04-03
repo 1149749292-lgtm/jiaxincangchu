@@ -15,7 +15,7 @@
         .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
         .fade-in { animation: fadeIn 0.5s ease-in; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .tab-active { border-bottom: 3px solid #3b82f6; color: #3b82f6; font-weight: 600; }
+        .tab-active { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important; color: white !important; border-color: #2563eb !important; font-weight: 600; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3); }
         .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
         .status-pending { background: #fef3c7; color: #92400e; }
         .status-partial { background: #dbeafe; color: #1e40af; }
@@ -268,6 +268,47 @@
             border-color: #fca5a5;
             color: #991b1b;
         }
+
+        /* 手机端表格优化 */
+        @media (max-width: 640px) {
+            table {
+                font-size: 12px;
+            }
+            th, td {
+                padding: 8px 4px !important;
+                white-space: nowrap;
+            }
+            .px-6 {
+                padding-left: 8px !important;
+                padding-right: 8px !important;
+            }
+            /* 隐藏部分列 */
+            th:nth-child(2), td:nth-child(2) {
+                max-width: 80px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+        }
+
+        /* 导航栏响应式 */
+        @media (min-width: 768px) {
+            nav {
+                display: flex !important;
+                gap: 2rem !important;
+            }
+            nav button {
+                border: none !important;
+                background: transparent !important;
+                border-bottom: 2px solid transparent !important;
+                border-radius: 0 !important;
+            }
+            nav button.tab-active {
+                background: transparent !important;
+                color: #3b82f6 !important;
+                border-bottom: 3px solid #3b82f6 !important;
+                box-shadow: none !important;
+            }
+        }
         .sync-status.syncing { background: rgba(245, 158, 11, 0.3); }
         .sync-status.synced { background: rgba(16, 185, 129, 0.3); }
         .sync-status.error { background: rgba(239, 68, 68, 0.3); }
@@ -314,17 +355,9 @@
 
         <header class="glass sticky top-0 z-40 border-b border-gray-200">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between items-center h-16 relative">
-                    <!-- 左侧：同步状态指示器 -->
-                    <div class="flex items-center">
-                        <div class="sync-status" id="syncStatus">
-                            <span class="sync-dot"></span>
-                            <span id="syncText">正在连接...</span>
-                        </div>
-                    </div>
-
-                    <!-- 中间：标题 -->
-                    <div class="flex items-center space-x-3 absolute left-1/2 transform -translate-x-1/2">
+                <!-- 桌面端布局 -->
+                <div class="hidden md:flex justify-between items-center h-16">
+                    <div class="flex items-center space-x-3">
                         <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                         </div>
@@ -334,9 +367,40 @@
                         </div>
                     </div>
                     <div class="flex items-center space-x-3">
+                        <div class="sync-status" id="syncStatus">
+                            <span class="sync-dot"></span>
+                            <span id="syncText">正在连接...</span>
+                        </div>
                         <button onclick="syncData()" class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:shadow-lg transition-all">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
                             <span>同步数据</span>
+                        </button>
+                    </div>
+                </div>
+                <!-- 手机端布局 -->
+                <div class="md:hidden py-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                            </div>
+                            <div>
+                                <h1 class="text-lg font-bold text-gray-800">佳信水产财务</h1>
+                                <p class="text-xs text-gray-500">v2.0 | 云端同步</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="sync-status" id="syncStatus">
+                                <span class="sync-dot"></span>
+                                <span id="syncText">连接中</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-400">上次同步: <span id="lastSyncTime">--</span></span>
+                        <button onclick="syncData()" class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium flex items-center space-x-1 hover:shadow-lg transition-all">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                            <span>同步</span>
                         </button>
                     </div>
                 </div>
@@ -345,13 +409,13 @@
 
         <div class="bg-white border-b border-gray-200">
             <div class="max-w-7xl mx-auto px-4">
-                <nav class="flex space-x-8 overflow-x-auto">
-                    <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn py-4 px-1 border-b-2 border-transparent hover:text-blue-600 whitespace-nowrap tab-active">📊 仪表盘</button>
-                    <button onclick="switchTab('purchase')" id="tab-purchase" class="tab-btn py-4 px-1 border-b-2 border-transparent hover:text-blue-600 whitespace-nowrap">📥 采购管理</button>
-                    <button onclick="switchTab('sales')" id="tab-sales" class="tab-btn py-4 px-1 border-b-2 border-transparent hover:text-blue-600 whitespace-nowrap">📤 销售管理</button>
-                    <button onclick="switchTab('customers')" id="tab-customers" class="tab-btn py-4 px-1 border-b-2 border-transparent hover:text-blue-600 whitespace-nowrap">👥 客户/供应商</button>
-                    <button onclick="switchTab('finance')" id="tab-finance" class="tab-btn py-4 px-1 border-b-2 border-transparent hover:text-blue-600 whitespace-nowrap">💵 收付款</button>
-                    <button onclick="switchTab('reports')" id="tab-reports" class="tab-btn py-4 px-1 border-b-2 border-transparent hover:text-blue-600 whitespace-nowrap">📋 财务报表</button>
+                <nav class="grid grid-cols-3 gap-2 py-3">
+                    <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn py-3 px-2 rounded-lg text-center text-sm font-medium transition-all hover:bg-blue-50 tab-active bg-blue-50 text-blue-600 border border-blue-200">📊 仪表盘</button>
+                    <button onclick="switchTab('purchase')" id="tab-purchase" class="tab-btn py-3 px-2 rounded-lg text-center text-sm font-medium transition-all hover:bg-blue-50 bg-white text-gray-600 border border-gray-200">📥 采购管理</button>
+                    <button onclick="switchTab('sales')" id="tab-sales" class="tab-btn py-3 px-2 rounded-lg text-center text-sm font-medium transition-all hover:bg-blue-50 bg-white text-gray-600 border border-gray-200">📤 销售管理</button>
+                    <button onclick="switchTab('customers')" id="tab-customers" class="tab-btn py-3 px-2 rounded-lg text-center text-sm font-medium transition-all hover:bg-blue-50 bg-white text-gray-600 border border-gray-200">👥 客户/供应商</button>
+                    <button onclick="switchTab('finance')" id="tab-finance" class="tab-btn py-3 px-2 rounded-lg text-center text-sm font-medium transition-all hover:bg-blue-50 bg-white text-gray-600 border border-gray-200">💵 收付款</button>
+                    <button onclick="switchTab('reports')" id="tab-reports" class="tab-btn py-3 px-2 rounded-lg text-center text-sm font-medium transition-all hover:bg-blue-50 bg-white text-gray-600 border border-gray-200">📋 财务报表</button>
                 </nav>
             </div>
         </div>
@@ -877,11 +941,15 @@
          * 从云端获取数据 - 关键修复：添加 cache: 'no-store' 防止浏览器缓存
          */
         async function fetchData() {
+            // 创建超时 Promise - 3秒超时，更快反馈
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('连接超时')), 3000);
+            });
+
             try {
-                // 关键修复1：添加时间戳参数，防止CDN/代理缓存
-                // 关键修复2：添加 cache: 'no-store'，禁止浏览器缓存
+                // 使用 meta 端点代替 latest，获取基本信息更快
                 const timestamp = Date.now();
-                const response = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}/latest?_t=${timestamp}`, {
+                const fetchPromise = fetch(`https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}?_t=${timestamp}`, {
                     method: 'GET',
                     headers: { 
                         'X-Master-Key': CONFIG.API_KEY,
@@ -889,8 +957,11 @@
                         'Cache-Control': 'no-cache, no-store, must-revalidate',
                         'Pragma': 'no-cache'
                     },
-                    cache: 'no-store'  // 关键：禁止浏览器缓存
+                    cache: 'no-store'
                 });
+
+                // 使用 Promise.race 实现超时控制
+                const response = await Promise.race([fetchPromise, timeoutPromise]);
 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -908,8 +979,12 @@
          * 保存数据到云端
          */
         async function saveData() {
+            // 始终保存到本地缓存
+            localStorage.setItem('finance_data_cache', JSON.stringify(data));
+
             if (!isOnline) { 
-                console.log('离线模式，跳过云端同步');
+                console.log('离线模式，仅保存到本地');
+                updateSyncStatus('error', '离线模式，已保存本地');
                 return; 
             }
 
@@ -940,7 +1015,7 @@
                 isSyncing = false;
             } catch (error) {
                 console.error('同步失败:', error);
-                updateSyncStatus('error', '同步失败');
+                updateSyncStatus('error', '同步失败，已保存本地');
                 isSyncing = false;
                 throw error;
             }
@@ -1012,40 +1087,74 @@
         /**
          * 初始化应用 - 与仓库系统 init 完全一致
          */
-        async function initApp() {
+        function initApp() {
             // 设置默认日期
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('purchaseDate').value = today;
             document.getElementById('salesDate').value = today;
             document.getElementById('paymentDate').value = today;
 
+            // 先尝试从本地缓存加载数据，立即显示界面
+            const cachedData = localStorage.getItem('finance_data_cache');
+            let hasCache = false;
+            if (cachedData) {
+                try {
+                    const parsed = JSON.parse(cachedData);
+                    data.suppliers = parsed.suppliers || [];
+                    data.customers = parsed.customers || [];
+                    data.purchaseOrders = parsed.purchaseOrders || [];
+                    data.salesOrders = parsed.salesOrders || [];
+                    data.transactions = parsed.transactions || [];
+                    data.lastPurchaseDocNumber = parsed.lastPurchaseDocNumber || 0;
+                    hasCache = true;
+                    updateSyncStatus('synced', '已加载本地数据');
+                } catch(e) {
+                    updateSyncStatus('error', '加载失败');
+                }
+            } else {
+                updateSyncStatus('syncing', '首次使用，准备同步...');
+            }
+
+            // 立即初始化界面（不等待网络）
+            initPurchaseTable();
+            updateAllViews();
+
+            // 后台同步云端数据（不阻塞界面）
+            setTimeout(() => {
+                syncToCloud();
+            }, 100);
+        }
+
+        // 后台同步函数
+        async function syncToCloud() {
+            // 如果已经在同步中，不要重复
+            if (isSyncing) return;
+            isSyncing = true;
+
             updateSyncStatus('syncing', '正在连接云端...');
-
             try {
-                // 使用新的 fetchData 获取云端数据
                 const cloudData = await fetchData();
-
-                // 合并云端数据到本地
-                if (cloudData) {
+                if (cloudData && Object.keys(cloudData).length > 0) {
                     data.suppliers = cloudData.suppliers || [];
                     data.customers = cloudData.customers || [];
                     data.purchaseOrders = cloudData.purchaseOrders || [];
                     data.salesOrders = cloudData.salesOrders || [];
                     data.transactions = cloudData.transactions || [];
                     data.lastPurchaseDocNumber = cloudData.lastPurchaseDocNumber || 0;
+                    localStorage.setItem('finance_data_cache', JSON.stringify(data));
+                    isOnline = true;
+                    updateSyncStatus('synced', '已同步到云端');
+                    updateAllViews();
+                } else {
+                    throw new Error('无数据');
                 }
-
-                isOnline = true;
-                updateSyncStatus('synced', '已同步到云端');
             } catch (err) {
-                console.error('初始化失败:', err);
+                console.error('云端同步失败:', err);
                 isOnline = false;
-                updateSyncStatus('error', '连接失败，使用本地模式');
+                updateSyncStatus('error', '云端未连接');
+            } finally {
+                isSyncing = false;
             }
-
-            // 初始化界面
-            initPurchaseTable();
-            updateAllViews();
         }
 
         // ==================== 视图切换 ====================// ==================== 视图切换 ====================
@@ -1053,12 +1162,14 @@
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(el => {
                 el.classList.remove('tab-active');
-                el.classList.add('border-transparent');
+                el.classList.remove('bg-blue-50', 'text-blue-600', 'border-blue-200');
+                el.classList.add('bg-white', 'text-gray-600', 'border-gray-200');
             });
 
             document.getElementById(`view-${tabName}`).classList.remove('hidden');
-            document.getElementById(`tab-${tabName}`).classList.add('tab-active');
-            document.getElementById(`tab-${tabName}`).classList.remove('border-transparent');
+            const activeTab = document.getElementById(`tab-${tabName}`);
+            activeTab.classList.add('tab-active');
+            activeTab.classList.remove('bg-white', 'text-gray-600', 'border-gray-200');
 
             updateView(tabName);
         }
@@ -1143,10 +1254,23 @@
             rows.forEach((row, index) => {
                 const newNum = index + 1;
                 row.id = 'purchase-row-' + newNum;
-                // 更新序号显示和删除按钮
+
+                // 更新序号显示 - 使用 textContent 只更新文本节点
                 const firstCell = row.cells[0];
-                firstCell.innerHTML = newNum + '<button onclick="deletePurchaseRow(' + newNum + ')" style="background: #ef4444; color: white; border: none; width: 18px; height: 18px; border-radius: 50%; font-size: 12px; cursor: pointer; margin-left: 4px; line-height: 1;">×</button>';
-                // 更新输入框的data-row属性
+                // 找到按钮
+                const btn = firstCell.querySelector('button');
+                if (btn) {
+                    // 移除按钮，更新文本，再添加回去
+                    firstCell.removeChild(btn);
+                    firstCell.textContent = newNum;
+                    firstCell.appendChild(btn);
+                    // 更新按钮的 onclick
+                    btn.setAttribute('onclick', 'deletePurchaseRow(' + newNum + ')');
+                } else {
+                    firstCell.textContent = newNum;
+                }
+
+                // 更新输入框的data-row属性（保留原有值）
                 const inputs = row.querySelectorAll('input');
                 inputs.forEach(input => {
                     input.setAttribute('data-row', newNum);
@@ -1183,9 +1307,12 @@
             let total = 0, col1 = 0, col2 = 0, col3 = 0;
 
             inputs.forEach(input => {
-                const spec = parseSpec(input.value);
+                const value = input.value.trim();
+                if (!value) return;
+
+                const spec = parseSpec(value);
                 const col = input.getAttribute('data-col');
-                if (spec) {
+                if (spec && spec.total > 0) {
                     total += spec.total;
                     if (col === '1') col1 += spec.total;
                     else if (col === '2') col2 += spec.total;
@@ -1193,11 +1320,18 @@
                 }
             });
 
-            document.getElementById('purchaseTotalJin').textContent = total;
-            document.getElementById('purchaseTotalJin2').textContent = total;
-            document.getElementById('col1Total').textContent = col1 + '斤';
-            document.getElementById('col2Total').textContent = col2 + '斤';
-            document.getElementById('col3Total').textContent = col3 + '斤';
+            // 更新总重量显示
+            const totalJinEl = document.getElementById('purchaseTotalJin');
+            const totalJin2El = document.getElementById('purchaseTotalJin2');
+            const col1El = document.getElementById('col1Total');
+            const col2El = document.getElementById('col2Total');
+            const col3El = document.getElementById('col3Total');
+
+            if (totalJinEl) totalJinEl.textContent = total;
+            if (totalJin2El) totalJin2El.textContent = total;
+            if (col1El) col1El.textContent = col1 + '斤';
+            if (col2El) col2El.textContent = col2 + '斤';
+            if (col3El) col3El.textContent = col3 + '斤';
 
             calculatePurchaseTotal();
         }
