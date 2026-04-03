@@ -310,7 +310,13 @@
   <div class="toast" id="toast"></div>
   <div class="container">
     <div class="header">
-      <div class="sync-status" id="syncStatus"><span class="sync-dot"></span><span id="syncText">正在连接云端...</span></div>
+      <div class="sync-status" id="syncStatus" style="cursor: pointer;" onclick="checkSyncStatus()" title="点击检查同步状态">
+          <span class="sync-dot"></span>
+          <span id="syncText">正在连接云端...</span>
+        </div>
+        <div id="syncWarning" style="display: none; position: absolute; top: 50px; right: 16px; background: #fef3c7; border: 2px solid #f59e0b; padding: 12px; border-radius: 8px; font-size: 12px; color: #92400e; z-index: 100; max-width: 200px;">
+          ⚠️ 离线模式：数据仅保存在本地，刷新页面会丢失！
+        </div>
       <div style="position: relative; z-index: 1;">
         <h1>🦐 佳信水产</h1>
         <p>智能仓库管理系统 v4.3 · 图二格式版</p>
@@ -467,7 +473,7 @@
             <div class="btn-group" style="margin-top: 0;">
               <button class="btn btn-primary" onclick="filterFlow()">🔍 筛选</button>
               <button class="btn btn-secondary" onclick="resetFlowFilter()">🔄 重置</button>
-              <button class="btn btn-success" onclick="exportFlowToExcel()">📊 导出明细</button>
+              <button class="btn btn-success" onclick="safeExportFlowToExcel()">📊 导出明细</button>
             </div>
           </div>
         </div>
@@ -833,8 +839,19 @@ async function init() {
     function updateSyncStatus(status, text) {
       const el = document.getElementById('syncStatus');
       const txt = document.getElementById('syncText');
+      const warning = document.getElementById('syncWarning');
       el.className = 'sync-status ' + status;
       txt.textContent = text;
+
+      // 显示/隐藏离线警告
+      if (warning) {
+        if (status === 'error' || (!isOnline && status !== 'synced')) {
+          warning.style.display = 'block';
+          setTimeout(() => { warning.style.display = 'none'; }, 5000);
+        } else {
+          warning.style.display = 'none';
+        }
+      }
     }
 
     // 密码验证状态
@@ -1204,17 +1221,30 @@ async function init() {
       let dataStartRowIdx = 3;  // 数据开始行（默认第4行）
 
       // 智能检测表头结构
-      // 如果第2行第1列也是"品名"，说明前两行都是表头
-      if (sheetData.length > 1 && sheetData[1][1] === '品名') {
+      // 注意：数组索引从0开始
+      // sheetData[0] = 第1行, sheetData[1] = 第2行
+      // [0] = 第1列, [1] = 第2列
+
+      // 情况1：如果第2行第1列(sheetData[1][0])也是"品名"，说明前两行都是主表头，第3行是子表头
+      if (sheetData.length > 2 && sheetData[1][0] === '品名') {
         headerRowIdx = 0;
-        subHeaderRowIdx = 2;
-        dataStartRowIdx = 3;
+        subHeaderRowIdx = 2;  // 第3行是子表头（入库/出库）
+        dataStartRowIdx = 3;  // 第4行开始是数据
+        console.log('检测到表头结构：第1-2行主表头，第3行子表头');
       }
-      // 如果第2行第6列是"入库"，说明第2行是子表头
+      // 情况2：如果第2行第6列(sheetData[1][5])是"入库"，说明第2行是子表头
       else if (sheetData.length > 1 && sheetData[1][5] === '入库') {
+        headerRowIdx = 0;
+        subHeaderRowIdx = 1;  // 第2行是子表头
+        dataStartRowIdx = 2;  // 第3行开始是数据
+        console.log('检测到表头结构：第1行主表头，第2行子表头');
+      }
+      // 情况3：默认假设第1行是主表头，第2行是子表头
+      else {
         headerRowIdx = 0;
         subHeaderRowIdx = 1;
         dataStartRowIdx = 2;
+        console.log('使用默认表头结构：第1行主表头，第2行子表头');
       }
 
       const mainHeaders = sheetData[headerRowIdx];
@@ -1224,19 +1254,44 @@ async function init() {
       console.log('子表头:', subHeaders);
 
       // 查找固定列索引
-      const nameIdx = 1;  // 品名在第2列（索引1）
-      const skuIdx = 2;   // 规格在第3列
-      const brandIdx = 3; // 品牌在第4列
-      const netIdx = 4;   // 净重在第5列
-      const grossIdx = 5; // 毛重在第6列
+      const nameIdx = 0;  // 品名在第1列（索引0）
+      const skuIdx = 1;   // 规格在第2列
+      const brandIdx = 2; // 品牌在第3列
+      const netIdx = 3;   // 净重在第4列
+      const grossIdx = 4; // 毛重在第5列
 
-      // 解析日期列（从第7列开始，索引6，每两列一个日期）
+      // 解析日期列（从第6列开始，索引5，每两列一个日期）
+      // 注意：固定列是 品名(0)|规格(1)|品牌(2)|净重(3)|毛重(4)，所以日期从第6列(索引5)开始
       const dateColumns = [];
-      for (let i = 6; i < mainHeaders.length; i += 2) {
+
+      // 首先找到"入库"子表头的位置，确定日期列范围
+      let firstInIdx = -1;
+      for (let i = 0; i < subHeaders.length; i++) {
+        if (subHeaders[i] === '入库' || subHeaders[i] === '入庫') {
+          firstInIdx = i;
+          break;
+        }
+      }
+
+      // 如果从子表头找到了入库位置，从这里开始解析
+      let startIdx = (firstInIdx !== -1) ? firstInIdx : 5;
+
+      for (let i = startIdx; i < mainHeaders.length; i += 2) {
         const dateVal = mainHeaders[i];
-        // 跳过空值和明显不是日期的值
+        const subHeaderIn = subHeaders[i];
+        const subHeaderOut = subHeaders[i + 1];
+
+        // 跳过空值
         if (dateVal === undefined || dateVal === null || dateVal === '') continue;
-        if (dateVal === '入库' || dateVal === '出库') continue;
+
+        // 检查子表头是否是入库/出库
+        const isIn = (subHeaderIn === '入库' || subHeaderIn === '入庫');
+        const isOut = (subHeaderOut === '出库' || subHeaderOut === '出庫');
+
+        if (!isIn && !isOut) {
+          console.log(`跳过非日期列: ${dateVal} (子表头: ${subHeaderIn}/${subHeaderOut})`);
+          continue;
+        }
 
         // 尝试解析为日期
         const date = parseChineseDate(dateVal);
@@ -1247,13 +1302,20 @@ async function init() {
             outIdx: i + 1,
             originalHeader: dateVal
           });
-          console.log(`找到日期列: ${dateVal} -> ${date}, 入库索引: ${i}, 出库索引: ${i+1}`);
+          console.log(`✅ 找到日期列: ${dateVal} -> ${date}, 入库索引: ${i}, 出库索引: ${i+1}`);
+        } else {
+          console.log(`❌ 无法解析日期: ${dateVal}`);
         }
       }
 
       if (dateColumns.length === 0) {
         hideLoading();
-        showError('导入失败', '未找到日期列，请确保表头包含日期格式（如：3月24日或46105）');
+        let debugInfo = '\n\n调试信息：\n';
+        debugInfo += `主表头: ${JSON.stringify(mainHeaders)}\n`;
+        debugInfo += `子表头: ${JSON.stringify(subHeaders)}\n`;
+        debugInfo += `数据起始行: ${dataStartRowIdx}\n`;
+        console.error('导入失败 - 未找到日期列', {mainHeaders, subHeaders, dataStartRowIdx});
+        showError('导入失败', '未找到日期列，请确保：\n1. 表头包含日期格式（如：3月24日、2026/03/24、46105等）\n2. 日期列下方有"入库"和"出库"子表头' + debugInfo);
         return;
       }
 
@@ -1431,15 +1493,17 @@ async function init() {
     }
 
     function parseChineseDate(dateStr) {
+      if (!dateStr || dateStr === undefined || dateStr === null || dateStr === '') {
+        console.log('日期为空值:', dateStr);
+        return null;
+      }
+
       // 处理Excel序列号（如46105表示2026-03-24）
-      // Excel序列号通常是5-6位数字
       const numVal = parseFloat(dateStr);
       if (!isNaN(numVal) && numVal > 40000 && numVal < 60000) {
-        // Excel日期从1899-12-30开始计算（使用UTC避免时区问题）
-        const excelEpoch = Date.UTC(1899, 11, 30);  // 注意：月份是0-based，11=12月
+        const excelEpoch = Date.UTC(1899, 11, 30);
         const date = new Date(excelEpoch + numVal * 24 * 60 * 60 * 1000);
         if (!isNaN(date.getTime())) {
-          // 使用UTC方法获取日期，避免时区偏移
           const year = date.getUTCFullYear();
           const month = String(date.getUTCMonth() + 1).padStart(2, '0');
           const day = String(date.getUTCDate()).padStart(2, '0');
@@ -1447,35 +1511,85 @@ async function init() {
         }
       }
 
-      const str = String(dateStr).trim();
+      let str = String(dateStr).trim();
 
-      // 匹配 "3月24日" 格式
-      const match = str.match(/(\d{1,2})月(\d{1,2})日/);
+      // 移除多余空格
+      str = str.replace(/\s+/g, '');
+
+      // 匹配 "2026年3月24日" 或 "2026年03月24日" 格式（带年字）
+      let match = str.match(/(\d{4})年(\d{1,2})月(\d{1,2})日?/);
       if (match) {
-        const month = parseInt(match[1]);
-        const day = parseInt(match[2]);
-        const year = new Date().getFullYear();
-        return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const year = match[1];
+        const month = String(parseInt(match[2])).padStart(2, '0');
+        const day = String(parseInt(match[3])).padStart(2, '0');
+        return `${year}-${month}-${day}`;
       }
 
-      // 匹配 "2026-03-24" 或 "03-24" 格式
-      if (str.match(/^\d{4}-\d{2}-\d{2}$/)) return str;
-      if (str.match(/^\d{2}-\d{2}$/)) {
+      // 匹配 "3月24日" 或 "03月24日" 格式
+      match = str.match(/(\d{1,2})月(\d{1,2})日?/);
+      if (match) {
+        const month = String(parseInt(match[1])).padStart(2, '0');
+        const day = String(parseInt(match[2])).padStart(2, '0');
         const year = new Date().getFullYear();
-        return `${year}-${str}`;
+        return `${year}-${month}-${day}`;
+      }
+
+      // 匹配 "2026/03/24" 或 "2026/3/24" 格式（斜杠分隔）
+      match = str.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+      if (match) {
+        const year = match[1];
+        const month = String(parseInt(match[2])).padStart(2, '0');
+        const day = String(parseInt(match[3])).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+
+      // 匹配 "03/24" 或 "3/24" 格式（斜杠，无年份）
+      match = str.match(/(\d{1,2})\/(\d{1,2})/);
+      if (match) {
+        const month = String(parseInt(match[1])).padStart(2, '0');
+        const day = String(parseInt(match[2])).padStart(2, '0');
+        const year = new Date().getFullYear();
+        return `${year}-${month}-${day}`;
+      }
+
+      // 匹配 "2026-03-24" 或 "2026-3-24" 格式（标准格式）
+      match = str.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if (match) {
+        const year = match[1];
+        const month = String(parseInt(match[2])).padStart(2, '0');
+        const day = String(parseInt(match[3])).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+
+      // 匹配 "03-24" 或 "3-24" 格式（短横线，无年份）
+      match = str.match(/^(\d{1,2})-(\d{1,2})$/);
+      if (match) {
+        const month = String(parseInt(match[1])).padStart(2, '0');
+        const day = String(parseInt(match[2])).padStart(2, '0');
+        const year = new Date().getFullYear();
+        return `${year}-${month}-${day}`;
+      }
+
+      // 匹配 "26-03-24" 格式（两位年份）
+      match = str.match(/(\d{2})-(\d{1,2})-(\d{1,2})/);
+      if (match) {
+        let year = parseInt(match[1]);
+        year = year < 50 ? 2000 + year : 1900 + year;
+        const month = String(parseInt(match[2])).padStart(2, '0');
+        const day = String(parseInt(match[3])).padStart(2, '0');
+        return `${year}-${month}-${day}`;
       }
 
       // 尝试直接解析为日期对象
       const d = new Date(str);
       if (!isNaN(d.getTime()) && str.length > 4) {
-        // 使用UTC方法获取日期
         const year = d.getUTCFullYear();
         const month = String(d.getUTCMonth() + 1).padStart(2, '0');
         const day = String(d.getUTCDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
       }
 
-      // 无法解析时返回null，而不是当前日期
+      console.log('无法解析日期:', dateStr);
       return null;
     }
 
@@ -2171,6 +2285,23 @@ async function doExecuteImport() {
       XLSX.writeFile(wb, fileName);
       showToast('✅ 导出成功');
     }
+
+    // 安全导出函数 - 先检查同步状态
+    function safeExportFlowToExcel() {
+      if (!isOnline) {
+        showToast('⚠️ 当前处于离线模式，导出前请确保数据已同步到云端', 'warning');
+        // 仍然允许导出，但给出警告
+      }
+
+      // 显示确认提示
+      const batchCount = batches.length;
+      const productCount = products.length;
+
+      if (confirm(`即将导出出入库明细\n\n当前数据：\n- 产品种类：${productCount} 种\n- 批次记录：${batchCount} 个\n\n导出不会删除任何数据，是否继续？`)) {
+        exportFlowToExcel();
+      }
+    }
+    
 
     // ==================== 撤销功能 ====================
 
@@ -3004,6 +3135,18 @@ async function doExecuteImport() {
       }).join('');
     }
 
+    
+    // 检查同步状态
+    function checkSyncStatus() {
+      if (!isOnline) {
+        const warning = document.getElementById('syncWarning');
+        warning.style.display = warning.style.display === 'none' ? 'block' : 'none';
+        showToast('⚠️ 当前处于离线模式，请检查网络连接', 'warning');
+      } else {
+        showToast('✅ 已连接到云端，数据会自动同步');
+      }
+    }
+    
     window.onload = init;
   </script>
 </body>
