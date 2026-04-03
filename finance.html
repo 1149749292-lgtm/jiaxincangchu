@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>佳信水产进销存财务系统 v3.0</title>
+    <title>佳信水产进销存财务系统 v3.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -341,7 +341,7 @@
                         </div>
                         <div>
                             <h1 class="text-xl font-bold text-gray-800">佳信水产财务系统</h1>
-                            <p class="text-xs text-gray-500">v3.0 | 全自动云端同步</p>
+                            <p class="text-xs text-gray-500">v3.3 | 云端同步已优化</p>
                         </div>
                     </div>
                     <!-- 只保留状态栏，删除手动同步按钮 -->
@@ -361,7 +361,7 @@
                             </div>
                             <div>
                                 <h1 class="text-lg font-bold text-gray-800">佳信水产财务</h1>
-                                <p class="text-xs text-gray-500">v3.0 | 自动同步</p>
+                                <p class="text-xs text-gray-500">v3.3 | 自动同步</p>
                             </div>
                         </div>
                         <div class="sync-status" id="syncStatusMobile">
@@ -908,12 +908,14 @@
          * 从云端获取数据 - 仓库系统风格：简单直接，无复杂超时控制
          */
         async function fetchData() {
-            const response = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}`, {
+            const timestamp = new Date().getTime();
+            const response = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}?_=${timestamp}`, {
                 method: 'GET',
                 headers: { 
                     'X-Master-Key': CONFIG.API_KEY,
                     'Content-Type': 'application/json'
-                }
+                },
+                cache: 'no-store'
             });
 
             if (!response.ok) {
@@ -928,21 +930,26 @@
          * 保存数据到云端 - 仓库系统风格：自动保存，无手动按钮
          */
         async function saveData() {
+            // 无论在线状态如何，先保存到本地作为备份
+            localStorage.setItem('finance_data_cache', JSON.stringify(data));
+
             if (!isOnline) { 
-                console.log('离线模式，仅保存到本地');
-                localStorage.setItem('finance_data_cache', JSON.stringify(data));
+                console.log('离线模式，数据已保存到本地');
+                showToast('⚠️ 离线模式，数据仅保存到本地', 'warning');
                 return; 
             }
 
-            updateSyncStatus('syncing', '正在同步...');
+            updateSyncStatus('syncing', '正在同步到云端...');
 
             try {
-                const response = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}`, {
+                const timestamp = new Date().getTime();
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}?_=${timestamp}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-Master-Key': CONFIG.API_KEY
                     },
+                    cache: 'no-store',
                     body: JSON.stringify(data)
                 });
 
@@ -951,7 +958,7 @@
                 }
 
                 updateSyncStatus('synced', '已同步到云端');
-                showToast('✅ 数据已保存');
+                showToast('✅ 数据已保存到云端');
             } catch (error) {
                 console.error('同步失败:', error);
                 updateSyncStatus('error', '同步失败，已保存本地');
@@ -1258,13 +1265,23 @@
 
         function openPurchaseModal() {
             const select = document.getElementById('purchaseSupplier');
+            // 供应商去重：按名称去重，保留第一个ID
+            const uniqueSuppliers = [];
+            const seenNames = new Set();
+            data.suppliers.forEach(s => {
+                if (!seenNames.has(s.name)) {
+                    seenNames.add(s.name);
+                    uniqueSuppliers.push(s);
+                }
+            });
             select.innerHTML = '<option value="">请选择供应商</option>' + 
-                data.suppliers.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                uniqueSuppliers.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
 
-            const lastNum = data.lastPurchaseDocNumber || 0;
-            const newNum = lastNum + 1;
-            const docNo = String(newNum).padStart(3, '0');
-            document.getElementById('purchaseDocNo').value = docNo;
+            // 整理编号确保连续性
+            reorderPurchaseDocNumbers();
+            // 显示下一个编号
+            const nextNum = data.purchaseOrders.length + 1;
+            document.getElementById('purchaseDocNo').value = String(nextNum).padStart(3, '0');
 
             document.getElementById('purchaseModal').classList.add('active');
         }
@@ -1300,7 +1317,13 @@
             const paymentStatus = document.getElementById('purchasePaymentStatus').value;
             const paidAmount = paymentStatus === 'paid' ? totalAmount : (paymentStatus === 'partial' ? parseFloat(document.getElementById('purchasePaidAmount').value) || 0 : 0);
 
-            const docNumber = document.getElementById('purchaseDocNo').value;
+            // 先整理现有编号，确保连续性
+            reorderPurchaseDocNumbers();
+
+            // 生成新编号（当前最大编号+1）
+            const newNum = data.purchaseOrders.length + 1;
+            const docNumber = String(newNum).padStart(3, '0');
+
             const order = {
                 id: 'PO' + Date.now(),
                 docNumber: docNumber,
@@ -1470,8 +1493,17 @@
         // ==================== 销售管理（销售清单） ====================
         function openSalesModal() {
             const select = document.getElementById('salesCustomer');
+            // 客户去重：按名称去重，保留第一个ID和电话/地址
+            const uniqueCustomers = [];
+            const seenNames = new Set();
+            data.customers.forEach(c => {
+                if (!seenNames.has(c.name)) {
+                    seenNames.add(c.name);
+                    uniqueCustomers.push(c);
+                }
+            });
             select.innerHTML = '<option value="">请选择客户</option>' + 
-                data.customers.map(c => `<option value="${c.id}" data-phone="${c.phone || ''}" data-address="${c.remark || ''}">${c.name}</option>`).join('');
+                uniqueCustomers.map(c => `<option value="${c.id}" data-phone="${c.phone || ''}" data-address="${c.remark || ''}">${c.name}</option>`).join('');
             document.getElementById('salesItems').innerHTML = '';
             salesItemCount = 0;
             addSalesItem();
@@ -1814,10 +1846,34 @@
 
         // ==================== 客户/供应商管理 ====================
         function renderPartyList() {
-            const customerTotal = data.customers.reduce((sum, c) => sum + (c.balance || 0), 0);
-            const supplierTotal = data.suppliers.reduce((sum, s) => sum + (s.balance || 0), 0);
+            // 去重：根据名称合并重复项，余额累加
+            const uniqueCustomers = [];
+            const customerMap = new Map();
+            data.customers.forEach(c => {
+                if (customerMap.has(c.name)) {
+                    // 合并余额
+                    customerMap.get(c.name).balance += (c.balance || 0);
+                } else {
+                    customerMap.set(c.name, { ...c, balance: c.balance || 0 });
+                    uniqueCustomers.push(customerMap.get(c.name));
+                }
+            });
 
-            document.getElementById('customerList').innerHTML = data.customers.map(c => `
+            const uniqueSuppliers = [];
+            const supplierMap = new Map();
+            data.suppliers.forEach(s => {
+                if (supplierMap.has(s.name)) {
+                    supplierMap.get(s.name).balance += (s.balance || 0);
+                } else {
+                    supplierMap.set(s.name, { ...s, balance: s.balance || 0 });
+                    uniqueSuppliers.push(supplierMap.get(s.name));
+                }
+            });
+
+            const customerTotal = uniqueCustomers.reduce((sum, c) => sum + c.balance, 0);
+            const supplierTotal = uniqueSuppliers.reduce((sum, s) => sum + s.balance, 0);
+
+            document.getElementById('customerList').innerHTML = uniqueCustomers.map(c => `
                 <tr>
                     <td class="px-4 py-3 text-sm font-medium">${c.name}</td>
                     <td class="px-4 py-3 text-sm ${c.balance > 0 ? 'text-red-600 font-bold' : 'text-gray-500'}">¥${(c.balance || 0).toFixed(0)}</td>
@@ -1829,11 +1885,11 @@
                 <tr style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-top: 2px solid #f59e0b;">
                     <td class="px-4 py-3 text-sm font-bold text-amber-800">合计欠款</td>
                     <td class="px-4 py-3 text-lg font-bold ${customerTotal > 0 ? 'text-red-600' : 'text-gray-600'}">¥${customerTotal.toFixed(0)}</td>
-                    <td class="px-4 py-3 text-sm text-amber-700">共 ${data.customers.length} 位客户</td>
+                    <td class="px-4 py-3 text-sm text-amber-700">共 ${uniqueCustomers.length} 位客户</td>
                 </tr>
             `;
 
-            document.getElementById('supplierList').innerHTML = data.suppliers.map(s => `
+            document.getElementById('supplierList').innerHTML = uniqueSuppliers.map(s => `
                 <tr>
                     <td class="px-4 py-3 text-sm font-medium">${s.name}</td>
                     <td class="px-4 py-3 text-sm ${s.balance > 0 ? 'text-red-600 font-bold' : 'text-gray-500'}">¥${(s.balance || 0).toFixed(0)}</td>
@@ -1845,7 +1901,7 @@
                 <tr style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-top: 2px solid #f59e0b;">
                     <td class="px-4 py-3 text-sm font-bold text-amber-800">合计应付款</td>
                     <td class="px-4 py-3 text-lg font-bold ${supplierTotal > 0 ? 'text-red-600' : 'text-gray-600'}">¥${supplierTotal.toFixed(0)}</td>
-                    <td class="px-4 py-3 text-sm text-amber-700">共 ${data.suppliers.length} 位供应商</td>
+                    <td class="px-4 py-3 text-sm text-amber-700">共 ${uniqueSuppliers.length} 位供应商</td>
                 </tr>
             `;
         }
@@ -1945,8 +2001,17 @@
 
             const select = document.getElementById('paymentParty');
             const parties = type === 'income' ? data.customers : data.suppliers;
+            // 去重：按名称去重
+            const uniqueParties = [];
+            const seenNames = new Set();
+            parties.forEach(p => {
+                if (!seenNames.has(p.name)) {
+                    seenNames.add(p.name);
+                    uniqueParties.push(p);
+                }
+            });
             select.innerHTML = '<option value="">请选择</option>' + 
-                parties.map(p => `<option value="${p.id}" data-type="${type === 'income' ? 'customer' : 'supplier'}">${p.name}</option>`).join('');
+                uniqueParties.map(p => `<option value="${p.id}" data-type="${type === 'income' ? 'customer' : 'supplier'}">${p.name}</option>`).join('');
 
             document.getElementById('paymentAmount').value = '';
             document.getElementById('paymentRemark').value = '';
@@ -2166,15 +2231,34 @@
 
             data.purchaseOrders.splice(orderIndex, 1);
 
+            // 重新整理编号：按日期排序后重新编号
+            reorderPurchaseDocNumbers();
+
             renderPurchaseList();
             updateDashboard();
 
             try {
                 await saveData();
-                showToast('✅ 删除成功');
+                showToast('✅ 删除成功，编号已重新整理');
             } catch (err) {
                 console.error('同步失败:', err);
             }
+        }
+
+        /**
+         * 重新整理采购单编号：按日期排序后从001开始重新编号
+         */
+        function reorderPurchaseDocNumbers() {
+            // 按日期升序排序（早的在前）
+            data.purchaseOrders.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            // 重新编号
+            data.purchaseOrders.forEach((order, index) => {
+                order.docNumber = String(index + 1).padStart(3, '0');
+            });
+
+            // 更新最后使用的编号
+            data.lastPurchaseDocNumber = data.purchaseOrders.length;
         }
 
         async function deleteSalesOrder(orderId) {
