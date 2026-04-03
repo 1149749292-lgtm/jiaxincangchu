@@ -113,6 +113,130 @@
         .drag-handle:active {
             cursor: grabbing;
         }
+
+        /* 右上角同步提示 */
+        .sync-toast {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 9999;
+            opacity: 0;
+            transform: translateX(100px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+        .sync-toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .sync-toast.syncing {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+        }
+        .sync-toast.error {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+        }
+        .sync-toast-icon {
+            width: 18px;
+            height: 18px;
+        }
+        .sync-toast.syncing .sync-toast-icon {
+            animation: spin 1s linear infinite;
+        }
+
+        /* 图片上传预览样式 */
+        .image-preview-item {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #e2e8f0;
+        }
+        .image-preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .image-preview-item .remove-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            line-height: 1;
+        }
+        .image-preview-item .remove-btn:hover {
+            background: rgba(220, 38, 38, 1);
+        }
+        /* 查看图片模态框 */
+        .image-viewer-modal .modal-content {
+            max-width: 95vw;
+            max-height: 95vh;
+            background: transparent;
+            box-shadow: none;
+        }
+        .image-viewer-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(0,0,0,0.9);
+            border-radius: 12px;
+        }
+        .image-viewer-item {
+            max-width: 100%;
+            max-height: 80vh;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .image-viewer-single {
+            max-width: 90vw;
+            max-height: 85vh;
+        }
+        .image-thumbnail-btn {
+            background: #f1f5f9;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px 16px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: #475569;
+            transition: all 0.2s;
+        }
+        .image-thumbnail-btn:hover {
+            background: #e2e8f0;
+            border-color: #cbd5e1;
+        }
+        .image-thumbnail-btn.has-image {
+            background: #dbeafe;
+            border-color: #3b82f6;
+            color: #1e40af;
+        }
 </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -133,6 +257,14 @@
 
     <!-- 主应用 -->
     <div id="app" class="hidden">
+    <!-- 同步提示 -->
+    <div id="syncToast" class="sync-toast">
+        <svg class="sync-toast-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span id="syncToastText">数据已同步</span>
+    </div>
+
         <header class="glass sticky top-0 z-40 border-b border-gray-200">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between items-center h-16">
@@ -434,7 +566,21 @@
                         </div>
                     </div>
                 </div>
-                <button onclick="savePurchaseOrder()" style="width: 100%; padding: 16px; background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; margin-top: 20px; cursor: pointer;">生成收购单</button>
+                
+                    <div style="margin-top: 16px; padding: 16px; background: #f8fafc; border-radius: 8px; border: 2px dashed #cbd5e1;">
+                        <div style="font-weight: bold; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            上传原始手写订单图片
+                        </div>
+                        <input type="file" id="purchaseImageInput" accept="image/*" multiple style="display: none;" onchange="handlePurchaseImages(this)">
+                        <div id="purchaseImagePreview" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;"></div>
+                        <button onclick="document.getElementById('purchaseImageInput').click()" style="background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; justify-content: center;">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            选择图片（可多选）
+                        </button>
+                        <p style="font-size: 12px; color: #64748b; margin-top: 8px; text-align: center;">支持 JPG、PNG 格式，最多上传 5 张</p>
+                    </div>
+<button onclick="savePurchaseOrder()" style="width: 100%; padding: 16px; background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; margin-top: 20px; cursor: pointer;">生成收购单</button>
             </div>
         </div>
     </div>
@@ -497,6 +643,15 @@
                 </div>
             </div>
             <div class="preview-modal-body">
+                <div id="purchaseReceiptImages" style="margin-bottom: 20px; display: none;">
+                    <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                        <div style="font-weight: bold; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: #1e40af;">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2z"></path></svg>
+                            原始手写订单图片
+                        </div>
+                        <div id="purchaseReceiptImagesList" style="display: flex; flex-wrap: wrap; gap: 10px;"></div>
+                    </div>
+                </div>
                 <div id="purchaseReceipt" class="purchase-receipt-wrapper">
                     <div class="purchase-receipt-header">
                         <h2>佳信水产销售清单</h2>
@@ -707,6 +862,7 @@
         }
 
         async function syncData() {
+            showSyncToast('正在同步...', 'syncing');
             try {
                 await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}`, {
                     method: 'PUT',
@@ -716,10 +872,43 @@
                     },
                     body: JSON.stringify(data)
                 });
-                alert('数据已同步到云端');
+                showSyncToast('数据已同步到云端', 'success');
             } catch (error) {
-                alert('同步失败');
+                showSyncToast('同步失败', 'error');
             }
+        }
+
+        // 静默同步（不显示提示）
+        async function syncDataSilent() {
+            try {
+                await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': CONFIG.API_KEY
+                    },
+                    body: JSON.stringify(data)
+                });
+            } catch (error) {
+                console.log('静默同步失败');
+            }
+        }
+
+        function showSyncToast(message, type) {
+            const toast = document.getElementById('syncToast');
+            const text = document.getElementById('syncToastText');
+            text.textContent = message;
+
+            toast.className = 'sync-toast';
+            if (type === 'syncing') toast.classList.add('syncing');
+            if (type === 'error') toast.classList.add('error');
+
+            toast.classList.add('show');
+
+            // 2秒后自动隐藏
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
         }
 
         // ==================== 视图切换 ====================
@@ -871,6 +1060,9 @@
             const supplier = data.suppliers.find(s => s.id === supplierId);
             const items = [];
 
+            // 获取上传的图片
+            const images = purchaseImages.length > 0 ? [...purchaseImages] : [];
+
             document.querySelectorAll('.purchase-input').forEach(input => {
                 const value = input.value.trim();
                 if (value) {
@@ -903,7 +1095,8 @@
                 product: document.getElementById('purchaseProduct').value,
                 items, totalWeight, price, totalAmount,
                 paymentStatus, paidAmount,
-                remainingAmount: totalAmount - paidAmount
+                remainingAmount: totalAmount - paidAmount,
+                images: images
             };
 
             data.purchaseOrders.unshift(order);
@@ -922,6 +1115,7 @@
             showPurchaseReceipt(order);
             closeModal('purchaseModal');
             renderPurchaseList();
+            clearPurchaseImages(); // 清空已上传的图片
         }
 
         function showPurchaseReceipt(order) {
@@ -932,6 +1126,21 @@
             document.getElementById('receiptTotalWeight').textContent = order.totalWeight;
             document.getElementById('receiptPrice').textContent = order.price.toFixed(2);
             document.getElementById('receiptTotalAmount').textContent = '¥' + order.totalAmount.toFixed(2);
+
+            // 显示图片
+            const imagesContainer = document.getElementById('purchaseReceiptImages');
+            const imagesList = document.getElementById('purchaseReceiptImagesList');
+            if (order.images && order.images.length > 0) {
+                imagesContainer.style.display = 'block';
+                imagesList.innerHTML = order.images.map((img, idx) => `
+                    <div style="width: 120px; height: 120px; border-radius: 8px; overflow: hidden; border: 2px solid #e2e8f0; cursor: pointer;" onclick="viewOrderImages('${order.id}', 'purchase')">
+                        <img src="${img.data}" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                `).join('');
+            } else {
+                imagesContainer.style.display = 'none';
+                imagesList.innerHTML = '';
+            }
 
             const rowData = {};
             for (let i = 1; i <= 8; i++) rowData[i] = { 1: '', 2: '', 3: '' };
@@ -982,6 +1191,7 @@
             tbody.innerHTML = orders.map(order => {
                 const statusText = { unpaid: '未付款', paid: '已付款', partial: '部分付款' }[order.paymentStatus];
                 const statusClass = { unpaid: 'status-pending', paid: 'status-paid', partial: 'status-partial' }[order.paymentStatus];
+                const hasImages = order.images && order.images.length > 0;
                 return `<tr>
                     <td class="px-6 py-4 text-sm font-medium">${order.docNumber}</td>
                     <td class="px-6 py-4 text-sm text-gray-500">${order.date}</td>
@@ -990,6 +1200,10 @@
                     <td class="px-6 py-4"><span class="status-badge ${statusClass}">${statusText}</span></td>
                     <td class="px-6 py-4 text-sm space-x-2">
                         <button onclick="viewPurchaseReceiptById('${order.id}')" class="text-blue-600 hover:underline">查看</button>
+                        ${hasImages ? `<button onclick="viewOrderImages('${order.id}', 'purchase')" class="image-thumbnail-btn has-image" title="查看原始手写单（${order.images.length}张）">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2z"></path></svg>
+                            手写单(${order.images.length})
+                        </button>` : '<span class="text-gray-400 text-xs">无图片</span>'}
                         <button onclick="addPurchasePayment('${order.id}')" class="text-green-600 hover:underline">付款</button>
                         <button onclick="showDeleteConfirm('purchase', '${order.id}')" class="text-red-600 hover:underline">删除</button>
                     </td>
@@ -1555,7 +1769,85 @@
         }
 
         // ==================== 删除功能 ====================
-        function showDeleteConfirm(type, orderId) {
+        
+        // ==================== 图片处理函数 ====================
+        let purchaseImages = []; // 临时存储待上传的图片
+
+        function handlePurchaseImages(input) {
+            const files = Array.from(input.files);
+            const maxFiles = 5;
+
+            if (purchaseImages.length + files.length > maxFiles) {
+                alert('最多只能上传5张图片');
+                return;
+            }
+
+            files.forEach(file => {
+                if (!file.type.startsWith('image/')) {
+                    alert('请上传图片文件');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    purchaseImages.push({
+                        name: file.name,
+                        data: e.target.result,
+                        size: file.size
+                    });
+                    renderPurchaseImagePreview();
+                };
+                reader.readAsDataURL(file);
+            });
+
+            // 清空input，允许重复选择相同文件
+            input.value = '';
+        }
+
+        function renderPurchaseImagePreview() {
+            const container = document.getElementById('purchaseImagePreview');
+            container.innerHTML = purchaseImages.map((img, index) => `
+                <div class="image-preview-item">
+                    <img src="${img.data}" alt="预览">
+                    <button class="remove-btn" onclick="removePurchaseImage(${index})">×</button>
+                </div>
+            `).join('');
+        }
+
+        function removePurchaseImage(index) {
+            purchaseImages.splice(index, 1);
+            renderPurchaseImagePreview();
+        }
+
+        function clearPurchaseImages() {
+            purchaseImages = [];
+            renderPurchaseImagePreview();
+        }
+
+        function viewOrderImages(orderId, type) {
+            const order = type === 'purchase' 
+                ? data.purchaseOrders.find(o => o.id === orderId)
+                : data.salesOrders.find(o => o.id === orderId);
+
+            if (!order || !order.images || order.images.length === 0) {
+                alert('该订单没有上传图片');
+                return;
+            }
+
+            const container = document.getElementById('imageViewerContainer');
+            if (order.images.length === 1) {
+                container.innerHTML = `<img src="${order.images[0].data}" class="image-viewer-single" onclick="closeModal('imageViewerModal')">`;
+            } else {
+                container.innerHTML = order.images.map(img => `
+                    <img src="${img.data}" class="image-viewer-item" style="max-width: 45%;" onclick="closeModal('imageViewerModal')">
+                `).join('');
+            }
+
+            document.getElementById('imageViewerModal').classList.add('active');
+        }
+
+        // 修改savePurchaseOrder函数，添加图片保存
+function showDeleteConfirm(type, orderId) {
             deleteTarget = { type, orderId };
             const typeText = type === 'purchase' ? '采购单（收购单）' : '销售单（销售清单）';
             document.getElementById('deleteTypeText').textContent = typeText;
@@ -1614,7 +1906,7 @@
             // 同步到云端（静默同步，不弹窗）
             await syncDataSilent();
 
-            alert('采购单已删除');
+            showSyncToast('采购单已删除', 'success');
         }
 
         async function deleteSalesOrder(orderId) {
@@ -1649,7 +1941,7 @@
             // 同步到云端（静默同步，不弹窗）
             await syncDataSilent();
 
-            alert('销售单已删除');
+            showSyncToast('销售单已删除', 'success');
         }
 
         // 点击模态框外部关闭
