@@ -1065,6 +1065,7 @@
 
             // 初始化界面
             initPurchaseTable();
+            reorderPurchaseDocNumbers(); // 数据加载后整理编号
             updateAllViews();
         }
 
@@ -1277,10 +1278,12 @@
             select.innerHTML = '<option value="">请选择供应商</option>' + 
                 uniqueSuppliers.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
 
-            // 整理编号确保连续性
-            reorderPurchaseDocNumbers();
+            // 整理编号确保连续性（如果有数据）
+            if (data.purchaseOrders && data.purchaseOrders.length > 0) {
+                reorderPurchaseDocNumbers();
+            }
             // 显示下一个编号
-            const nextNum = data.purchaseOrders.length + 1;
+            const nextNum = (data.purchaseOrders ? data.purchaseOrders.length : 0) + 1;
             document.getElementById('purchaseDocNo').value = String(nextNum).padStart(3, '0');
 
             document.getElementById('purchaseModal').classList.add('active');
@@ -1318,10 +1321,12 @@
             const paidAmount = paymentStatus === 'paid' ? totalAmount : (paymentStatus === 'partial' ? parseFloat(document.getElementById('purchasePaidAmount').value) || 0 : 0);
 
             // 先整理现有编号，确保连续性
-            reorderPurchaseDocNumbers();
+            if (data.purchaseOrders && data.purchaseOrders.length > 0) {
+                reorderPurchaseDocNumbers();
+            }
 
             // 生成新编号（当前最大编号+1）
-            const newNum = data.purchaseOrders.length + 1;
+            const newNum = (data.purchaseOrders ? data.purchaseOrders.length : 0) + 1;
             const docNumber = String(newNum).padStart(3, '0');
 
             const order = {
@@ -2249,12 +2254,24 @@
          * 重新整理采购单编号：按日期排序后从001开始重新编号
          */
         function reorderPurchaseDocNumbers() {
+            // 安全检查：确保数据存在
+            if (!data.purchaseOrders || !Array.isArray(data.purchaseOrders)) {
+                data.purchaseOrders = [];
+                return;
+            }
+
             // 按日期升序排序（早的在前）
-            data.purchaseOrders.sort((a, b) => new Date(a.date) - new Date(b.date));
+            data.purchaseOrders.sort((a, b) => {
+                const dateA = a.date ? new Date(a.date) : new Date(0);
+                const dateB = b.date ? new Date(b.date) : new Date(0);
+                return dateA - dateB;
+            });
 
             // 重新编号
             data.purchaseOrders.forEach((order, index) => {
-                order.docNumber = String(index + 1).padStart(3, '0');
+                if (order) {
+                    order.docNumber = String(index + 1).padStart(3, '0');
+                }
             });
 
             // 更新最后使用的编号
