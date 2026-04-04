@@ -2382,8 +2382,15 @@ async function doExecuteImport() {
 
         const totalQty = displayItems.reduce((sum, item) => sum + item.qty, 0);
 
-        // 显示备注（如果有）
-        const remarkHtml = batch.remark ? `<div style="margin-top: 8px; padding: 8px 12px; background: white; border-radius: 6px; font-size: 13px; color: #0369a1; border-left: 3px solid #0ea5e9;">📝 ${escapeHtml(batch.remark)}</div>` : '';
+        // 显示备注（可编辑）
+        const remarkHtml = batch.remark ? 
+          `<div onclick="editBatchRemark('${batch.id}')" style="margin-top: 8px; padding: 8px 12px; background: white; border-radius: 6px; font-size: 13px; color: #0369a1; border-left: 3px solid #0ea5e9; cursor: pointer; position: relative;" title="点击修改备注">
+            📝 ${escapeHtml(batch.remark)}
+            <span style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); opacity: 0.6; font-size: 12px;">✏️</span>
+          </div>` : 
+          `<div onclick="editBatchRemark('${batch.id}')" style="margin-top: 8px; padding: 8px 12px; background: #f8fafc; border-radius: 6px; font-size: 13px; color: #94a3b8; border: 1px dashed #cbd5e1; cursor: pointer; text-align: center;" title="点击添加备注">
+            ➕ 点击添加备注
+          </div>`;
 
         return `<div class="batch-card" id="batch-${batch.id}">
           <div class="batch-header" onclick="toggleBatch('${batch.id}')">
@@ -2631,6 +2638,42 @@ async function doExecuteImport() {
         showToast(msg);
         updateUI();
       } catch (err) { hideLoading(); showError('撤销失败', err.message); }
+    }
+
+    // 编辑批次备注
+    async function editBatchRemark(batchId) {
+      const batch = batches.find(b => b.id === batchId);
+      if (!batch) return;
+
+      // 弹出输入框
+      const newRemark = prompt('请输入备注（留空则删除备注）：', batch.remark || '');
+
+      // 用户点击取消
+      if (newRemark === null) return;
+
+      const trimmedRemark = newRemark.trim();
+
+      // 如果内容没有变化，不保存
+      if (trimmedRemark === (batch.remark || '')) return;
+
+      showLoading('正在保存...');
+
+      try {
+        // 更新备注
+        batch.remark = trimmedRemark || undefined; // 空值转为 undefined
+
+        // 保存到云端
+        await saveData();
+
+        hideLoading();
+        showToast('✅ 备注已更新');
+
+        // 刷新流水显示
+        renderFlow();
+      } catch (err) {
+        hideLoading();
+        showError('保存失败', err.message);
+      }
     }
 
     // ==================== 数据管理 ====================
