@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>佳信水产进销存财务系统 v3.3</title>
+    <title>佳信水产进销存财务系统 v3.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -450,6 +450,55 @@
             user-select: none;
             -webkit-user-select: none;
         }
+
+        /* 产品选择样式 */
+        .product-select-row {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border: 2px solid #3b82f6;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .product-select-label {
+            font-weight: 600;
+            color: #1e40af;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .product-search-select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #3b82f6;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+        }
+        .product-info-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .product-info-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .product-info-label {
+            color: #6b7280;
+            font-size: 11px;
+        }
+        .product-info-value {
+            color: #111827;
+            font-weight: 600;
+        }
+        .product-autofilled {
+            background: #f0fdf4 !important;
+            border-color: #22c55e !important;
+        }
 </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -480,10 +529,9 @@
                         </div>
                         <div>
                             <h1 class="text-xl font-bold text-gray-800">佳信水产财务系统</h1>
-                            <p class="text-xs text-gray-500">v3.3 | 云端同步已优化</p>
+                            <p class="text-xs text-gray-500">v3.4 | 产品库已集成</p>
                         </div>
                     </div>
-                    <!-- 只保留状态栏，删除手动同步按钮 -->
                     <div class="flex items-center space-x-3">
                         <div class="sync-status" id="syncStatus">
                             <span class="sync-dot"></span>
@@ -500,7 +548,7 @@
                             </div>
                             <div>
                                 <h1 class="text-lg font-bold text-gray-800">佳信水产财务</h1>
-                                <p class="text-xs text-gray-500">v3.3 | 自动同步</p>
+                                <p class="text-xs text-gray-500">v3.4 | 自动同步</p>
                             </div>
                         </div>
                         <div class="sync-status" id="syncStatusMobile">
@@ -518,9 +566,9 @@
                     <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn py-3 px-2 rounded-lg text-center text-sm font-medium transition-all hover:bg-blue-50 tab-active bg-blue-50 text-blue-600 border border-blue-200">📊 仪表盘</button>
                     <button onclick="switchTab('purchase')" id="tab-purchase" class="tab-btn py-3 px-2 rounded-lg text-center text-sm font-medium transition-all hover:bg-blue-50 bg-white text-gray-600 border border-gray-200">📥 采购管理</button>
                     <button onclick="switchTab('sales')" id="tab-sales" class="tab-btn py-3 px-2 rounded-lg text-center text-sm font-medium transition-all hover:bg-blue-50 bg-white text-gray-600 border border-gray-200">📤 销售管理</button>
+                    <button onclick="switchTab('products')" id="tab-products" class="tab-btn py-3 px-2 rounded-lg text-center text-sm font-medium transition-all hover:bg-blue-50 bg-white text-gray-600 border border-gray-200">🦐 产品库</button>
                     <button onclick="switchTab('customers')" id="tab-customers" class="tab-btn py-3 px-2 rounded-lg text-center text-sm font-medium transition-all hover:bg-blue-50 bg-white text-gray-600 border border-gray-200">👥 客户/供应商</button>
                     <button onclick="switchTab('finance')" id="tab-finance" class="tab-btn py-3 px-2 rounded-lg text-center text-sm font-medium transition-all hover:bg-blue-50 bg-white text-gray-600 border border-gray-200">💵 收付款</button>
-                    <button onclick="switchTab('reports')" id="tab-reports" class="tab-btn py-3 px-2 rounded-lg text-center text-sm font-medium transition-all hover:bg-blue-50 bg-white text-gray-600 border border-gray-200">📋 财务报表</button>
                 </nav>
             </div>
         </div>
@@ -654,6 +702,57 @@
                 </div>
             </div>
 
+            <!-- 产品库管理 -->
+            <div id="view-products" class="view-section hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">产品库管理</h2>
+                    <div class="flex space-x-3">
+                        <button onclick="importDefaultProducts()" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center space-x-2 text-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            <span>导入默认产品</span>
+                        </button>
+                        <button onclick="exportProducts()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2 text-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            <span>导出Excel</span>
+                        </button>
+                        <button onclick="openProductModal()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            <span>新增产品</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 产品搜索 -->
+                <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
+                    <div class="flex space-x-4">
+                        <input type="text" id="productSearch" placeholder="搜索产品名称、规格、品牌..." class="px-4 py-2 border rounded-lg flex-1" onkeyup="renderProductList()">
+                        <select id="productCategoryFilter" class="px-4 py-2 border rounded-lg" onchange="renderProductList()">
+                            <option value="">全部类别</option>
+                            <option value="shrimp">虾类</option>
+                            <option value="fish">鱼类</option>
+                            <option value="other">其他</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 产品列表 -->
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">产品信息</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">规格</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">默认重量</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">单价</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">计价方式</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productList" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- 客户/供应商 -->
             <div id="view-customers" class="view-section hidden">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -712,24 +811,6 @@
                         </thead>
                         <tbody id="transactionList" class="divide-y divide-gray-200"></tbody>
                     </table>
-                </div>
-            </div>
-
-            <!-- 财务报表 -->
-            <div id="view-reports" class="view-section hidden">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                    <div class="bg-white rounded-xl p-6 shadow-sm">
-                        <h3 class="text-lg font-semibold mb-2">本月毛利</h3>
-                        <p class="text-3xl font-bold text-blue-600" id="monthProfit">¥0</p>
-                    </div>
-                    <div class="bg-white rounded-xl p-6 shadow-sm">
-                        <h3 class="text-lg font-semibold mb-2">本月销售额</h3>
-                        <p class="text-3xl font-bold text-green-600" id="monthSales">¥0</p>
-                    </div>
-                    <div class="bg-white rounded-xl p-6 shadow-sm">
-                        <h3 class="text-lg font-semibold mb-2">本月采购额</h3>
-                        <p class="text-3xl font-bold text-orange-600" id="monthPurchase">¥0</p>
-                    </div>
                 </div>
             </div>
         </main>
@@ -810,7 +891,7 @@
 
                     <div style="margin-top: 16px; padding: 16px; background: #f8fafc; border-radius: 8px; border: 2px dashed #cbd5e1;">
                         <div style="font-weight: bold; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2z"></path></svg>
                             上传原始手写订单图片
                         </div>
                         <input type="file" id="purchaseImageInput" accept="image/*" multiple style="display: none;" onchange="handlePurchaseImages(this)">
@@ -828,7 +909,7 @@
 
     <!-- 销售单录入模态框 -->
     <div id="salesModal" class="modal">
-        <div class="modal-content" style="max-width: 800px;">
+        <div class="modal-content" style="max-width: 900px;">
             <div class="p-6 border-b border-gray-200 flex justify-between items-center">
                 <h3 class="text-xl font-bold">新增销售单（销售清单）</h3>
                 <button onclick="closeModal('salesModal')" class="text-gray-400 hover:text-gray-600">✕</button>
@@ -861,14 +942,88 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- 产品选择区域 -->
+                <div id="productSelectArea" style="background: #f0f9ff; border: 2px solid #0ea5e9; border-radius: 12px; padding: 16px; margin-bottom: 20px; display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span style="font-size: 16px; font-weight: bold; color: #0369a1;">🦐 选择产品</span>
+                        <button onclick="closeProductSelect()" style="color: #64748b; font-size: 20px;">✕</button>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <input type="text" id="productQuickSearch" placeholder="输入产品名称、规格或品牌快速搜索..." 
+                            style="width: 100%; padding: 10px; border: 1px solid #0ea5e9; border-radius: 6px; font-size: 14px;"
+                            onkeyup="filterProductOptions()">
+                    </div>
+                    <div id="productOptionsList" style="max-height: 300px; overflow-y: auto; background: white; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <!-- 产品选项将动态生成 -->
+                    </div>
+                </div>
+
                 <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                         <span style="font-size: 16px; font-weight: bold;">产品明细</span>
-                        <button onclick="addSalesItem()" style="background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 6px;">+ 添加产品</button>
+                        <button onclick="openProductSelect()" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            从产品库添加
+                        </button>
                     </div>
                     <div id="salesItems"></div>
                 </div>
                 <button onclick="saveSalesOrder()" style="width: 100%; padding: 16px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer;">生成销售清单</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 产品管理模态框 -->
+    <div id="productModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="text-xl font-bold" id="productModalTitle">新增产品</h3>
+                <button onclick="closeModal('productModal')" class="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <input type="hidden" id="productId">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">产品名称 *</label>
+                    <input type="text" id="productName" class="w-full px-3 py-2 border rounded-lg" placeholder="例如：黑虎虾">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">规格 *</label>
+                    <input type="text" id="productSpec" class="w-full px-3 py-2 border rounded-lg" placeholder="例如：8-10、30/40">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">品牌/产地</label>
+                    <input type="text" id="productBrand" class="w-full px-3 py-2 border rounded-lg" placeholder="例如：蓝琼、厄瓜多尔">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">默认重量(kg) *</label>
+                        <input type="number" id="productWeight" step="0.1" class="w-full px-3 py-2 border rounded-lg" placeholder="每箱净重">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">单价(元) *</label>
+                        <input type="number" id="productPrice" step="0.1" class="w-full px-3 py-2 border rounded-lg" placeholder="每公斤或每箱价格">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">计价方式 *</label>
+                    <select id="productPriceType" class="w-full px-3 py-2 border rounded-lg">
+                        <option value="kg">按公斤计价</option>
+                        <option value="piece">按件(箱)计价</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">产品类别</label>
+                    <select id="productCategory" class="w-full px-3 py-2 border rounded-lg">
+                        <option value="shrimp">虾类</option>
+                        <option value="fish">鱼类</option>
+                        <option value="other">其他</option>
+                    </select>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button onclick="closeModal('productModal')" class="px-4 py-2 border rounded-lg hover:bg-gray-50">取消</button>
+                    <button onclick="saveProduct()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">保存</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1044,24 +1199,81 @@
         let data = {
             suppliers: [],
             customers: [],
+            products: [],  // 新增：产品库
             purchaseOrders: [],
             salesOrders: [],
             transactions: [],
             lastPurchaseDocNumber: 0
         };
 
-        // 网络状态管理（仓库系统风格 - 简化版）
+        // 网络状态管理
         let isOnline = false;
 
         let purchaseRowCount = 0;
         let salesItemCount = 0;
         let purchaseImages = [];
+        let currentEditingSalesItem = null;  // 当前正在编辑的销售行
 
-        // ==================== 云端同步核心（仓库系统风格） ====================
+        // ==================== 默认产品数据 ====================
+        const DEFAULT_PRODUCTS = [
+            // 干冰熟虾系列 - 佳信
+            { name: '干冰熟虾', spec: '特大A', brand: '佳信', defaultWeight: 2.5, price: 120.0, priceType: 'kg', category: 'shrimp' },
+            { name: '干冰熟虾', spec: '特大', brand: '佳信', defaultWeight: 2.5, price: 112.0, priceType: 'kg', category: 'shrimp' },
+            { name: '干冰熟虾', spec: '1-2', brand: '佳信', defaultWeight: 2.5, price: 103.0, priceType: 'kg', category: 'shrimp' },
+            { name: '干冰熟虾', spec: '2-4', brand: '佳信', defaultWeight: 2.5, price: 95.0, priceType: 'kg', category: 'shrimp' },
+            { name: '干冰熟虾', spec: '4-6', brand: '佳信', defaultWeight: 2.5, price: 87.0, priceType: 'kg', category: 'shrimp' },
+            { name: '干冰熟虾', spec: '6-8', brand: '佳信', defaultWeight: 2.5, price: 83.0, priceType: 'kg', category: 'shrimp' },
+            { name: '干冰熟虾', spec: '8-12', brand: '佳信', defaultWeight: 2.5, price: 78.0, priceType: 'kg', category: 'shrimp' },
 
-        /**
-         * 从云端获取数据 - 仓库系统风格：简单直接，无复杂超时控制
-         */
+            // 盒冻熟虾系列 - 佳信
+            { name: '盒冻熟虾', spec: '16-20', brand: '佳信', defaultWeight: 3.2, price: 185.0, priceType: 'kg', category: 'shrimp' },
+            { name: '盒冻熟虾', spec: '21-25', brand: '佳信', defaultWeight: 3.2, price: 175.0, priceType: 'kg', category: 'shrimp' },
+            { name: '盒冻熟虾', spec: '13-15', brand: '佳信', defaultWeight: 3.2, price: 190.0, priceType: 'kg', category: 'shrimp' },
+
+            // B级熟虾系列 - 佳信
+            { name: '干冰B级熟虾', spec: 'B级特大', brand: '佳信', defaultWeight: 6.25, price: 162.5, priceType: 'kg', category: 'shrimp' },
+            { name: '干冰B级熟虾', spec: 'B级2-4', brand: '佳信', defaultWeight: 6.25, price: 137.5, priceType: 'kg', category: 'shrimp' },
+            { name: '干冰B级熟虾', spec: 'B级4-6', brand: '佳信', defaultWeight: 6.25, price: 112.5, priceType: 'kg', category: 'shrimp' },
+            { name: '黑虎B级熟虾', spec: 'B级2-4', brand: '佳信', defaultWeight: 6.25, price: 137.5, priceType: 'kg', category: 'shrimp' },
+            { name: '黑虎B级熟虾', spec: 'B级4-6', brand: '佳信', defaultWeight: 6.25, price: 112.5, priceType: 'kg', category: 'shrimp' },
+
+            // 白灼黑虎熟虾系列 - 蓝琼
+            { name: '白灼黑虎熟虾', spec: '8-10', brand: '蓝琼', defaultWeight: 2.8, price: 64.5, priceType: 'kg', category: 'shrimp' },
+            { name: '白灼黑虎熟虾', spec: '10-15', brand: '蓝琼', defaultWeight: 2.8, price: 63.0, priceType: 'kg', category: 'shrimp' },
+            { name: '白灼黑虎熟虾', spec: '6-8', brand: '蓝琼', defaultWeight: 6.3, price: 65.5, priceType: 'kg', category: 'shrimp' },
+            { name: '白灼黑虎熟虾', spec: '8-10', brand: '蓝琼', defaultWeight: 6.3, price: 64.5, priceType: 'kg', category: 'shrimp' },
+            { name: '白灼黑虎熟虾', spec: '10-15', brand: '蓝琼', defaultWeight: 6.3, price: 63.0, priceType: 'kg', category: 'shrimp' },
+            { name: '白灼黑虎熟虾', spec: '16-20', brand: '蓝琼', defaultWeight: 6.3, price: 61.5, priceType: 'kg', category: 'shrimp' },
+
+            // 盒冻熟虾系列 - 大富肴
+            { name: '盒冻熟虾', spec: '30-40', brand: '大富肴', defaultWeight: 5, price: 142.0, priceType: 'kg', category: 'shrimp' },
+            { name: '盒冻熟虾', spec: '40-50', brand: '大富肴', defaultWeight: 5, price: 132.0, priceType: 'kg', category: 'shrimp' },
+            { name: '盒冻熟虾', spec: '50-60', brand: '大富肴', defaultWeight: 5, price: 122.0, priceType: 'kg', category: 'shrimp' },
+
+            // 白灼黑虎熟虾系列 - 大富肴
+            { name: '白灼黑虎熟虾', spec: '21-25', brand: '大富肴', defaultWeight: 2.5, price: 174.0, priceType: 'kg', category: 'shrimp' },
+            { name: '白灼黑虎熟虾', spec: '26-30', brand: '大富肴', defaultWeight: 2.5, price: 169.0, priceType: 'kg', category: 'shrimp' },
+            { name: '白灼黑虎熟虾', spec: '30-40', brand: '大富肴', defaultWeight: 2.5, price: 164.0, priceType: 'kg', category: 'shrimp' },
+            { name: '白灼黑虎熟虾', spec: '40-50', brand: '大富肴', defaultWeight: 2.5, price: 154.0, priceType: 'kg', category: 'shrimp' },
+            { name: '白灼黑虎熟虾', spec: '50-60', brand: '大富肴', defaultWeight: 2.5, price: 124.0, priceType: 'kg', category: 'shrimp' },
+
+            // B级黑虎熟虾系列 - 大富肴
+            { name: 'B级黑虎熟虾', spec: 'B级21-25', brand: '大富肴', defaultWeight: 2.5, price: 134.0, priceType: 'kg', category: 'shrimp' },
+            { name: 'B级黑虎熟虾', spec: 'B级26-30', brand: '大富肴', defaultWeight: 2.5, price: 129.0, priceType: 'kg', category: 'shrimp' },
+            { name: 'B级黑虎熟虾', spec: 'B级30-40', brand: '大富肴', defaultWeight: 2.5, price: 124.0, priceType: 'kg', category: 'shrimp' },
+            { name: 'B级黑虎熟虾', spec: 'B级40-50', brand: '大富肴', defaultWeight: 2.5, price: 114.0, priceType: 'kg', category: 'shrimp' },
+
+            // 干冰熟虾系列 - 豪杰
+            { name: '干冰熟虾', spec: '2-4', brand: '豪杰', defaultWeight: 2.5, price: 95.0, priceType: 'kg', category: 'shrimp' },
+            { name: '干冰熟虾', spec: '4-6', brand: '豪杰', defaultWeight: 2.5, price: 87.0, priceType: 'kg', category: 'shrimp' },
+            { name: '干冰熟虾', spec: '6-8', brand: '豪杰', defaultWeight: 2.5, price: 83.0, priceType: 'kg', category: 'shrimp' },
+            { name: '干冰熟虾', spec: '8-12', brand: '豪杰', defaultWeight: 2.5, price: 78.0, priceType: 'kg', category: 'shrimp' },
+
+            // 软虾 - 佳信
+            { name: '软虾', spec: '软虾', brand: '佳信', defaultWeight: 8.5, price: 83.0, priceType: 'kg', category: 'shrimp' }
+        ];
+
+        // ==================== 云端同步核心 ====================
         async function fetchData() {
             const timestamp = new Date().getTime();
             const response = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.BIN_ID}?_=${timestamp}`, {
@@ -1081,11 +1293,7 @@
             return result.record || {};
         }
 
-        /**
-         * 保存数据到云端 - 仓库系统风格：自动保存，无手动按钮
-         */
         async function saveData() {
-            // 无论在线状态如何，先保存到本地作为备份
             localStorage.setItem('finance_data_cache', JSON.stringify(data));
 
             if (!isOnline) { 
@@ -1122,9 +1330,6 @@
             }
         }
 
-        /**
-         * 更新同步状态显示 - 仓库系统风格
-         */
         function updateSyncStatus(status, text) {
             const el = document.getElementById('syncStatus');
             const txt = document.getElementById('syncText');
@@ -1142,8 +1347,7 @@
             }
         }
 
-        // ==================== 初始化（仓库系统风格） ====================
-
+        // ==================== 初始化 ====================
         document.addEventListener('DOMContentLoaded', function() {
             const savedPassword = localStorage.getItem('finance_password');
             if (savedPassword === CONFIG.PASSWORD) {
@@ -1165,26 +1369,20 @@
             }
         }
 
-        /**
-         * 初始化应用 - 完全采用仓库系统的 init() 模式
-         * 直接云端加载，失败才用本地
-         */
         async function initApp() {
-            // 设置默认日期
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('purchaseDate').value = today;
             document.getElementById('salesDate').value = today;
             document.getElementById('paymentDate').value = today;
 
-            // 直接尝试云端同步（仓库系统风格）
             updateSyncStatus('syncing', '正在连接云端...');
 
             try {
                 const cloudData = await fetchData();
 
-                // 直接覆盖本地数据
                 data.suppliers = cloudData.suppliers || [];
                 data.customers = cloudData.customers || [];
+                data.products = cloudData.products || [];  // 加载产品库
                 data.purchaseOrders = cloudData.purchaseOrders || [];
                 data.salesOrders = cloudData.salesOrders || [];
                 data.transactions = cloudData.transactions || [];
@@ -1196,14 +1394,13 @@
 
             } catch (err) {
                 console.error('云端连接失败:', err);
-
-                // 失败时才读本地缓存
                 const cached = localStorage.getItem('finance_data_cache');
                 if (cached) {
                     try {
                         const parsed = JSON.parse(cached);
                         data.suppliers = parsed.suppliers || [];
                         data.customers = parsed.customers || [];
+                        data.products = parsed.products || [];
                         data.purchaseOrders = parsed.purchaseOrders || [];
                         data.salesOrders = parsed.salesOrders || [];
                         data.transactions = parsed.transactions || [];
@@ -1218,9 +1415,7 @@
                 updateSyncStatus('error', '连接失败，使用本地模式');
             }
 
-            // 初始化界面
             initPurchaseTable();
-            // 保持原有单号不重新排序 // 数据加载后整理编号
             updateAllViews();
         }
 
@@ -1255,9 +1450,9 @@
                 case 'dashboard': updateDashboard(); break;
                 case 'purchase': renderPurchaseList(); break;
                 case 'sales': renderSalesList(); break;
+                case 'products': renderProductList(); break;  // 新增
                 case 'customers': renderPartyList(); break;
                 case 'finance': renderTransactionList(); break;
-                case 'reports': updateReports(); break;
             }
         }
 
@@ -1265,10 +1460,382 @@
             updateDashboard();
             renderPurchaseList();
             renderSalesList();
+            renderProductList();  // 新增
             renderPartyList();
             renderTransactionList();
-            updateReports();
         }
+
+        // ==================== 产品库管理 ====================
+        function renderProductList() {
+            const search = document.getElementById('productSearch').value.toLowerCase();
+            const categoryFilter = document.getElementById('productCategoryFilter').value;
+
+            let products = data.products || [];
+
+            if (search) {
+                products = products.filter(p => 
+                    (p.name && p.name.toLowerCase().includes(search)) ||
+                    (p.spec && p.spec.toLowerCase().includes(search)) ||
+                    (p.brand && p.brand.toLowerCase().includes(search))
+                );
+            }
+
+            if (categoryFilter) {
+                products = products.filter(p => p.category === categoryFilter);
+            }
+
+            const tbody = document.getElementById('productList');
+
+            if (products.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                            <div style="font-size: 48px; margin-bottom: 8px;">📦</div>
+                            <p>暂无产品，请点击"导入默认产品"或"新增产品"</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = products.map((p, index) => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3">
+                        <div class="text-sm font-medium text-gray-900">${p.name}</div>
+                        <div class="text-xs text-gray-500">${p.brand || '无品牌'}</div>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${p.spec}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${p.defaultWeight} kg</td>
+                    <td class="px-4 py-3 text-sm font-medium text-gray-900">¥${p.price}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <span class="status-badge ${p.priceType === 'kg' ? 'status-paid' : 'status-partial'}">
+                            ${p.priceType === 'kg' ? '按公斤' : '按件'}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-sm space-x-2">
+                        <button onclick="editProduct('${p.id}')" class="text-blue-600 hover:underline">编辑</button>
+                        <button onclick="deleteProduct('${p.id}')" class="text-red-600 hover:underline">删除</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function importDefaultProducts() {
+            // 先清空现有产品库
+            const oldCount = data.products ? data.products.length : 0;
+            data.products = [];
+
+            // 导入Excel中的41个产品（DEFAULT_PRODUCTS现在是Excel数据）
+            let addedCount = 0;
+            DEFAULT_PRODUCTS.forEach((defaultProduct, index) => {
+                data.products.push({
+                    id: 'P' + Date.now() + index + Math.random().toString(36).substr(2, 5),
+                    ...defaultProduct
+                });
+                addedCount++;
+            });
+
+            saveData();
+            renderProductList();
+            showToast(`✅ 已清空原产品库(${oldCount}个)，导入 ${addedCount} 个新产品`);
+        }
+
+        function openProductModal() {
+            document.getElementById('productId').value = '';
+            document.getElementById('productModalTitle').textContent = '新增产品';
+            document.getElementById('productName').value = '';
+            document.getElementById('productSpec').value = '';
+            document.getElementById('productBrand').value = '';
+            document.getElementById('productWeight').value = '';
+            document.getElementById('productPrice').value = '';
+            document.getElementById('productPriceType').value = 'kg';
+            document.getElementById('productCategory').value = 'shrimp';
+            document.getElementById('productModal').classList.add('active');
+        }
+
+        function editProduct(productId) {
+            const product = data.products.find(p => p.id === productId);
+            if (!product) return;
+
+            document.getElementById('productId').value = product.id;
+            document.getElementById('productModalTitle').textContent = '编辑产品';
+            document.getElementById('productName').value = product.name;
+            document.getElementById('productSpec').value = product.spec;
+            document.getElementById('productBrand').value = product.brand || '';
+            document.getElementById('productWeight').value = product.defaultWeight;
+            document.getElementById('productPrice').value = product.price;
+            document.getElementById('productPriceType').value = product.priceType;
+            document.getElementById('productCategory').value = product.category || 'shrimp';
+            document.getElementById('productModal').classList.add('active');
+        }
+
+        async function saveProduct() {
+            const id = document.getElementById('productId').value;
+            const name = document.getElementById('productName').value.trim();
+            const spec = document.getElementById('productSpec').value.trim();
+            const brand = document.getElementById('productBrand').value.trim();
+            const weight = parseFloat(document.getElementById('productWeight').value);
+            const price = parseFloat(document.getElementById('productPrice').value);
+            const priceType = document.getElementById('productPriceType').value;
+            const category = document.getElementById('productCategory').value;
+
+            if (!name || !spec || !weight || !price) {
+                showToast('⚠️ 请填写所有必填项', 'warning');
+                return;
+            }
+
+            const productData = {
+                name,
+                spec,
+                brand,
+                defaultWeight: weight,
+                price,
+                priceType,
+                category
+            };
+
+            if (id) {
+                // 编辑
+                const index = data.products.findIndex(p => p.id === id);
+                if (index !== -1) {
+                    data.products[index] = { ...data.products[index], ...productData };
+                }
+            } else {
+                // 新增
+                data.products.push({
+                    id: 'P' + Date.now(),
+                    ...productData
+                });
+            }
+
+            try {
+                await saveData();
+                closeModal('productModal');
+                renderProductList();
+                showToast('✅ 保存成功');
+            } catch (err) {
+                console.error('保存失败:', err);
+            }
+        }
+
+        async function deleteProduct(productId) {
+            const product = data.products.find(p => p.id === productId);
+            if (!product) return;
+
+            if (!confirm(`确定要删除产品 "${product.name} ${product.spec}" 吗？`)) return;
+
+            data.products = data.products.filter(p => p.id !== productId);
+
+            try {
+                await saveData();
+                renderProductList();
+                showToast('✅ 删除成功');
+            } catch (err) {
+                console.error('删除失败:', err);
+            }
+        }
+
+        // 导出产品库到Excel
+        function exportProducts() {
+            if (!data.products || data.products.length === 0) {
+                showToast('⚠️ 产品库为空，无数据可导出', 'warning');
+                return;
+            }
+
+            // 准备导出数据
+            const exportData = data.products.map(p => ({
+                '产品名称': p.name,
+                '规格': p.spec,
+                '品牌/产地': p.brand || '',
+                '默认重量(kg)': p.defaultWeight,
+                '单价(元)': p.price,
+                '计价方式': p.priceType === 'kg' ? '按公斤' : '按件',
+                '产品类别': p.category === 'shrimp' ? '虾类' : p.category === 'fish' ? '鱼类' : '其他',
+                '产品ID': p.id
+            }));
+
+            // 创建工作表
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+
+            // 设置列宽
+            worksheet['!cols'] = [
+                { wch: 15 }, // 产品名称
+                { wch: 12 }, // 规格
+                { wch: 15 }, // 品牌/产地
+                { wch: 12 }, // 默认重量
+                { wch: 10 }, // 单价
+                { wch: 10 }, // 计价方式
+                { wch: 10 }, // 产品类别
+                { wch: 20 }  // 产品ID
+            ];
+
+            // 创建工作簿
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, '产品库');
+
+            // 生成文件名（带时间戳）
+            const dateStr = new Date().toISOString().split('T')[0];
+            const fileName = `产品库_${dateStr}.xlsx`;
+
+            // 导出文件
+            XLSX.writeFile(workbook, fileName);
+
+            showToast(`✅ 已导出 ${exportData.length} 个产品到 ${fileName}`);
+        }
+
+        // ==================== 销售单产品选择功能 ====================
+        function openProductSelect() {
+            if (!data.products || data.products.length === 0) {
+                showToast('⚠️ 产品库为空，请先导入或添加产品', 'warning');
+                return;
+            }
+
+            const container = document.getElementById('productSelectArea');
+            container.style.display = 'block';
+            document.getElementById('productQuickSearch').value = '';
+            renderProductOptions(data.products);
+            document.getElementById('productQuickSearch').focus();
+        }
+
+        function closeProductSelect() {
+            document.getElementById('productSelectArea').style.display = 'none';
+        }
+
+        function renderProductOptions(products) {
+            const container = document.getElementById('productOptionsList');
+
+            if (products.length === 0) {
+                container.innerHTML = '<div style="padding: 20px; text-align: center; color: #6b7280;">未找到匹配产品</div>';
+                return;
+            }
+
+            container.innerHTML = products.map(p => `
+                <div onclick="selectProductForSales('${p.id}')" 
+                     style="padding: 12px; border-bottom: 1px solid #e5e7eb; cursor: pointer; hover: background-color: #f3f4f6;"
+                     onmouseover="this.style.backgroundColor='#f3f4f6'"
+                     onmouseout="this.style.backgroundColor='white'">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span style="font-weight: 600; color: #111827;">${p.name}</span>
+                            <span style="color: #6b7280; margin-left: 8px;">${p.spec}</span>
+                            <span style="color: #9ca3af; margin-left: 8px; font-size: 12px;">${p.brand || '无品牌'}</span>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 600; color: #dc2626;">¥${p.price}/${p.priceType === 'kg' ? 'kg' : '件'}</div>
+                            <div style="font-size: 12px; color: #6b7280;">默认: ${p.defaultWeight}kg</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterProductOptions() {
+            const search = document.getElementById('productQuickSearch').value.toLowerCase();
+            const filtered = data.products.filter(p => 
+                (p.name && p.name.toLowerCase().includes(search)) ||
+                (p.spec && p.spec.toLowerCase().includes(search)) ||
+                (p.brand && p.brand.toLowerCase().includes(search))
+            );
+            renderProductOptions(filtered);
+        }
+
+        function selectProductForSales(productId) {
+            const product = data.products.find(p => p.id === productId);
+            if (!product) return;
+
+            // 添加新行并自动填充
+            addSalesItemWithProduct(product);
+
+            // 关闭选择区域
+            closeProductSelect();
+        }
+
+        function addSalesItemWithProduct(product) {
+            salesItemCount++;
+            const container = document.getElementById('salesItems');
+            const div = document.createElement('div');
+            div.className = 'sales-item-row';
+            div.draggable = true;
+            div.style.cssText = 'background: #f8fafc; border: 2px solid #22c55e; border-radius: 8px; padding: 12px; margin-bottom: 10px;';  // 绿色边框表示自动填充
+
+            const total = product.defaultWeight * product.price;
+
+            div.innerHTML = `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 600; color: #2563eb;">
+                    <span style="display: flex; align-items: center;">
+                        <span class="drag-handle" title="拖拽排序">⋮⋮</span> 
+                        序号 ${salesItemCount}
+                        <span style="background: #22c55e; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px;">自动填充</span>
+                    </span>
+                    <div>
+                        <button onclick="changeProductInRow(this)" style="background: #3b82f6; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 12px; margin-right: 4px;">更换产品</button>
+                        <button onclick="this.closest('.sales-item-row').remove(); renumberSalesItems();" style="background: #dc2626; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 12px;">删除</button>
+                    </div>
+                </div>
+                <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 8px; margin-bottom: 8px; font-size: 12px; color: #166534;">
+                    <strong>${product.name}</strong> | ${product.spec} | ${product.brand || '无品牌'} | ¥${product.price}/${product.priceType === 'kg' ? 'kg' : '件'}
+                </div>
+                <div class="sales-item-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                    <input type="hidden" class="si-product-id" value="${product.id}">
+                    <input type="text" class="si-name" placeholder="品名" value="${product.name}" readonly style="padding: 8px; border: 1px solid #86efac; border-radius: 6px; background: #f0fdf4; color: #166534;">
+                    <input type="text" class="si-spec" placeholder="规格" value="${product.spec}" readonly style="padding: 8px; border: 1px solid #86efac; border-radius: 6px; background: #f0fdf4; color: #166534;">
+                    <input type="text" class="si-brand" placeholder="品牌" value="${product.brand || ''}" readonly style="padding: 8px; border: 1px solid #86efac; border-radius: 6px; background: #f0fdf4; color: #166534;">
+                    <input type="number" class="si-qty" placeholder="数量/件 *" oninput="calcSalesItem(this)" style="padding: 8px; border: 2px solid #f59e0b; border-radius: 6px; background: white;">
+                    <input type="number" class="si-weight" placeholder="净重/kg" step="0.01" value="${product.defaultWeight}" oninput="calcSalesItem(this)" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+                    <select class="si-price-type" onchange="calcSalesItem(this)" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+                        <option value="kg" ${product.priceType === 'kg' ? 'selected' : ''}>单价/kg</option>
+                        <option value="piece" ${product.priceType === 'piece' ? 'selected' : ''}>单价/件</option>
+                    </select>
+                    <input type="number" class="si-price" placeholder="单价" step="0.01" value="${product.price}" oninput="calcSalesItem(this)" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+                    <input type="text" class="si-total" placeholder="总价" readonly style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; background: #f3f4f6; color: #dc2626; font-weight: bold;">
+                    <input type="text" class="si-remark" placeholder="备注" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+                </div>
+            `;
+            container.appendChild(div);
+
+            // 自动计算总价
+            setTimeout(() => {
+                calcSalesItem(div.querySelector('.si-qty'));
+            }, 100);
+        }
+
+        function changeProductInRow(btn) {
+            const row = btn.closest('.sales-item-row');
+            currentEditingSalesItem = row;
+            openProductSelect();
+
+            // 修改选择行为：替换当前行而不是添加新行
+            const originalSelectProduct = selectProductForSales;
+            selectProductForSales = function(productId) {
+                const product = data.products.find(p => p.id === productId);
+                if (!product || !currentEditingSalesItem) return;
+
+                // 更新当前行的数据
+                currentEditingSalesItem.querySelector('.si-product-id').value = product.id;
+                currentEditingSalesItem.querySelector('.si-name').value = product.name;
+                currentEditingSalesItem.querySelector('.si-spec').value = product.spec;
+                currentEditingSalesItem.querySelector('.si-brand').value = product.brand || '';
+                currentEditingSalesItem.querySelector('.si-weight').value = product.defaultWeight;
+                currentEditingSalesItem.querySelector('.si-price').value = product.price;
+                currentEditingSalesItem.querySelector('.si-price-type').value = product.priceType;
+
+                // 更新提示信息
+                const infoDiv = currentEditingSalesItem.querySelector('div[style*="f0fdf4"]');
+                if (infoDiv) {
+                    infoDiv.innerHTML = `<strong>${product.name}</strong> | ${product.spec} | ${product.brand || '无品牌'} | ¥${product.price}/${product.priceType === 'kg' ? 'kg' : '件'}`;
+                }
+
+                // 重新计算
+                calcSalesItem(currentEditingSalesItem.querySelector('.si-qty'));
+
+                closeProductSelect();
+                currentEditingSalesItem = null;
+
+                // 恢复原始函数
+                selectProductForSales = originalSelectProduct;
+            };
+        }
+
 
         // ==================== 仪表盘 ====================
         function updateDashboard() {
@@ -1420,11 +1987,9 @@
         }
 
         function openPurchaseModal() {
-            // 重置编辑状态
             editingPurchaseOrderId = null;
 
             const select = document.getElementById('purchaseSupplier');
-            // 供应商去重：按名称去重，保留第一个ID
             const uniqueSuppliers = [];
             const seenNames = new Set();
             data.suppliers.forEach(s => {
@@ -1436,7 +2001,6 @@
             select.innerHTML = '<option value="">请选择供应商</option>' + 
                 uniqueSuppliers.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
 
-            // 计算下一个编号：基于现有最大单号+1
             let maxNum = 0;
             data.purchaseOrders.forEach(order => {
                 if (order.docNumber) {
@@ -1450,7 +2014,6 @@
             const nextNum = maxNum + 1;
             document.getElementById('purchaseDocNo').value = String(nextNum).padStart(3, '0');
 
-            // 重置表单
             document.getElementById('purchaseDate').value = new Date().toISOString().split('T')[0];
             document.getElementById('purchaseProduct').value = '黑虎虾';
             document.getElementById('purchasePrice').value = '22.50';
@@ -1459,14 +2022,10 @@
             document.getElementById('purchasePaidAmount').value = '';
             document.getElementById('purchaseRemainingAmount').value = '';
 
-            // 重置表格
             initPurchaseTable();
             calculatePurchase();
-
-            // 清空图片
             clearPurchaseImages();
 
-            // 恢复模态框标题和按钮
             document.querySelector('#purchaseModal h3').textContent = '新增采购单（收购单）';
             const saveBtn = document.querySelector('#purchaseModal button[onclick^="savePurchaseOrder"], #purchaseModal button[onclick^="saveEditPurchaseOrder"]');
             if (saveBtn) {
@@ -1479,14 +2038,12 @@
 
         let editingPurchaseOrderId = null;
 
-        // 打开编辑采购单模态框
         function openEditPurchaseModal(orderId) {
             const order = data.purchaseOrders.find(o => o.id === orderId);
             if (!order) { showToast('❌ 订单不存在', 'error'); return; }
 
             editingPurchaseOrderId = orderId;
 
-            // 填充供应商选择
             const select = document.getElementById('purchaseSupplier');
             const uniqueSuppliers = [];
             const seenNames = new Set();
@@ -1499,27 +2056,20 @@
             select.innerHTML = '<option value="">请选择供应商</option>' + 
                 uniqueSuppliers.map(s => `<option value="${s.id}" ${s.id === order.supplierId ? 'selected' : ''}>${s.name}</option>`).join('');
 
-            // 填充基本信息
             document.getElementById('purchaseDate').value = order.date;
             document.getElementById('purchaseDocNo').value = order.docNumber || '';
             document.getElementById('purchaseProduct').value = order.product || '黑虎虾';
             document.getElementById('purchasePrice').value = order.price || 22.50;
 
-            console.log('✓ 正在编辑订单:', order.id, '单号:', order.docNumber);
-
-            // 填充表格数据
             const tbody = document.getElementById('purchaseTableBody');
             tbody.innerHTML = '';
             purchaseRowCount = 0;
 
-            // 动态计算需要的行数：数据中的最大行号，至少3行
             const maxRowInData = order.items.reduce((max, item) => Math.max(max, item.row || 0), 0);
             const rowsToCreate = Math.max(maxRowInData, 3);
 
-            // 创建足够的行来容纳所有数据
             for (let i = 0; i < rowsToCreate; i++) addPurchaseRow();
 
-            // 填充数据到对应行和列
             const rowData = {};
             order.items.forEach(item => {
                 if (!rowData[item.row]) rowData[item.row] = {};
@@ -1539,10 +2089,8 @@
                 }
             });
 
-            // 计算合计
             calculatePurchase();
 
-            // 填充付款状态
             document.getElementById('purchasePaymentStatus').value = order.paymentStatus || 'unpaid';
             updatePurchasePayment();
             if (order.paymentStatus === 'partial') {
@@ -1550,11 +2098,9 @@
                 document.getElementById('purchaseRemainingAmount').value = order.remainingAmount || 0;
             }
 
-            // 填充图片
             purchaseImages = order.images ? [...order.images] : [];
             renderPurchaseImagePreview();
 
-            // 修改按钮文本和模态框标题
             document.querySelector('#purchaseModal h3').textContent = '编辑采购单（收购单）';
             const saveBtn = document.querySelector('#purchaseModal button[onclick^="savePurchaseOrder"]');
             if (saveBtn) {
@@ -1565,7 +2111,6 @@
             document.getElementById('purchaseModal').classList.add('active');
         }
 
-        // 保存编辑后的采购单
         async function saveEditPurchaseOrder() {
             if (!editingPurchaseOrderId) return;
 
@@ -1602,7 +2147,6 @@
             const paidAmount = paymentStatus === 'paid' ? totalAmount : (paymentStatus === 'partial' ? parseFloat(document.getElementById('purchasePaidAmount').value) || 0 : 0);
             const remainingAmount = totalAmount - paidAmount;
 
-            // 更新供应商余额（先还原旧订单的欠款，再应用新订单的欠款）
             if (oldSupplier) {
                 oldSupplier.balance = Math.max(0, (oldSupplier.balance || 0) - order.remainingAmount);
             }
@@ -1610,10 +2154,8 @@
                 supplier.balance = (supplier.balance || 0) + remainingAmount;
             }
 
-            // 获取手动修改后的单号
             const newDocNumber = document.getElementById('purchaseDocNo').value.trim();
 
-            // 检查单号是否与其他订单冲突（排除自己）
             if (newDocNumber !== order.docNumber) {
                 const existingOrder = data.purchaseOrders.find(o => o.docNumber === newDocNumber && o.id !== order.id);
                 if (existingOrder) {
@@ -1622,7 +2164,6 @@
                 }
             }
 
-            // 更新订单数据（包括手动修改的单号）
             order.docNumber = newDocNumber;
             order.date = document.getElementById('purchaseDate').value;
             order.supplierId = supplierId;
@@ -1637,15 +2178,11 @@
             order.remainingAmount = remainingAmount;
             order.images = purchaseImages.length > 0 ? [...purchaseImages] : [];
 
-            // 强制更新 data.purchaseOrders 数组中的对应项
             const orderIndex = data.purchaseOrders.findIndex(o => o.id === editingPurchaseOrderId);
             if (orderIndex !== -1) {
                 data.purchaseOrders[orderIndex] = order;
             }
 
-            console.log('✓ 订单已更新，新单号:', order.docNumber);
-
-            // 自动同步
             try {
                 await saveData();
                 showToast('✅ 订单修改成功');
@@ -1653,10 +2190,8 @@
                 console.error('同步失败:', err);
             }
 
-            // 重置编辑状态
             editingPurchaseOrderId = null;
 
-            // 恢复模态框标题和按钮
             document.querySelector('#purchaseModal h3').textContent = '新增采购单（收购单）';
             const saveBtn = document.querySelector('#purchaseModal button[onclick^="saveEditPurchaseOrder"]');
             if (saveBtn) {
@@ -1670,7 +2205,6 @@
             clearPurchaseImages();
         }
 
-        // 关键：保存后自动同步（仓库系统风格）
         async function savePurchaseOrder() {
             const supplierId = document.getElementById('purchaseSupplier').value;
             if (!supplierId) { showToast('⚠️ 请选择供应商', 'warning'); return; }
@@ -1701,7 +2235,6 @@
             const paymentStatus = document.getElementById('purchasePaymentStatus').value;
             const paidAmount = paymentStatus === 'paid' ? totalAmount : (paymentStatus === 'partial' ? parseFloat(document.getElementById('purchasePaidAmount').value) || 0 : 0);
 
-            // 生成新编号：基于现有最大单号+1
             let maxNum = 0;
             data.purchaseOrders.forEach(order => {
                 if (order.docNumber) {
@@ -1732,12 +2265,10 @@
             data.purchaseOrders.unshift(order);
             supplier.balance = (supplier.balance || 0) + order.remainingAmount;
 
-            // 更新 lastPurchaseDocNumber
             if (newNum > (data.lastPurchaseDocNumber || 0)) {
                 data.lastPurchaseDocNumber = newNum;
             }
 
-            // 自动同步（仓库系统风格）
             try {
                 await saveData();
             } catch (err) {
@@ -1773,9 +2304,8 @@
                 imagesList.innerHTML = '';
             }
 
-            // 动态计算需要的行数，不再固定8行
             const maxRow = order.items.reduce((max, item) => Math.max(max, item.row || 0), 0);
-            const rowCount = Math.max(maxRow, 3); // 最少显示3行
+            const rowCount = Math.max(maxRow, 3);
 
             const rowData = {};
             for (let i = 1; i <= rowCount; i++) rowData[i] = { 1: '', 2: '', 3: '' };
@@ -1792,7 +2322,6 @@
 
             const tbody = document.getElementById('receiptTableBody');
             tbody.innerHTML = '';
-            // 使用动态计算的行数，不再固定8行
             for (let i = 1; i <= rowCount; i++) {
                 tbody.innerHTML += `<tr><td style="border: 1px solid #334155; padding: 8px; background: #f9f9f9; font-weight: bold;">${i}</td><td style="border: 1px solid #334155; padding: 8px;">${rowData[i][1]}</td><td style="border: 1px solid #334155; padding: 8px;">${rowData[i][2]}</td><td style="border: 1px solid #334155; padding: 8px;">${rowData[i][3]}</td></tr>`;
             }
@@ -1815,6 +2344,32 @@
             });
         }
 
+        let purchaseSortConfig = { column: null, direction: 'asc' };
+
+        function sortPurchaseList(column) {
+            if (purchaseSortConfig.column === column) {
+                purchaseSortConfig.direction = purchaseSortConfig.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                purchaseSortConfig.column = column;
+                purchaseSortConfig.direction = 'asc';
+            }
+
+            document.querySelectorAll('.sort-arrow').forEach(arrow => {
+                arrow.textContent = '';
+                arrow.className = 'sort-arrow text-gray-400';
+            });
+
+            if (purchaseSortConfig.column) {
+                const arrowElement = document.getElementById('sort-purchase-' + purchaseSortConfig.column);
+                if (arrowElement) {
+                    arrowElement.textContent = purchaseSortConfig.direction === 'asc' ? '↑' : '↓';
+                    arrowElement.className = 'sort-arrow text-blue-600 font-bold';
+                }
+            }
+
+            renderPurchaseList();
+        }
+
         function renderPurchaseList() {
             const search = document.getElementById('purchaseSearch').value.toLowerCase();
             const statusFilter = document.getElementById('purchaseStatusFilter').value;
@@ -1823,31 +2378,22 @@
             if (search) orders = orders.filter(o => o.id.toLowerCase().includes(search) || o.supplierName.toLowerCase().includes(search));
             if (statusFilter) orders = orders.filter(o => o.paymentStatus === statusFilter);
 
-            // 应用排序
             if (purchaseSortConfig.column) {
                 orders.sort((a, b) => {
                     let valueA, valueB;
-
                     if (purchaseSortConfig.column === 'docNumber') {
-                        // 按单号数字排序
                         valueA = parseInt(a.docNumber) || 0;
                         valueB = parseInt(b.docNumber) || 0;
                     } else if (purchaseSortConfig.column === 'supplier') {
-                        // 按供应商名称排序
                         valueA = (a.supplierName || '').toLowerCase();
                         valueB = (b.supplierName || '').toLowerCase();
                     }
-
                     if (valueA < valueB) return purchaseSortConfig.direction === 'asc' ? -1 : 1;
                     if (valueA > valueB) return purchaseSortConfig.direction === 'asc' ? 1 : -1;
                     return 0;
                 });
             }
 
-            // 更新排序图标
-            setTimeout(updatePurchaseSortIcons, 0);
-
-            // 计算合计
             let totalWeight = 0, totalAmount = 0, totalPaid = 0, totalUnpaid = 0;
             orders.forEach(order => {
                 totalWeight += order.totalWeight || 0;
@@ -1857,12 +2403,6 @@
             });
 
             const tbody = document.getElementById('purchaseList');
-
-            // 调试：检查第一个订单的 docNumber
-            if (orders.length > 0) {
-                console.log('📋 渲染采购列表:', orders.length, '条记录');
-                console.log('📋 第一条记录:', orders[0].id, '单号:', orders[0].docNumber);
-            }
 
             let html = orders.map(order => {
                 const statusText = { unpaid: '未付', paid: '已付', partial: '部分' }[order.paymentStatus];
@@ -1886,7 +2426,6 @@
                 </tr>`;
             }).join('');
 
-            // 添加合计行
             if (orders.length > 0) {
                 html += `<tr style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-top: 2px solid #f59e0b;">
                     <td class="px-2 py-3 text-xs font-bold text-amber-800 whitespace-nowrap" colspan="2">合计${orders.length}单</td>
@@ -1929,7 +2468,6 @@
                 amount: payAmount, remark: `采购单 ${order.docNumber} 付款`
             });
 
-            // 自动同步
             try {
                 await saveData();
             } catch (err) {
@@ -1940,13 +2478,12 @@
             showToast('✅ 付款已登记');
         }
 
-        // ==================== 销售管理（销售清单） ====================
+
+        // ==================== 销售管理 ====================
         function openSalesModal() {
-            // 重置编辑状态
             editingSalesOrderId = null;
 
             const select = document.getElementById('salesCustomer');
-            // 客户去重：按名称去重，保留第一个ID和电话/地址
             const uniqueCustomers = [];
             const seenNames = new Set();
             data.customers.forEach(c => {
@@ -1958,15 +2495,13 @@
             select.innerHTML = '<option value="">请选择客户</option>' + 
                 uniqueCustomers.map(c => `<option value="${c.id}" data-phone="${c.phone || ''}" data-address="${c.remark || ''}">${c.name}</option>`).join('');
 
-            // 重置表单
             document.getElementById('salesDate').value = new Date().toISOString().split('T')[0];
             document.getElementById('salesCustomerPhone').value = '';
             document.getElementById('salesCustomerAddress').value = '';
             document.getElementById('salesItems').innerHTML = '';
+            document.getElementById('productSelectArea').style.display = 'none';
             salesItemCount = 0;
-            addSalesItem();
 
-            // 恢复模态框标题和按钮
             document.querySelector('#salesModal h3').textContent = '新增销售单（销售清单）';
             const saveBtn = document.querySelector('#salesModal button[onclick^="saveSalesOrder"], #salesModal button[onclick^="saveEditSalesOrder"]');
             if (saveBtn) {
@@ -1999,19 +2534,22 @@
                     <span style="display: flex; align-items: center;"><span class="drag-handle" title="拖拽排序">⋮⋮</span> 序号 ${salesItemCount}</span>
                     <button onclick="this.closest('.sales-item-row').remove(); renumberSalesItems();" style="background: #dc2626; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 12px;">删除</button>
                 </div>
-                <div class="sales-item-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
-                    <input type="text" class="si-name" placeholder="品名" value="黑虎虾" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
-                    <input type="text" class="si-spec" placeholder="规格" value="8-10" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
-                    <input type="text" class="si-brand" placeholder="品牌" value="蓝琼" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+                <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 8px; margin-bottom: 8px; font-size: 12px; color: #92400e;">
+                    ⚠️ 请使用上方"从产品库添加"按钮选择产品，自动填充信息
+                </div>
+                <div class="sales-item-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                    <input type="text" class="si-name" placeholder="品名" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+                    <input type="text" class="si-spec" placeholder="规格" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+                    <input type="text" class="si-brand" placeholder="品牌" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
                     <input type="number" class="si-qty" placeholder="数量/件" oninput="calcSalesItem(this)" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
                     <input type="number" class="si-weight" placeholder="净重/kg" step="0.01" oninput="calcSalesItem(this)" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
                     <select class="si-price-type" onchange="calcSalesItem(this)" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
                         <option value="kg">单价/kg</option>
                         <option value="piece">单价/件</option>
                     </select>
-                    <input type="number" class="si-price" placeholder="单价" step="0.01" value="64.5" oninput="calcSalesItem(this)" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+                    <input type="number" class="si-price" placeholder="单价" step="0.01" oninput="calcSalesItem(this)" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
                     <input type="text" class="si-total" placeholder="总价" readonly style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; background: #f3f4f6; color: #dc2626; font-weight: bold;">
-                    <input type="text" class="si-remark" placeholder="备注" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; grid-column: span 2;">
+                    <input type="text" class="si-remark" placeholder="备注" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
                 </div>
             `;
             container.appendChild(div);
@@ -2020,7 +2558,10 @@
         function renumberSalesItems() {
             const rows = document.querySelectorAll('#salesItems > div');
             rows.forEach((row, index) => {
-                row.querySelector('span').textContent = `序号 ${index + 1}`;
+                const span = row.querySelector('span > span:last-child');
+                if (span && span.textContent.includes('序号')) {
+                    span.textContent = `序号 ${index + 1}`;
+                }
             });
             salesItemCount = rows.length;
         }
@@ -2115,14 +2656,12 @@
 
         let editingSalesOrderId = null;
 
-        // 打开编辑销售单模态框
         function openEditSalesModal(orderId) {
             const order = data.salesOrders.find(o => o.id === orderId);
             if (!order) { showToast('❌ 订单不存在', 'error'); return; }
 
             editingSalesOrderId = orderId;
 
-            // 填充客户选择
             const select = document.getElementById('salesCustomer');
             const uniqueCustomers = [];
             const seenNames = new Set();
@@ -2135,16 +2674,13 @@
             select.innerHTML = '<option value="">请选择客户</option>' + 
                 uniqueCustomers.map(c => `<option value="${c.id}" data-phone="${c.phone || ''}" data-address="${c.remark || ''}" ${c.id === order.customerId ? 'selected' : ''}>${c.name}</option>`).join('');
 
-            // 填充基本信息
             document.getElementById('salesDate').value = order.date;
             document.getElementById('salesCustomerPhone').value = order.customerPhone || '';
             document.getElementById('salesCustomerAddress').value = order.customerAddress || '';
 
-            // 清空并重建产品列表
             document.getElementById('salesItems').innerHTML = '';
             salesItemCount = 0;
 
-            // 添加产品行
             order.items.forEach(item => {
                 addSalesItem();
                 const row = document.querySelectorAll('#salesItems > div')[salesItemCount - 1];
@@ -2157,12 +2693,14 @@
                 row.querySelector('.si-price-type').value = item.priceType;
                 row.querySelector('.si-total').value = item.total;
                 row.querySelector('.si-remark').value = item.remark || '';
+
+                // 移除提示信息
+                const tipDiv = row.querySelector('div[style*="fef3c7"]');
+                if (tipDiv) tipDiv.remove();
             });
 
-            // 如果没有产品，添加一行空的
             if (order.items.length === 0) addSalesItem();
 
-            // 修改按钮文本和模态框标题
             document.querySelector('#salesModal h3').textContent = '编辑销售单（销售清单）';
             const saveBtn = document.querySelector('#salesModal button[onclick^="saveSalesOrder"]');
             if (saveBtn) {
@@ -2173,7 +2711,6 @@
             document.getElementById('salesModal').classList.add('active');
         }
 
-        // 保存编辑后的销售单
         async function saveEditSalesOrder() {
             if (!editingSalesOrderId) return;
 
@@ -2212,21 +2749,17 @@
 
             if (items.length === 0) { showToast('⚠️ 请至少填写一个完整的产品信息', 'warning'); return; }
 
-            // 计算金额差异
             const amountDiff = totalAmount - order.totalAmount;
 
-            // 更新原客户余额（减去原订单剩余金额）
             if (oldCustomer) {
                 oldCustomer.balance = Math.max(0, (oldCustomer.balance || 0) - order.remainingAmount);
             }
 
-            // 更新新客户余额（加上新订单剩余金额）
             const newRemaining = totalAmount - order.paidAmount;
             if (newCustomer) {
                 newCustomer.balance = (newCustomer.balance || 0) + Math.max(0, newRemaining);
             }
 
-            // 更新订单数据
             order.date = document.getElementById('salesDate').value;
             order.customerId = customerSelect.value;
             order.customerName = customerName;
@@ -2244,7 +2777,6 @@
                 order.paymentStatus = 'partial';
             }
 
-            // 自动同步
             try {
                 await saveData();
                 showToast('✅ 订单修改成功');
@@ -2252,10 +2784,8 @@
                 console.error('同步失败:', err);
             }
 
-            // 重置编辑状态
             editingSalesOrderId = null;
 
-            // 恢复模态框标题和按钮
             document.querySelector('#salesModal h3').textContent = '新增销售单（销售清单）';
             const saveBtn = document.querySelector('#salesModal button[onclick^="saveSalesOrder"], #salesModal button[onclick^="saveEditSalesOrder"]');
             if (saveBtn) {
@@ -2269,7 +2799,6 @@
             updateDashboard();
         }
 
-        // 关键：保存后自动同步（仓库系统风格）
         async function saveSalesOrder() {
             const customerSelect = document.getElementById('salesCustomer');
             if (!customerSelect.value) { showToast('⚠️ 请选择客户', 'warning'); return; }
@@ -2315,7 +2844,6 @@
             const customer = data.customers.find(c => c.id === customerSelect.value);
             if (customer) customer.balance = (customer.balance || 0) + totalAmount;
 
-            // 自动同步（仓库系统风格）
             try {
                 await saveData();
             } catch (err) {
@@ -2416,7 +2944,6 @@
             if (search) orders = orders.filter(o => o.id.toLowerCase().includes(search) || o.customerName.toLowerCase().includes(search));
             if (statusFilter) orders = orders.filter(o => o.paymentStatus === statusFilter);
 
-            // 计算合计
             let totalAmount = 0, totalPaid = 0, totalUnpaid = 0;
             orders.forEach(order => {
                 totalAmount += order.totalAmount || 0;
@@ -2442,7 +2969,6 @@
                 </tr>`;
             }).join('');
 
-            // 添加合计行
             if (orders.length > 0) {
                 html += `<tr style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-top: 2px solid #f59e0b;">
                     <td class="px-6 py-4 text-sm font-bold text-amber-800" colspan="3">合计（${orders.length}单）</td>
@@ -2483,7 +3009,6 @@
                 amount: receiveAmount, remark: `销售单 ${order.id.slice(-6)} 收款`
             });
 
-            // 自动同步
             try {
                 await saveData();
             } catch (err) {
@@ -2494,136 +3019,11 @@
             showToast('✅ 收款已登记');
         }
 
+
         // ==================== 客户/供应商管理 ====================
-        
-        
-        // ==================== 采购单排序状态 ====================
-        let purchaseSortConfig = {
-            column: null,      // 'docNumber' 或 'supplier'
-            direction: 'asc'   // 'asc' 或 'desc'
-        };
-
-        // 采购单排序函数
-        function sortPurchaseList(column) {
-            // 切换排序方向
-            if (purchaseSortConfig.column === column) {
-                purchaseSortConfig.direction = purchaseSortConfig.direction === 'asc' ? 'desc' : 'asc';
-            } else {
-                purchaseSortConfig.column = column;
-                purchaseSortConfig.direction = 'asc';
-            }
-
-            // 更新排序图标
-            updatePurchaseSortIcons();
-
-            // 重新渲染列表
-            renderPurchaseList();
-        }
-
-        // 更新排序图标显示
-        function updatePurchaseSortIcons() {
-            // 清除所有图标
-            document.querySelectorAll('.sort-arrow').forEach(arrow => {
-                arrow.textContent = '';
-                arrow.className = 'sort-arrow text-gray-400';
-            });
-
-            // 设置当前排序列的图标
-            if (purchaseSortConfig.column) {
-                const arrowElement = document.getElementById('sort-purchase-' + purchaseSortConfig.column);
-                if (arrowElement) {
-                    arrowElement.textContent = purchaseSortConfig.direction === 'asc' ? '↑' : '↓';
-                    arrowElement.className = 'sort-arrow text-blue-600 font-bold';
-                }
-            }
-        }
-
-// ==================== 客户/供应商删除功能 ====================
-
-        // 删除确认对话框
-        function deletePartyConfirm(partyId, partyName, type) {
-            const typeText = type === 'customer' ? '客户' : '供应商';
-
-            // 创建确认对话框
-            const modal = document.createElement('div');
-            modal.className = 'modal active';
-            modal.id = 'deletePartyModal';
-            modal.innerHTML = `
-                <div class="modal-content" style="max-width: 400px;">
-                    <div class="p-6 border-b border-gray-200">
-                        <h3 class="text-xl font-bold text-red-600">⚠️ 删除确认</h3>
-                    </div>
-                    <div class="p-6 space-y-4">
-                        <p class="text-gray-700">确定要删除${typeText} <span class="font-bold text-gray-900">${partyName}</span> 吗？</p>
-                        <p class="text-sm text-gray-500">此操作不可恢复。</p>
-                        <div class="flex justify-end space-x-3 pt-4">
-                            <button onclick="document.getElementById('deletePartyModal').remove()" class="px-4 py-2 border rounded-lg hover:bg-gray-50">取消</button>
-                            <button onclick="executeDeleteParty('${partyId}', '${type}')" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium">确认删除</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-        }
-
-        // 执行删除
-        async function executeDeleteParty(partyId, type) {
-            // 关闭对话框
-            const modal = document.getElementById('deletePartyModal');
-            if (modal) modal.remove();
-
-            if (type === 'customer') {
-                // 检查是否有关联订单
-                const hasOrders = data.salesOrders.some(o => o.customerId === partyId);
-                if (hasOrders) {
-                    showToast('❌ 该客户已有销售订单，无法删除', 'error');
-                    return;
-                }
-
-                // 删除客户
-                const index = data.customers.findIndex(c => c.id === partyId);
-                if (index !== -1) {
-                    const name = data.customers[index].name;
-                    data.customers.splice(index, 1);
-                    try {
-                        await saveData();
-                        renderPartyList();
-                        showToast('✅ 客户 "' + name + '" 已删除');
-                    } catch (err) {
-                        console.error('删除失败:', err);
-                        showToast('❌ 删除失败', 'error');
-                    }
-                }
-            } else {
-                // 检查是否有关联订单
-                const hasOrders = data.purchaseOrders.some(o => o.supplierId === partyId);
-                if (hasOrders) {
-                    showToast('❌ 该供应商已有采购订单，无法删除', 'error');
-                    return;
-                }
-
-                // 删除供应商
-                const index = data.suppliers.findIndex(s => s.id === partyId);
-                if (index !== -1) {
-                    const name = data.suppliers[index].name;
-                    data.suppliers.splice(index, 1);
-                    try {
-                        await saveData();
-                        renderPartyList();
-                        showToast('✅ 供应商 "' + name + '" 已删除');
-                    } catch (err) {
-                        console.error('删除失败:', err);
-                        showToast('❌ 删除失败', 'error');
-                    }
-                }
-            }
-        }
-
-function renderPartyList() {
-            // 去重并统计客户信息
+        function renderPartyList() {
             const customerMap = new Map();
 
-            // 先统计每个客户的所有订单数据
             data.customers.forEach(c => {
                 if (!customerMap.has(c.name)) {
                     customerMap.set(c.name, {
@@ -2631,15 +3031,14 @@ function renderPartyList() {
                         name: c.name,
                         phone: c.phone,
                         remark: c.remark,
-                        totalAmount: 0,      // 总货款
-                        paidAmount: 0,       // 已支付
-                        remainingAmount: 0,  // 未支付
-                        orderCount: 0        // 订单数
+                        totalAmount: 0,
+                        paidAmount: 0,
+                        remainingAmount: 0,
+                        orderCount: 0
                     });
                 }
             });
 
-            // 统计销售订单
             data.salesOrders.forEach(order => {
                 const customer = data.customers.find(c => c.id === order.customerId);
                 if (customer && customerMap.has(customer.name)) {
@@ -2651,7 +3050,6 @@ function renderPartyList() {
                 }
             });
 
-            // 去重并统计供应商信息
             const supplierMap = new Map();
 
             data.suppliers.forEach(s => {
@@ -2669,7 +3067,6 @@ function renderPartyList() {
                 }
             });
 
-            // 统计采购订单
             data.purchaseOrders.forEach(order => {
                 const supplier = data.suppliers.find(s => s.id === order.supplierId);
                 if (supplier && supplierMap.has(supplier.name)) {
@@ -2684,7 +3081,6 @@ function renderPartyList() {
             const uniqueCustomers = Array.from(customerMap.values());
             const uniqueSuppliers = Array.from(supplierMap.values());
 
-            // 计算合计
             const customerTotals = uniqueCustomers.reduce((acc, c) => ({
                 totalAmount: acc.totalAmount + c.totalAmount,
                 paidAmount: acc.paidAmount + c.paidAmount,
@@ -2699,7 +3095,6 @@ function renderPartyList() {
                 orderCount: acc.orderCount + s.orderCount
             }), { totalAmount: 0, paidAmount: 0, remainingAmount: 0, orderCount: 0 });
 
-            // 渲染客户列表 - 显示详细统计
             document.getElementById('customerList').innerHTML = uniqueCustomers.map(c => `
                 <tr class="hover:bg-blue-50 transition-colors">
                     <td class="px-4 py-3">
@@ -2733,7 +3128,6 @@ function renderPartyList() {
                 </tr>
             `;
 
-            // 渲染供应商列表 - 显示详细统计
             document.getElementById('supplierList').innerHTML = uniqueSuppliers.map(s => `
                 <tr class="hover:bg-purple-50 transition-colors">
                     <td class="px-4 py-3">
@@ -2768,12 +3162,10 @@ function renderPartyList() {
             `;
         }
 
-        // 从客户列表直接收款
         async function receivePaymentFromCustomer(customerId) {
             const customer = data.customers.find(c => c.id === customerId);
             if (!customer) return;
 
-            // 计算该客户所有未完成的销售订单
             const unpaidOrders = data.salesOrders.filter(o => o.customerId === customerId && o.remainingAmount > 0);
             const totalUnpaid = unpaidOrders.reduce((sum, o) => sum + o.remainingAmount, 0);
 
@@ -2786,7 +3178,6 @@ function renderPartyList() {
                 return; 
             }
 
-            // 按比例分配到各订单
             let remainingToAllocate = receiveAmount;
             for (let order of unpaidOrders) {
                 if (remainingToAllocate <= 0) break;
@@ -2822,12 +3213,10 @@ function renderPartyList() {
             }
         }
 
-        // 向供应商付款
         async function paySupplier(supplierId) {
             const supplier = data.suppliers.find(s => s.id === supplierId);
             if (!supplier) return;
 
-            // 计算该供应商所有未完成的采购订单
             const unpaidOrders = data.purchaseOrders.filter(o => o.supplierId === supplierId && o.remainingAmount > 0);
             const totalUnpaid = unpaidOrders.reduce((sum, o) => sum + o.remainingAmount, 0);
 
@@ -2840,7 +3229,6 @@ function renderPartyList() {
                 return; 
             }
 
-            // 按比例分配到各订单
             let remainingToAllocate = payAmount;
             for (let order of unpaidOrders) {
                 if (remainingToAllocate <= 0) break;
@@ -2902,7 +3290,6 @@ function renderPartyList() {
             openCustomerModal();
         }
 
-        // 关键：保存后自动同步（仓库系统风格）
         async function saveParty() {
             const type = document.getElementById('partyType').value;
             const name = document.getElementById('partyName').value.trim();
@@ -2939,7 +3326,6 @@ function renderPartyList() {
                 }
             }
 
-            // 自动同步
             try {
                 await saveData();
             } catch (err) {
@@ -2949,6 +3335,77 @@ function renderPartyList() {
             closeModal('partyModal');
             renderPartyList();
             showToast('✅ 保存成功');
+        }
+
+        function deletePartyConfirm(partyId, partyName, type) {
+            const typeText = type === 'customer' ? '客户' : '供应商';
+
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.id = 'deletePartyModal';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 400px;">
+                    <div class="p-6 border-b border-gray-200">
+                        <h3 class="text-xl font-bold text-red-600">⚠️ 删除确认</h3>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <p class="text-gray-700">确定要删除${typeText} <span class="font-bold text-gray-900">${partyName}</span> 吗？</p>
+                        <p class="text-sm text-gray-500">此操作不可恢复。</p>
+                        <div class="flex justify-end space-x-3 pt-4">
+                            <button onclick="document.getElementById('deletePartyModal').remove()" class="px-4 py-2 border rounded-lg hover:bg-gray-50">取消</button>
+                            <button onclick="executeDeleteParty('${partyId}', '${type}')" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium">确认删除</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        async function executeDeleteParty(partyId, type) {
+            const modal = document.getElementById('deletePartyModal');
+            if (modal) modal.remove();
+
+            if (type === 'customer') {
+                const hasOrders = data.salesOrders.some(o => o.customerId === partyId);
+                if (hasOrders) {
+                    showToast('❌ 该客户已有销售订单，无法删除', 'error');
+                    return;
+                }
+
+                const index = data.customers.findIndex(c => c.id === partyId);
+                if (index !== -1) {
+                    const name = data.customers[index].name;
+                    data.customers.splice(index, 1);
+                    try {
+                        await saveData();
+                        renderPartyList();
+                        showToast('✅ 客户 "' + name + '" 已删除');
+                    } catch (err) {
+                        console.error('删除失败:', err);
+                        showToast('❌ 删除失败', 'error');
+                    }
+                }
+            } else {
+                const hasOrders = data.purchaseOrders.some(o => o.supplierId === partyId);
+                if (hasOrders) {
+                    showToast('❌ 该供应商已有采购订单，无法删除', 'error');
+                    return;
+                }
+
+                const index = data.suppliers.findIndex(s => s.id === partyId);
+                if (index !== -1) {
+                    const name = data.suppliers[index].name;
+                    data.suppliers.splice(index, 1);
+                    try {
+                        await saveData();
+                        renderPartyList();
+                        showToast('✅ 供应商 "' + name + '" 已删除');
+                    } catch (err) {
+                        console.error('删除失败:', err);
+                        showToast('❌ 删除失败', 'error');
+                    }
+                }
+            }
         }
 
         // ==================== 收付款 ====================
@@ -2971,7 +3428,6 @@ function renderPartyList() {
 
             const select = document.getElementById('paymentParty');
             const parties = type === 'income' ? data.customers : data.suppliers;
-            // 去重：按名称去重
             const uniqueParties = [];
             const seenNames = new Set();
             parties.forEach(p => {
@@ -2988,7 +3444,6 @@ function renderPartyList() {
             document.getElementById('paymentModal').classList.add('active');
         }
 
-        // 关键：保存后自动同步（仓库系统风格）
         async function savePayment() {
             const type = document.getElementById('paymentModal').dataset.type;
             const partyId = document.getElementById('paymentParty').value;
@@ -3015,7 +3470,6 @@ function renderPartyList() {
                 if (supplier) supplier.balance = Math.max(0, (supplier.balance || 0) - amount);
             }
 
-            // 自动同步
             try {
                 await saveData();
             } catch (err) {
@@ -3028,29 +3482,12 @@ function renderPartyList() {
             showToast('✅ 保存成功');
         }
 
-        // ==================== 报表 ====================
-        function updateReports() {
-            const now = new Date();
-            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-            const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
-
-            const monthSales = data.salesOrders.filter(o => o.date >= monthStart && o.date <= monthEnd).reduce((sum, o) => sum + o.totalAmount, 0);
-            const monthPurchase = data.purchaseOrders.filter(o => o.date >= monthStart && o.date <= monthEnd).reduce((sum, o) => sum + o.totalAmount, 0);
-            const monthProfit = monthSales - monthPurchase;
-
-            document.getElementById('monthSales').textContent = `¥${monthSales.toFixed(0)}`;
-            document.getElementById('monthPurchase').textContent = `¥${monthPurchase.toFixed(0)}`;
-            document.getElementById('monthProfit').textContent = `¥${monthProfit.toFixed(0)}`;
-        }
-
         // ==================== 工具函数 ====================
         function closeModal(modalId) {
             document.getElementById(modalId).classList.remove('active');
 
-            // 如果是采购或销售模态框，重置编辑状态
             if (modalId === 'purchaseModal') {
                 editingPurchaseOrderId = null;
-                // 恢复按钮
                 document.querySelector('#purchaseModal h3').textContent = '新增采购单（收购单）';
                 const saveBtn = document.querySelector('#purchaseModal button[onclick^="savePurchaseOrder"], #purchaseModal button[onclick^="saveEditPurchaseOrder"]');
                 if (saveBtn) {
@@ -3061,7 +3498,6 @@ function renderPartyList() {
 
             if (modalId === 'salesModal') {
                 editingSalesOrderId = null;
-                // 恢复按钮
                 document.querySelector('#salesModal h3').textContent = '新增销售单（销售清单）';
                 const saveBtn = document.querySelector('#salesModal button[onclick^="saveSalesOrder"], #salesModal button[onclick^="saveEditSalesOrder"]');
                 if (saveBtn) {
@@ -3132,7 +3568,6 @@ function renderPartyList() {
                 return;
             }
 
-            // 创建图片查看模态框
             const modal = document.createElement('div');
             modal.className = 'modal image-viewer-modal active';
             modal.innerHTML = `
@@ -3155,7 +3590,6 @@ function renderPartyList() {
             deleteTarget = { type, orderId };
             const typeText = type === 'purchase' ? '采购单（收购单）' : '销售单（销售清单）';
 
-            // 创建删除确认模态框
             const modal = document.createElement('div');
             modal.id = 'deleteConfirmModal';
             modal.className = 'modal active';
@@ -3224,7 +3658,6 @@ function renderPartyList() {
 
             data.purchaseOrders.splice(orderIndex, 1);
 
-            // 删除后不重新排序编号，保留原有单号
             renderPurchaseList();
             updateDashboard();
 
@@ -3234,34 +3667,6 @@ function renderPartyList() {
             } catch (err) {
                 console.error('同步失败:', err);
             }
-        }
-
-        /**
-         * 重新整理采购单编号：按日期排序后从001开始重新编号
-         */
-        function reorderPurchaseDocNumbers() {
-            // 安全检查：确保数据存在
-            if (!data.purchaseOrders || !Array.isArray(data.purchaseOrders)) {
-                data.purchaseOrders = [];
-                return;
-            }
-
-            // 按日期升序排序（早的在前）
-            data.purchaseOrders.sort((a, b) => {
-                const dateA = a.date ? new Date(a.date) : new Date(0);
-                const dateB = b.date ? new Date(b.date) : new Date(0);
-                return dateA - dateB;
-            });
-
-            // 重新编号
-            data.purchaseOrders.forEach((order, index) => {
-                if (order) {
-                    order.docNumber = String(index + 1).padStart(3, '0');
-                }
-            });
-
-            // 更新最后使用的编号
-            data.lastPurchaseDocNumber = data.purchaseOrders.length;
         }
 
         async function deleteSalesOrder(orderId) {
