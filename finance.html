@@ -4,9 +4,969 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>佳信水产进销存财务系统 v3.4</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.tailwindcss.com">
+        
+        // ==================== 销售列表排序功能 ====================
+        let salesSortConfig = { column: null, direction: 'asc' };
+
+        function sortSalesList(column) {
+            // 切换排序方向
+            if (salesSortConfig.column === column) {
+                salesSortConfig.direction = salesSortConfig.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                salesSortConfig.column = column;
+                salesSortConfig.direction = 'asc';
+            }
+
+            // 重置所有箭头
+            document.querySelectorAll('[id^="sort-sales-"]').forEach(arrow => {
+                arrow.textContent = '';
+                arrow.className = 'sort-arrow text-gray-400';
+            });
+
+            // 设置当前列箭头
+            const arrowElement = document.getElementById('sort-sales-' + column);
+            if (arrowElement) {
+                arrowElement.textContent = salesSortConfig.direction === 'asc' ? '↑' : '↓';
+                arrowElement.className = 'sort-arrow text-blue-600 font-bold';
+            }
+
+            // 重新渲染列表
+            renderSalesList();
+        }
+
+// ==================== 客户对账单功能 ====================
+        let selectedStatementCustomerId = null;
+
+        function exportCustomerStatement() {
+            // 生成交互式客户列表供选择
+            const modal = document.getElementById('statementCustomerSelectModal');
+            const list = document.getElementById('statementCustomerList');
+
+            // 获取有交易记录的客户
+            const customerMap = new Map();
+            data.customers.forEach(c => {
+                if (!customerMap.has(c.name)) {
+                    customerMap.set(c.name, c);
+                }
+            });
+
+            // 计算每个客户的交易统计
+            const customersWithOrders = [];
+            customerMap.forEach((customer, name) => {
+                const orders = data.salesOrders.filter(o => {
+                    const c = data.customers.find(cust => cust.id === o.customerId);
+                    return c && c.name === name;
+                });
+
+                if (orders.length > 0) {
+                    const totalAmount = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+                    const totalPaid = orders.reduce((sum, o) => sum + o.paidAmount, 0);
+                    const totalUnpaid = orders.reduce((sum, o) => sum + o.remainingAmount, 0);
+                    const totalQty = orders.reduce((sum, o) => sum + (o.totalQty || 0), 0);
+
+                    customersWithOrders.push({
+                        ...customer,
+                        orders,
+                        totalAmount,
+                        totalPaid,
+                        totalUnpaid,
+                        totalQty
+                    });
+                }
+            });
+
+            if (customersWithOrders.length === 0) {
+                showToast('⚠️ 暂无客户交易记录', 'warning');
+                return;
+            }
+
+            list.innerHTML = customersWithOrders.map(c => `
+                <div onclick="selectStatementCustomer('${c.id}')" 
+                     class="customer-select-item p-4 border-2 rounded-lg cursor-pointer transition-all hover:shadow-md ${selectedStatementCustomerId === c.id ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-300'}"
+                     data-customer-id="${c.id}">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="font-bold text-gray-800">${c.name}</div>
+                            <div class="text-sm text-gray-500 mt-1">${c.orders.length}笔订单 · ${c.totalQty}件 · 未付¥${c.totalUnpaid.toFixed(2)}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold text-red-600">¥${c.totalAmount.toFixed(2)}</div>
+                            <div class="text-xs text-gray-400">总货款</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            modal.classList.add('active');
+        }
+
+        function selectStatementCustomer(customerId) {
+            selectedStatementCustomerId = customerId;
+            // 更新UI显示选中状态
+            document.querySelectorAll('.customer-select-item').forEach(el => {
+                if (el.dataset.customerId === customerId) {
+                    el.classList.remove('border-gray-200');
+                    el.classList.add('border-green-500', 'bg-green-50');
+                } else {
+                    el.classList.remove('border-green-500', 'bg-green-50');
+                    el.classList.add('border-gray-200');
+                }
+            });
+        }
+
+        function generateSelectedStatement() {
+            if (!selectedStatementCustomerId) {
+                showToast('⚠️ 请先选择一个客户', 'warning');
+                return;
+            }
+
+            closeModal('statementCustomerSelectModal');
+            generateCustomerStatement(selectedStatementCustomerId);
+        }
+
+        function generateCustomerStatement(customerId) {
+            const customer = data.customers.find(c => c.id === customerId);
+            if (!customer) return;
+
+            // 获取该客户的所有订单
+            const orders = data.salesOrders.filter(o => o.customerId === customerId).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (orders.length === 0) {
+                showToast('⚠️ 该客户暂无订单记录', 'warning');
+                return;
+            }
+
+            const totalAmount = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+            const totalPaid = orders.reduce((sum, o) => sum + o.paidAmount, 0);
+            const totalUnpaid = orders.reduce((sum, o) => sum + o.remainingAmount, 0);
+            const totalQty = orders.reduce((sum, o) => sum + (o.totalQty || 0), 0);
+
+            // 生成日期范围文本
+            const dates = orders.map(o => o.date).sort();
+            const startDate = dates[0];
+            const endDate = dates[dates.length - 1];
+            const dateRangeText = startDate === endDate ? startDate : `${startDate} 至 ${endDate}`;
+
+            // 获取该客户的收付款记录
+            const payments = data.transactions.filter(t => t.partyId === customerId && t.type === 'income').sort((a, b) => new Date(b.date) - new Date(a.date));
+            const totalPayments = payments.reduce((sum, p) => sum + p.amount, 0);
+            const remainingAmount = totalAmount - totalPayments;
+
+            // 生成订单明细HTML（不显示状态列）
+            const orderRows = orders.map((order, index) => {
+                return `
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 12px 8px; text-align: center; color: #6b7280; font-size: 13px;">${index + 1}</td>
+                        <td style="padding: 12px 8px; text-align: center; color: #111827; font-size: 13px; font-weight: 500;">${order.date}</td>
+                        <td style="padding: 12px 8px; text-align: center; color: #6b7280; font-size: 13px;">NO.${order.id.slice(-6)}</td>
+                        <td style="padding: 12px 8px; text-align: center; color: #111827; font-size: 13px; font-weight: 600;">${order.totalQty || 0}件</td>
+                        <td style="padding: 12px 8px; text-align: right; color: #dc2626; font-size: 13px; font-weight: 600;">¥${order.totalAmount.toFixed(2)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            // 生成支付明细HTML
+            const paymentRows = payments.map((payment, index) => {
+                return `
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 10px 8px; text-align: center; color: #6b7280; font-size: 12px;">${index + 1}</td>
+                        <td style="padding: 10px 8px; text-align: center; color: #111827; font-size: 12px;">${payment.date}</td>
+                        <td style="padding: 10px 8px; text-align: center; color: #059669; font-size: 12px; font-weight: 500;">¥${payment.amount.toFixed(2)}</td>
+                        <td style="padding: 10px 8px; text-align: center; color: #6b7280; font-size: 12px;">${payment.paymentMethod || '-'}</td>
+                        <td style="padding: 10px 8px; text-align: left; color: #6b7280; font-size: 12px;">${payment.remark || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            // 组装对账单HTML
+            const statementHTML = `
+                <div style="padding: 40px; background: white; font-family: 'Inter', 'Microsoft YaHei', sans-serif; color: #1f2937;">
+                    <!-- 头部 -->
+                    <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px solid #1e40af;">
+                        <h1 style="font-size: 28px; font-weight: 800; color: #1e3a5f; margin-bottom: 8px; letter-spacing: 2px;">佳信水产有限公司</h1>
+                        <h2 style="font-size: 20px; font-weight: 600; color: #3b82f6; margin-bottom: 16px;">客户对账单</h2>
+                        <div style="display: flex; justify-content: center; gap: 30px; font-size: 13px; color: #6b7280;">
+                            <span>电话：18077761212</span>
+                            <span>联系人：郑佳宝</span>
+                        </div>
+                    </div>
+
+                    <!-- 客户信息 -->
+                    <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 12px; padding: 20px; margin-bottom: 24px; border: 1px solid #bfdbfe;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div>
+                                <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">客户名称</div>
+                                <div style="font-size: 18px; font-weight: 700; color: #1e40af;">${customer.name}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">对账期间</div>
+                                <div style="font-size: 16px; font-weight: 600; color: #111827;">${dateRangeText}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">联系电话</div>
+                                <div style="font-size: 14px; color: #374151;">${customer.phone || '-'}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">单据数量</div>
+                                <div style="font-size: 16px; font-weight: 600; color: #111827;">${orders.length}笔订单 · 收款${payments.length}笔</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 汇总卡片 -->
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
+                        <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #fecaca;">
+                            <div style="font-size: 12px; color: #991b1b; margin-bottom: 4px;">总货款</div>
+                            <div style="font-size: 22px; font-weight: 800; color: #dc2626;">¥${totalAmount.toFixed(2)}</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #86efac;">
+                            <div style="font-size: 12px; color: #166534; margin-bottom: 4px;">已支付</div>
+                            <div style="font-size: 22px; font-weight: 800; color: #16a34a;">¥${totalPayments.toFixed(2)}</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #fde047;">
+                            <div style="font-size: 12px; color: #854d0e; margin-bottom: 4px;">未支付</div>
+                            <div style="font-size: 22px; font-weight: 800; color: #ca8a04;">¥${remainingAmount.toFixed(2)}</div>
+                        </div>
+                    </div>
+
+                    <!-- 订单明细表格 -->
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 12px; padding-left: 8px; border-left: 4px solid #3b82f6;">发货明细</div>
+                        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <thead>
+                                <tr style="background: #f8fafc;">
+                                    <th style="padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">序号</th>
+                                    <th style="padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">日期</th>
+                                    <th style="padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">单号</th>
+                                    <th style="padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">件数</th>
+                                    <th style="padding: 12px 8px; text-align: right; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">金额</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${orderRows}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 支付明细表格 -->
+                    ${payments.length > 0 ? `
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 12px; padding-left: 8px; border-left: 4px solid #10b981;">收款明细</div>
+                        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <thead>
+                                <tr style="background: #f0fdf4;">
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">序号</th>
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">日期</th>
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">金额</th>
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">支付方式</th>
+                                    <th style="padding: 10px 8px; text-align: left; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">备注</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${paymentRows}
+                            </tbody>
+                        </table>
+                    </div>
+                    ` : ''}
+
+                    <!-- 剩余未支付金额 -->
+                    <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 10px; padding: 16px; margin: 20px 0; border: 2px solid #f59e0b; text-align: center;">
+                        <div style="font-size: 14px; color: #92400e; margin-bottom: 4px;">剩余未支付金额</div>
+                        <div style="font-size: 28px; font-weight: 800; color: #b45309;">¥${remainingAmount.toFixed(2)}</div>
+                    </div>
+
+                    <!-- 底部信息 -->
+                    <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin-top: 30px; border: 1px solid #e5e7eb;">
+                        <div style="font-size: 12px; color: #6b7280; line-height: 1.8; text-align: center;">
+                            <p style="margin-bottom: 8px;">如有疑问，请联系：郑佳宝 18077761212</p>
+                            <p>感谢您选择佳信水产！</p>
+                        </div>
+                    </div>
+
+                    <!-- 生成时间 -->
+                    <div style="text-align: center; margin-top: 20px; font-size: 11px; color: #9ca3af;">
+                        对账单生成时间：${new Date().toLocaleString('zh-CN')}
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('customerStatementContent').innerHTML = statementHTML;
+            document.getElementById('customerStatementModal').classList.add('active');
+
+            // 保存当前对账单客户ID用于下载
+            document.getElementById('customerStatementModal').dataset.currentCustomerId = customerId;
+        }
+
+        function downloadCustomerStatement() {
+            const element = document.getElementById('customerStatementContent');
+            const customerId = document.getElementById('customerStatementModal').dataset.currentCustomerId;
+            const customer = data.customers.find(c => c.id === customerId);
+
+            document.getElementById('loading').classList.add('show');
+
+            html2canvas(element, { 
+                scale: 2, 
+                backgroundColor: '#ffffff',
+                useCORS: true,
+                logging: false
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `对账单_${customer ? customer.name : '客户'}_${new Date().toISOString().split('T')[0]}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                document.getElementById('loading').classList.remove('show');
+                showToast('✅ 对账单已保存');
+            }).catch(err => {
+                console.error('生成图片失败:', err);
+                document.getElementById('loading').classList.remove('show');
+                showToast('❌ 生成图片失败', 'error');
+            });
+        }
+
+</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
+        
+        // ==================== 销售列表排序功能 ====================
+        let salesSortConfig = { column: null, direction: 'asc' };
+
+        function sortSalesList(column) {
+            // 切换排序方向
+            if (salesSortConfig.column === column) {
+                salesSortConfig.direction = salesSortConfig.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                salesSortConfig.column = column;
+                salesSortConfig.direction = 'asc';
+            }
+
+            // 重置所有箭头
+            document.querySelectorAll('[id^="sort-sales-"]').forEach(arrow => {
+                arrow.textContent = '';
+                arrow.className = 'sort-arrow text-gray-400';
+            });
+
+            // 设置当前列箭头
+            const arrowElement = document.getElementById('sort-sales-' + column);
+            if (arrowElement) {
+                arrowElement.textContent = salesSortConfig.direction === 'asc' ? '↑' : '↓';
+                arrowElement.className = 'sort-arrow text-blue-600 font-bold';
+            }
+
+            // 重新渲染列表
+            renderSalesList();
+        }
+
+// ==================== 客户对账单功能 ====================
+        let selectedStatementCustomerId = null;
+
+        function exportCustomerStatement() {
+            // 生成交互式客户列表供选择
+            const modal = document.getElementById('statementCustomerSelectModal');
+            const list = document.getElementById('statementCustomerList');
+
+            // 获取有交易记录的客户
+            const customerMap = new Map();
+            data.customers.forEach(c => {
+                if (!customerMap.has(c.name)) {
+                    customerMap.set(c.name, c);
+                }
+            });
+
+            // 计算每个客户的交易统计
+            const customersWithOrders = [];
+            customerMap.forEach((customer, name) => {
+                const orders = data.salesOrders.filter(o => {
+                    const c = data.customers.find(cust => cust.id === o.customerId);
+                    return c && c.name === name;
+                });
+
+                if (orders.length > 0) {
+                    const totalAmount = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+                    const totalPaid = orders.reduce((sum, o) => sum + o.paidAmount, 0);
+                    const totalUnpaid = orders.reduce((sum, o) => sum + o.remainingAmount, 0);
+                    const totalQty = orders.reduce((sum, o) => sum + (o.totalQty || 0), 0);
+
+                    customersWithOrders.push({
+                        ...customer,
+                        orders,
+                        totalAmount,
+                        totalPaid,
+                        totalUnpaid,
+                        totalQty
+                    });
+                }
+            });
+
+            if (customersWithOrders.length === 0) {
+                showToast('⚠️ 暂无客户交易记录', 'warning');
+                return;
+            }
+
+            list.innerHTML = customersWithOrders.map(c => `
+                <div onclick="selectStatementCustomer('${c.id}')" 
+                     class="customer-select-item p-4 border-2 rounded-lg cursor-pointer transition-all hover:shadow-md ${selectedStatementCustomerId === c.id ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-300'}"
+                     data-customer-id="${c.id}">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="font-bold text-gray-800">${c.name}</div>
+                            <div class="text-sm text-gray-500 mt-1">${c.orders.length}笔订单 · ${c.totalQty}件 · 未付¥${c.totalUnpaid.toFixed(2)}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold text-red-600">¥${c.totalAmount.toFixed(2)}</div>
+                            <div class="text-xs text-gray-400">总货款</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            modal.classList.add('active');
+        }
+
+        function selectStatementCustomer(customerId) {
+            selectedStatementCustomerId = customerId;
+            // 更新UI显示选中状态
+            document.querySelectorAll('.customer-select-item').forEach(el => {
+                if (el.dataset.customerId === customerId) {
+                    el.classList.remove('border-gray-200');
+                    el.classList.add('border-green-500', 'bg-green-50');
+                } else {
+                    el.classList.remove('border-green-500', 'bg-green-50');
+                    el.classList.add('border-gray-200');
+                }
+            });
+        }
+
+        function generateSelectedStatement() {
+            if (!selectedStatementCustomerId) {
+                showToast('⚠️ 请先选择一个客户', 'warning');
+                return;
+            }
+
+            closeModal('statementCustomerSelectModal');
+            generateCustomerStatement(selectedStatementCustomerId);
+        }
+
+        function generateCustomerStatement(customerId) {
+            const customer = data.customers.find(c => c.id === customerId);
+            if (!customer) return;
+
+            // 获取该客户的所有订单
+            const orders = data.salesOrders.filter(o => o.customerId === customerId).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (orders.length === 0) {
+                showToast('⚠️ 该客户暂无订单记录', 'warning');
+                return;
+            }
+
+            const totalAmount = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+            const totalPaid = orders.reduce((sum, o) => sum + o.paidAmount, 0);
+            const totalUnpaid = orders.reduce((sum, o) => sum + o.remainingAmount, 0);
+            const totalQty = orders.reduce((sum, o) => sum + (o.totalQty || 0), 0);
+
+            // 生成日期范围文本
+            const dates = orders.map(o => o.date).sort();
+            const startDate = dates[0];
+            const endDate = dates[dates.length - 1];
+            const dateRangeText = startDate === endDate ? startDate : `${startDate} 至 ${endDate}`;
+
+            // 获取该客户的收付款记录
+            const payments = data.transactions.filter(t => t.partyId === customerId && t.type === 'income').sort((a, b) => new Date(b.date) - new Date(a.date));
+            const totalPayments = payments.reduce((sum, p) => sum + p.amount, 0);
+            const remainingAmount = totalAmount - totalPayments;
+
+            // 生成订单明细HTML（不显示状态列）
+            const orderRows = orders.map((order, index) => {
+                return `
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 12px 8px; text-align: center; color: #6b7280; font-size: 13px;">${index + 1}</td>
+                        <td style="padding: 12px 8px; text-align: center; color: #111827; font-size: 13px; font-weight: 500;">${order.date}</td>
+                        <td style="padding: 12px 8px; text-align: center; color: #6b7280; font-size: 13px;">NO.${order.id.slice(-6)}</td>
+                        <td style="padding: 12px 8px; text-align: center; color: #111827; font-size: 13px; font-weight: 600;">${order.totalQty || 0}件</td>
+                        <td style="padding: 12px 8px; text-align: right; color: #dc2626; font-size: 13px; font-weight: 600;">¥${order.totalAmount.toFixed(2)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            // 生成支付明细HTML
+            const paymentRows = payments.map((payment, index) => {
+                return `
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 10px 8px; text-align: center; color: #6b7280; font-size: 12px;">${index + 1}</td>
+                        <td style="padding: 10px 8px; text-align: center; color: #111827; font-size: 12px;">${payment.date}</td>
+                        <td style="padding: 10px 8px; text-align: center; color: #059669; font-size: 12px; font-weight: 500;">¥${payment.amount.toFixed(2)}</td>
+                        <td style="padding: 10px 8px; text-align: center; color: #6b7280; font-size: 12px;">${payment.paymentMethod || '-'}</td>
+                        <td style="padding: 10px 8px; text-align: left; color: #6b7280; font-size: 12px;">${payment.remark || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            // 组装对账单HTML
+            const statementHTML = `
+                <div style="padding: 40px; background: white; font-family: 'Inter', 'Microsoft YaHei', sans-serif; color: #1f2937;">
+                    <!-- 头部 -->
+                    <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px solid #1e40af;">
+                        <h1 style="font-size: 28px; font-weight: 800; color: #1e3a5f; margin-bottom: 8px; letter-spacing: 2px;">佳信水产有限公司</h1>
+                        <h2 style="font-size: 20px; font-weight: 600; color: #3b82f6; margin-bottom: 16px;">客户对账单</h2>
+                        <div style="display: flex; justify-content: center; gap: 30px; font-size: 13px; color: #6b7280;">
+                            <span>电话：18077761212</span>
+                            <span>联系人：郑佳宝</span>
+                        </div>
+                    </div>
+
+                    <!-- 客户信息 -->
+                    <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 12px; padding: 20px; margin-bottom: 24px; border: 1px solid #bfdbfe;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div>
+                                <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">客户名称</div>
+                                <div style="font-size: 18px; font-weight: 700; color: #1e40af;">${customer.name}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">对账期间</div>
+                                <div style="font-size: 16px; font-weight: 600; color: #111827;">${dateRangeText}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">联系电话</div>
+                                <div style="font-size: 14px; color: #374151;">${customer.phone || '-'}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">单据数量</div>
+                                <div style="font-size: 16px; font-weight: 600; color: #111827;">${orders.length}笔订单 · 收款${payments.length}笔</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 汇总卡片 -->
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
+                        <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #fecaca;">
+                            <div style="font-size: 12px; color: #991b1b; margin-bottom: 4px;">总货款</div>
+                            <div style="font-size: 22px; font-weight: 800; color: #dc2626;">¥${totalAmount.toFixed(2)}</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #86efac;">
+                            <div style="font-size: 12px; color: #166534; margin-bottom: 4px;">已支付</div>
+                            <div style="font-size: 22px; font-weight: 800; color: #16a34a;">¥${totalPayments.toFixed(2)}</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #fde047;">
+                            <div style="font-size: 12px; color: #854d0e; margin-bottom: 4px;">未支付</div>
+                            <div style="font-size: 22px; font-weight: 800; color: #ca8a04;">¥${remainingAmount.toFixed(2)}</div>
+                        </div>
+                    </div>
+
+                    <!-- 订单明细表格 -->
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 12px; padding-left: 8px; border-left: 4px solid #3b82f6;">发货明细</div>
+                        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <thead>
+                                <tr style="background: #f8fafc;">
+                                    <th style="padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">序号</th>
+                                    <th style="padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">日期</th>
+                                    <th style="padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">单号</th>
+                                    <th style="padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">件数</th>
+                                    <th style="padding: 12px 8px; text-align: right; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">金额</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${orderRows}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 支付明细表格 -->
+                    ${payments.length > 0 ? `
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 12px; padding-left: 8px; border-left: 4px solid #10b981;">收款明细</div>
+                        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <thead>
+                                <tr style="background: #f0fdf4;">
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">序号</th>
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">日期</th>
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">金额</th>
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">支付方式</th>
+                                    <th style="padding: 10px 8px; text-align: left; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">备注</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${paymentRows}
+                            </tbody>
+                        </table>
+                    </div>
+                    ` : ''}
+
+                    <!-- 剩余未支付金额 -->
+                    <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 10px; padding: 16px; margin: 20px 0; border: 2px solid #f59e0b; text-align: center;">
+                        <div style="font-size: 14px; color: #92400e; margin-bottom: 4px;">剩余未支付金额</div>
+                        <div style="font-size: 28px; font-weight: 800; color: #b45309;">¥${remainingAmount.toFixed(2)}</div>
+                    </div>
+
+                    <!-- 底部信息 -->
+                    <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin-top: 30px; border: 1px solid #e5e7eb;">
+                        <div style="font-size: 12px; color: #6b7280; line-height: 1.8; text-align: center;">
+                            <p style="margin-bottom: 8px;">如有疑问，请联系：郑佳宝 18077761212</p>
+                            <p>感谢您选择佳信水产！</p>
+                        </div>
+                    </div>
+
+                    <!-- 生成时间 -->
+                    <div style="text-align: center; margin-top: 20px; font-size: 11px; color: #9ca3af;">
+                        对账单生成时间：${new Date().toLocaleString('zh-CN')}
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('customerStatementContent').innerHTML = statementHTML;
+            document.getElementById('customerStatementModal').classList.add('active');
+
+            // 保存当前对账单客户ID用于下载
+            document.getElementById('customerStatementModal').dataset.currentCustomerId = customerId;
+        }
+
+        function downloadCustomerStatement() {
+            const element = document.getElementById('customerStatementContent');
+            const customerId = document.getElementById('customerStatementModal').dataset.currentCustomerId;
+            const customer = data.customers.find(c => c.id === customerId);
+
+            document.getElementById('loading').classList.add('show');
+
+            html2canvas(element, { 
+                scale: 2, 
+                backgroundColor: '#ffffff',
+                useCORS: true,
+                logging: false
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `对账单_${customer ? customer.name : '客户'}_${new Date().toISOString().split('T')[0]}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                document.getElementById('loading').classList.remove('show');
+                showToast('✅ 对账单已保存');
+            }).catch(err => {
+                console.error('生成图片失败:', err);
+                document.getElementById('loading').classList.remove('show');
+                showToast('❌ 生成图片失败', 'error');
+            });
+        }
+
+</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">
+        
+        // ==================== 销售列表排序功能 ====================
+        let salesSortConfig = { column: null, direction: 'asc' };
+
+        function sortSalesList(column) {
+            // 切换排序方向
+            if (salesSortConfig.column === column) {
+                salesSortConfig.direction = salesSortConfig.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                salesSortConfig.column = column;
+                salesSortConfig.direction = 'asc';
+            }
+
+            // 重置所有箭头
+            document.querySelectorAll('[id^="sort-sales-"]').forEach(arrow => {
+                arrow.textContent = '';
+                arrow.className = 'sort-arrow text-gray-400';
+            });
+
+            // 设置当前列箭头
+            const arrowElement = document.getElementById('sort-sales-' + column);
+            if (arrowElement) {
+                arrowElement.textContent = salesSortConfig.direction === 'asc' ? '↑' : '↓';
+                arrowElement.className = 'sort-arrow text-blue-600 font-bold';
+            }
+
+            // 重新渲染列表
+            renderSalesList();
+        }
+
+// ==================== 客户对账单功能 ====================
+        let selectedStatementCustomerId = null;
+
+        function exportCustomerStatement() {
+            // 生成交互式客户列表供选择
+            const modal = document.getElementById('statementCustomerSelectModal');
+            const list = document.getElementById('statementCustomerList');
+
+            // 获取有交易记录的客户
+            const customerMap = new Map();
+            data.customers.forEach(c => {
+                if (!customerMap.has(c.name)) {
+                    customerMap.set(c.name, c);
+                }
+            });
+
+            // 计算每个客户的交易统计
+            const customersWithOrders = [];
+            customerMap.forEach((customer, name) => {
+                const orders = data.salesOrders.filter(o => {
+                    const c = data.customers.find(cust => cust.id === o.customerId);
+                    return c && c.name === name;
+                });
+
+                if (orders.length > 0) {
+                    const totalAmount = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+                    const totalPaid = orders.reduce((sum, o) => sum + o.paidAmount, 0);
+                    const totalUnpaid = orders.reduce((sum, o) => sum + o.remainingAmount, 0);
+                    const totalQty = orders.reduce((sum, o) => sum + (o.totalQty || 0), 0);
+
+                    customersWithOrders.push({
+                        ...customer,
+                        orders,
+                        totalAmount,
+                        totalPaid,
+                        totalUnpaid,
+                        totalQty
+                    });
+                }
+            });
+
+            if (customersWithOrders.length === 0) {
+                showToast('⚠️ 暂无客户交易记录', 'warning');
+                return;
+            }
+
+            list.innerHTML = customersWithOrders.map(c => `
+                <div onclick="selectStatementCustomer('${c.id}')" 
+                     class="customer-select-item p-4 border-2 rounded-lg cursor-pointer transition-all hover:shadow-md ${selectedStatementCustomerId === c.id ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-300'}"
+                     data-customer-id="${c.id}">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="font-bold text-gray-800">${c.name}</div>
+                            <div class="text-sm text-gray-500 mt-1">${c.orders.length}笔订单 · ${c.totalQty}件 · 未付¥${c.totalUnpaid.toFixed(2)}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold text-red-600">¥${c.totalAmount.toFixed(2)}</div>
+                            <div class="text-xs text-gray-400">总货款</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            modal.classList.add('active');
+        }
+
+        function selectStatementCustomer(customerId) {
+            selectedStatementCustomerId = customerId;
+            // 更新UI显示选中状态
+            document.querySelectorAll('.customer-select-item').forEach(el => {
+                if (el.dataset.customerId === customerId) {
+                    el.classList.remove('border-gray-200');
+                    el.classList.add('border-green-500', 'bg-green-50');
+                } else {
+                    el.classList.remove('border-green-500', 'bg-green-50');
+                    el.classList.add('border-gray-200');
+                }
+            });
+        }
+
+        function generateSelectedStatement() {
+            if (!selectedStatementCustomerId) {
+                showToast('⚠️ 请先选择一个客户', 'warning');
+                return;
+            }
+
+            closeModal('statementCustomerSelectModal');
+            generateCustomerStatement(selectedStatementCustomerId);
+        }
+
+        function generateCustomerStatement(customerId) {
+            const customer = data.customers.find(c => c.id === customerId);
+            if (!customer) return;
+
+            // 获取该客户的所有订单
+            const orders = data.salesOrders.filter(o => o.customerId === customerId).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (orders.length === 0) {
+                showToast('⚠️ 该客户暂无订单记录', 'warning');
+                return;
+            }
+
+            const totalAmount = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+            const totalPaid = orders.reduce((sum, o) => sum + o.paidAmount, 0);
+            const totalUnpaid = orders.reduce((sum, o) => sum + o.remainingAmount, 0);
+            const totalQty = orders.reduce((sum, o) => sum + (o.totalQty || 0), 0);
+
+            // 生成日期范围文本
+            const dates = orders.map(o => o.date).sort();
+            const startDate = dates[0];
+            const endDate = dates[dates.length - 1];
+            const dateRangeText = startDate === endDate ? startDate : `${startDate} 至 ${endDate}`;
+
+            // 获取该客户的收付款记录
+            const payments = data.transactions.filter(t => t.partyId === customerId && t.type === 'income').sort((a, b) => new Date(b.date) - new Date(a.date));
+            const totalPayments = payments.reduce((sum, p) => sum + p.amount, 0);
+            const remainingAmount = totalAmount - totalPayments;
+
+            // 生成订单明细HTML（不显示状态列）
+            const orderRows = orders.map((order, index) => {
+                return `
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 12px 8px; text-align: center; color: #6b7280; font-size: 13px;">${index + 1}</td>
+                        <td style="padding: 12px 8px; text-align: center; color: #111827; font-size: 13px; font-weight: 500;">${order.date}</td>
+                        <td style="padding: 12px 8px; text-align: center; color: #6b7280; font-size: 13px;">NO.${order.id.slice(-6)}</td>
+                        <td style="padding: 12px 8px; text-align: center; color: #111827; font-size: 13px; font-weight: 600;">${order.totalQty || 0}件</td>
+                        <td style="padding: 12px 8px; text-align: right; color: #dc2626; font-size: 13px; font-weight: 600;">¥${order.totalAmount.toFixed(2)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            // 生成支付明细HTML
+            const paymentRows = payments.map((payment, index) => {
+                return `
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 10px 8px; text-align: center; color: #6b7280; font-size: 12px;">${index + 1}</td>
+                        <td style="padding: 10px 8px; text-align: center; color: #111827; font-size: 12px;">${payment.date}</td>
+                        <td style="padding: 10px 8px; text-align: center; color: #059669; font-size: 12px; font-weight: 500;">¥${payment.amount.toFixed(2)}</td>
+                        <td style="padding: 10px 8px; text-align: center; color: #6b7280; font-size: 12px;">${payment.paymentMethod || '-'}</td>
+                        <td style="padding: 10px 8px; text-align: left; color: #6b7280; font-size: 12px;">${payment.remark || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            // 组装对账单HTML
+            const statementHTML = `
+                <div style="padding: 40px; background: white; font-family: 'Inter', 'Microsoft YaHei', sans-serif; color: #1f2937;">
+                    <!-- 头部 -->
+                    <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px solid #1e40af;">
+                        <h1 style="font-size: 28px; font-weight: 800; color: #1e3a5f; margin-bottom: 8px; letter-spacing: 2px;">佳信水产有限公司</h1>
+                        <h2 style="font-size: 20px; font-weight: 600; color: #3b82f6; margin-bottom: 16px;">客户对账单</h2>
+                        <div style="display: flex; justify-content: center; gap: 30px; font-size: 13px; color: #6b7280;">
+                            <span>电话：18077761212</span>
+                            <span>联系人：郑佳宝</span>
+                        </div>
+                    </div>
+
+                    <!-- 客户信息 -->
+                    <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 12px; padding: 20px; margin-bottom: 24px; border: 1px solid #bfdbfe;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div>
+                                <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">客户名称</div>
+                                <div style="font-size: 18px; font-weight: 700; color: #1e40af;">${customer.name}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">对账期间</div>
+                                <div style="font-size: 16px; font-weight: 600; color: #111827;">${dateRangeText}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">联系电话</div>
+                                <div style="font-size: 14px; color: #374151;">${customer.phone || '-'}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">单据数量</div>
+                                <div style="font-size: 16px; font-weight: 600; color: #111827;">${orders.length}笔订单 · 收款${payments.length}笔</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 汇总卡片 -->
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
+                        <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #fecaca;">
+                            <div style="font-size: 12px; color: #991b1b; margin-bottom: 4px;">总货款</div>
+                            <div style="font-size: 22px; font-weight: 800; color: #dc2626;">¥${totalAmount.toFixed(2)}</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #86efac;">
+                            <div style="font-size: 12px; color: #166534; margin-bottom: 4px;">已支付</div>
+                            <div style="font-size: 22px; font-weight: 800; color: #16a34a;">¥${totalPayments.toFixed(2)}</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #fde047;">
+                            <div style="font-size: 12px; color: #854d0e; margin-bottom: 4px;">未支付</div>
+                            <div style="font-size: 22px; font-weight: 800; color: #ca8a04;">¥${remainingAmount.toFixed(2)}</div>
+                        </div>
+                    </div>
+
+                    <!-- 订单明细表格 -->
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 12px; padding-left: 8px; border-left: 4px solid #3b82f6;">发货明细</div>
+                        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <thead>
+                                <tr style="background: #f8fafc;">
+                                    <th style="padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">序号</th>
+                                    <th style="padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">日期</th>
+                                    <th style="padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">单号</th>
+                                    <th style="padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">件数</th>
+                                    <th style="padding: 12px 8px; text-align: right; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">金额</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${orderRows}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 支付明细表格 -->
+                    ${payments.length > 0 ? `
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 12px; padding-left: 8px; border-left: 4px solid #10b981;">收款明细</div>
+                        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <thead>
+                                <tr style="background: #f0fdf4;">
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">序号</th>
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">日期</th>
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">金额</th>
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">支付方式</th>
+                                    <th style="padding: 10px 8px; text-align: left; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">备注</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${paymentRows}
+                            </tbody>
+                        </table>
+                    </div>
+                    ` : ''}
+
+                    <!-- 剩余未支付金额 -->
+                    <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 10px; padding: 16px; margin: 20px 0; border: 2px solid #f59e0b; text-align: center;">
+                        <div style="font-size: 14px; color: #92400e; margin-bottom: 4px;">剩余未支付金额</div>
+                        <div style="font-size: 28px; font-weight: 800; color: #b45309;">¥${remainingAmount.toFixed(2)}</div>
+                    </div>
+
+                    <!-- 底部信息 -->
+                    <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin-top: 30px; border: 1px solid #e5e7eb;">
+                        <div style="font-size: 12px; color: #6b7280; line-height: 1.8; text-align: center;">
+                            <p style="margin-bottom: 8px;">如有疑问，请联系：郑佳宝 18077761212</p>
+                            <p>感谢您选择佳信水产！</p>
+                        </div>
+                    </div>
+
+                    <!-- 生成时间 -->
+                    <div style="text-align: center; margin-top: 20px; font-size: 11px; color: #9ca3af;">
+                        对账单生成时间：${new Date().toLocaleString('zh-CN')}
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('customerStatementContent').innerHTML = statementHTML;
+            document.getElementById('customerStatementModal').classList.add('active');
+
+            // 保存当前对账单客户ID用于下载
+            document.getElementById('customerStatementModal').dataset.currentCustomerId = customerId;
+        }
+
+        function downloadCustomerStatement() {
+            const element = document.getElementById('customerStatementContent');
+            const customerId = document.getElementById('customerStatementModal').dataset.currentCustomerId;
+            const customer = data.customers.find(c => c.id === customerId);
+
+            document.getElementById('loading').classList.add('show');
+
+            html2canvas(element, { 
+                scale: 2, 
+                backgroundColor: '#ffffff',
+                useCORS: true,
+                logging: false
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `对账单_${customer ? customer.name : '客户'}_${new Date().toISOString().split('T')[0]}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                document.getElementById('loading').classList.remove('show');
+                showToast('✅ 对账单已保存');
+            }).catch(err => {
+                console.error('生成图片失败:', err);
+                document.getElementById('loading').classList.remove('show');
+                showToast('❌ 生成图片失败', 'error');
+            });
+        }
+
+</script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Microsoft YaHei', sans-serif; }
@@ -689,11 +1649,21 @@
                     <table class="w-full">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">单号</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">日期</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">客户</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">金额</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none" onclick="sortSalesList('id')">
+                                    单号 <span id="sort-sales-id" class="sort-arrow text-gray-400"></span>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none" onclick="sortSalesList('date')">
+                                    日期 <span id="sort-sales-date" class="sort-arrow text-gray-400"></span>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none" onclick="sortSalesList('customer')">
+                                    客户 <span id="sort-sales-customer" class="sort-arrow text-gray-400"></span>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none" onclick="sortSalesList('amount')">
+                                    金额 <span id="sort-sales-amount" class="sort-arrow text-gray-400"></span>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none" onclick="sortSalesList('status')">
+                                    状态 <span id="sort-sales-status" class="sort-arrow text-gray-400"></span>
+                                </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
                             </tr>
                         </thead>
@@ -759,7 +1729,13 @@
                     <div>
                         <div class="flex justify-between items-center mb-4">
                             <h2 class="text-xl font-bold">客户管理</h2>
-                            <button onclick="openCustomerModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">+ 新增客户</button>
+                            <div class="flex gap-2">
+                                <button onclick="exportCustomerStatement()" class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-lg text-sm hover:from-green-600 hover:to-emerald-700 flex items-center gap-2 shadow-md">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    导出对账单
+                                </button>
+                                <button onclick="openCustomerModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">+ 新增客户</button>
+                            </div>
                         </div>
                         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
                             <table class="w-full">
@@ -807,7 +1783,15 @@
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
                     <table class="w-full">
                         <thead class="bg-gray-50">
-                            <tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500">日期</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500">类型</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500">往来单位</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500">金额</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500">备注</th></tr>
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">日期</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">类型</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">往来单位</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">金额</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">支付方式</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">备注</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">操作</th>
+                            </tr>
                         </thead>
                         <tbody id="transactionList" class="divide-y divide-gray-200"></tbody>
                     </table>
@@ -1146,9 +2130,10 @@
         <div class="modal-content" style="max-width: 500px;">
             <div class="p-6 border-b border-gray-200 flex justify-between items-center">
                 <h3 class="text-xl font-bold" id="paymentModalTitle">收款登记</h3>
-                <button onclick="closeModal('paymentModal')" class="text-gray-400 hover:text-gray-600">✕</button>
+                <button onclick="closePaymentModal()" class="text-gray-400 hover:text-gray-600">✕</button>
             </div>
             <div class="p-6 space-y-4">
+                <input type="hidden" id="paymentId">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">往来单位</label>
                     <select id="paymentParty" class="w-full px-3 py-2 border rounded-lg"></select>
@@ -1162,11 +2147,15 @@
                     <input type="date" id="paymentDate" class="w-full px-3 py-2 border rounded-lg">
                 </div>
                 <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">支付方式</label>
+                    <input type="text" id="paymentMethod" class="w-full px-3 py-2 border rounded-lg" placeholder="例如：微信转账、银行转账、现金">
+                </div>
+                <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">备注</label>
                     <input type="text" id="paymentRemark" class="w-full px-3 py-2 border rounded-lg" placeholder="可选">
                 </div>
                 <div class="flex justify-end space-x-3 pt-4">
-                    <button onclick="closeModal('paymentModal')" class="px-4 py-2 border rounded-lg hover:bg-gray-50">取消</button>
+                    <button onclick="closePaymentModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-50">取消</button>
                     <button onclick="savePayment()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">保存</button>
                 </div>
             </div>
@@ -2940,9 +3929,44 @@
             const search = document.getElementById('salesSearch').value.toLowerCase();
             const statusFilter = document.getElementById('salesStatusFilter').value;
 
-            let orders = data.salesOrders;
+            let orders = [...data.salesOrders]; // 创建副本以便排序
             if (search) orders = orders.filter(o => o.id.toLowerCase().includes(search) || o.customerName.toLowerCase().includes(search));
             if (statusFilter) orders = orders.filter(o => o.paymentStatus === statusFilter);
+
+            // 应用排序
+            if (salesSortConfig.column) {
+                orders.sort((a, b) => {
+                    let valueA, valueB;
+                    switch (salesSortConfig.column) {
+                        case 'id':
+                            valueA = a.id.slice(-6); // 取后6位单号
+                            valueB = b.id.slice(-6);
+                            break;
+                        case 'date':
+                            valueA = new Date(a.date);
+                            valueB = new Date(b.date);
+                            break;
+                        case 'customer':
+                            valueA = (a.customerName || '').toLowerCase();
+                            valueB = (b.customerName || '').toLowerCase();
+                            break;
+                        case 'amount':
+                            valueA = a.totalAmount || 0;
+                            valueB = b.totalAmount || 0;
+                            break;
+                        case 'status':
+                            valueA = a.paymentStatus || '';
+                            valueB = b.paymentStatus || '';
+                            break;
+                        default:
+                            return 0;
+                    }
+
+                    if (valueA < valueB) return salesSortConfig.direction === 'asc' ? -1 : 1;
+                    if (valueA > valueB) return salesSortConfig.direction === 'asc' ? 1 : -1;
+                    return 0;
+                });
+            }
 
             let totalAmount = 0, totalPaid = 0, totalUnpaid = 0;
             orders.forEach(order => {
@@ -3111,6 +4135,7 @@
                     </td>
                     <td class="px-4 py-3 text-sm">
                         ${c.remainingAmount > 0 ? `<button onclick="receivePaymentFromCustomer('${c.id}')" class="text-green-600 hover:text-green-800 font-medium">收款</button>` : ''}
+                        <button onclick="generateCustomerStatement('${c.id}')" class="text-blue-600 hover:text-blue-800 font-medium ml-2" title="导出对账单">📷</button>
                         ${c.totalAmount === 0 ? `<button onclick="deletePartyConfirm('${c.id}', '${c.name}', 'customer')" class="text-red-600 hover:text-red-800 font-medium ml-2">删除</button>` : ''}
                     </td>
                 </tr>
@@ -3417,9 +4442,205 @@
                     <td class="px-6 py-4 text-sm"><span class="status-badge ${t.type === 'income' ? 'status-paid' : 'status-pending'}">${t.type === 'income' ? '收款' : '付款'}</span></td>
                     <td class="px-6 py-4 text-sm">${t.partyName}</td>
                     <td class="px-6 py-4 text-sm font-medium ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}">${t.type === 'income' ? '+' : '-'}¥${t.amount.toFixed(2)}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">${t.paymentMethod || '-'}</td>
                     <td class="px-6 py-4 text-sm text-gray-500">${t.remark || '-'}</td>
+                    <td class="px-6 py-4 text-sm space-x-2">
+                        <button onclick="editPayment('${t.id}')" class="text-blue-600 hover:text-blue-800">编辑</button>
+                        <button onclick="deletePayment('${t.id}')" class="text-red-600 hover:text-red-800">删除</button>
+                    </td>
                 </tr>
             `).join('');
+        }
+
+        let editingPaymentId = null;
+
+        function openPaymentModal(type) {
+            editingPaymentId = null;
+            document.getElementById('paymentModalTitle').textContent = type === 'income' ? '收款登记' : '付款登记';
+            document.getElementById('paymentModal').dataset.type = type;
+            document.getElementById('paymentId').value = '';
+
+            const select = document.getElementById('paymentParty');
+            const parties = type === 'income' ? data.customers : data.suppliers;
+            const uniqueParties = [];
+            const seenNames = new Set();
+            parties.forEach(p => {
+                if (!seenNames.has(p.name)) {
+                    seenNames.add(p.name);
+                    uniqueParties.push(p);
+                }
+            });
+            select.innerHTML = '<option value="">请选择</option>' + 
+                uniqueParties.map(p => `<option value="${p.id}" data-type="${type === 'income' ? 'customer' : 'supplier'}">${p.name}</option>`).join('');
+
+            document.getElementById('paymentAmount').value = '';
+            document.getElementById('paymentMethod').value = '';
+            document.getElementById('paymentRemark').value = '';
+            document.getElementById('paymentDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('paymentModal').classList.add('active');
+        }
+
+        function editPayment(paymentId) {
+            const payment = data.transactions.find(t => t.id === paymentId);
+            if (!payment) return;
+
+            editingPaymentId = paymentId;
+            document.getElementById('paymentModalTitle').textContent = payment.type === 'income' ? '编辑收款' : '编辑付款';
+            document.getElementById('paymentModal').dataset.type = payment.type;
+            document.getElementById('paymentId').value = payment.id;
+
+            const select = document.getElementById('paymentParty');
+            const parties = payment.type === 'income' ? data.customers : data.suppliers;
+            const uniqueParties = [];
+            const seenNames = new Set();
+            parties.forEach(p => {
+                if (!seenNames.has(p.name)) {
+                    seenNames.add(p.name);
+                    uniqueParties.push(p);
+                }
+            });
+            select.innerHTML = '<option value="">请选择</option>' + 
+                uniqueParties.map(p => `<option value="${p.id}" data-type="${payment.type === 'income' ? 'customer' : 'supplier'}" ${p.id === payment.partyId ? 'selected' : ''}>${p.name}</option>`).join('');
+
+            document.getElementById('paymentAmount').value = payment.amount;
+            document.getElementById('paymentDate').value = payment.date;
+            document.getElementById('paymentMethod').value = payment.paymentMethod || '';
+            document.getElementById('paymentRemark').value = payment.remark || '';
+            document.getElementById('paymentModal').classList.add('active');
+        }
+
+        async function deletePayment(paymentId) {
+            if (!confirm('确定要删除这条收付款记录吗？')) return;
+
+            const payment = data.transactions.find(t => t.id === paymentId);
+            if (!payment) return;
+
+            // 如果是收款，减少客户余额；如果是付款，减少供应商余额
+            if (payment.type === 'income') {
+                const customer = data.customers.find(c => c.id === payment.partyId);
+                if (customer) {
+                    customer.balance = (customer.balance || 0) + payment.amount;
+                }
+            } else {
+                const supplier = data.suppliers.find(s => s.id === payment.partyId);
+                if (supplier) {
+                    supplier.balance = (supplier.balance || 0) + payment.amount;
+                }
+            }
+
+            data.transactions = data.transactions.filter(t => t.id !== paymentId);
+
+            try {
+                await saveData();
+                renderTransactionList();
+                renderPartyList();
+                updateDashboard();
+                showToast('✅ 删除成功');
+            } catch (err) {
+                console.error('删除失败:', err);
+                showToast('❌ 删除失败', 'error');
+            }
+        }
+
+        function closePaymentModal() {
+            editingPaymentId = null;
+            document.getElementById('paymentModal').classList.remove('active');
+        }
+
+        async function savePayment() {
+            const type = document.getElementById('paymentModal').dataset.type;
+            const partyId = document.getElementById('paymentParty').value;
+            const amount = parseFloat(document.getElementById('paymentAmount').value);
+            const paymentMethod = document.getElementById('paymentMethod').value.trim();
+
+            if (!partyId || !amount || amount <= 0) { 
+                showToast('⚠️ 请填写完整信息', 'warning'); 
+                return; 
+            }
+
+            const partySelect = document.getElementById('paymentParty');
+            const partyName = partySelect.options[partySelect.selectedIndex].text;
+            const partyType = partySelect.options[partySelect.selectedIndex].dataset.type;
+
+            if (editingPaymentId) {
+                // 编辑模式
+                const oldPayment = data.transactions.find(t => t.id === editingPaymentId);
+                if (!oldPayment) return;
+
+                // 先恢复旧记录的余额影响
+                if (oldPayment.type === 'income') {
+                    const oldCustomer = data.customers.find(c => c.id === oldPayment.partyId);
+                    if (oldCustomer) {
+                        oldCustomer.balance = (oldCustomer.balance || 0) + oldPayment.amount;
+                    }
+                } else {
+                    const oldSupplier = data.suppliers.find(s => s.id === oldPayment.partyId);
+                    if (oldSupplier) {
+                        oldSupplier.balance = (oldSupplier.balance || 0) + oldPayment.amount;
+                    }
+                }
+
+                // 更新记录
+                oldPayment.partyId = partyId;
+                oldPayment.partyName = partyName;
+                oldPayment.amount = amount;
+                oldPayment.date = document.getElementById('paymentDate').value;
+                oldPayment.paymentMethod = paymentMethod;
+                oldPayment.remark = document.getElementById('paymentRemark').value;
+
+                // 应用新的余额影响
+                if (type === 'income') {
+                    const customer = data.customers.find(c => c.id === partyId);
+                    if (customer) {
+                        customer.balance = Math.max(0, (customer.balance || 0) - amount);
+                    }
+                } else {
+                    const supplier = data.suppliers.find(s => s.id === partyId);
+                    if (supplier) {
+                        supplier.balance = Math.max(0, (supplier.balance || 0) - amount);
+                    }
+                }
+
+                try {
+                    await saveData();
+                    closePaymentModal();
+                    renderTransactionList();
+                    renderPartyList();
+                    updateDashboard();
+                    showToast('✅ 修改成功');
+                } catch (err) {
+                    console.error('保存失败:', err);
+                }
+            } else {
+                // 新增模式
+                const payment = {
+                    id: 'TRX' + Date.now(),
+                    date: document.getElementById('paymentDate').value,
+                    type, partyId, partyName, amount,
+                    paymentMethod: paymentMethod,
+                    remark: document.getElementById('paymentRemark').value
+                };
+
+                data.transactions.push(payment);
+
+                if (partyType === 'customer') {
+                    const customer = data.customers.find(c => c.id === partyId);
+                    if (customer) customer.balance = Math.max(0, (customer.balance || 0) - amount);
+                } else {
+                    const supplier = data.suppliers.find(s => s.id === partyId);
+                    if (supplier) supplier.balance = Math.max(0, (supplier.balance || 0) - amount);
+                }
+
+                try {
+                    await saveData();
+                    closePaymentModal();
+                    renderTransactionList();
+                    renderPartyList();
+                    showToast('✅ 保存成功');
+                } catch (err) {
+                    console.error('同步失败:', err);
+                }
+            }
         }
 
         function openPaymentModal(type) {
@@ -3708,6 +4929,365 @@
                 e.target.classList.remove('active');
             }
         });
-    </script>
+    
+        
+        // ==================== 销售列表排序功能 ====================
+        let salesSortConfig = { column: null, direction: 'asc' };
+
+        function sortSalesList(column) {
+            // 切换排序方向
+            if (salesSortConfig.column === column) {
+                salesSortConfig.direction = salesSortConfig.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                salesSortConfig.column = column;
+                salesSortConfig.direction = 'asc';
+            }
+
+            // 重置所有箭头
+            document.querySelectorAll('[id^="sort-sales-"]').forEach(arrow => {
+                arrow.textContent = '';
+                arrow.className = 'sort-arrow text-gray-400';
+            });
+
+            // 设置当前列箭头
+            const arrowElement = document.getElementById('sort-sales-' + column);
+            if (arrowElement) {
+                arrowElement.textContent = salesSortConfig.direction === 'asc' ? '↑' : '↓';
+                arrowElement.className = 'sort-arrow text-blue-600 font-bold';
+            }
+
+            // 重新渲染列表
+            renderSalesList();
+        }
+
+// ==================== 客户对账单功能 ====================
+        let selectedStatementCustomerId = null;
+
+        function exportCustomerStatement() {
+            // 生成交互式客户列表供选择
+            const modal = document.getElementById('statementCustomerSelectModal');
+            const list = document.getElementById('statementCustomerList');
+
+            // 获取有交易记录的客户
+            const customerMap = new Map();
+            data.customers.forEach(c => {
+                if (!customerMap.has(c.name)) {
+                    customerMap.set(c.name, c);
+                }
+            });
+
+            // 计算每个客户的交易统计
+            const customersWithOrders = [];
+            customerMap.forEach((customer, name) => {
+                const orders = data.salesOrders.filter(o => {
+                    const c = data.customers.find(cust => cust.id === o.customerId);
+                    return c && c.name === name;
+                });
+
+                if (orders.length > 0) {
+                    const totalAmount = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+                    const totalPaid = orders.reduce((sum, o) => sum + o.paidAmount, 0);
+                    const totalUnpaid = orders.reduce((sum, o) => sum + o.remainingAmount, 0);
+                    const totalQty = orders.reduce((sum, o) => sum + (o.totalQty || 0), 0);
+
+                    customersWithOrders.push({
+                        ...customer,
+                        orders,
+                        totalAmount,
+                        totalPaid,
+                        totalUnpaid,
+                        totalQty
+                    });
+                }
+            });
+
+            if (customersWithOrders.length === 0) {
+                showToast('⚠️ 暂无客户交易记录', 'warning');
+                return;
+            }
+
+            list.innerHTML = customersWithOrders.map(c => `
+                <div onclick="selectStatementCustomer('${c.id}')" 
+                     class="customer-select-item p-4 border-2 rounded-lg cursor-pointer transition-all hover:shadow-md ${selectedStatementCustomerId === c.id ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-300'}"
+                     data-customer-id="${c.id}">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="font-bold text-gray-800">${c.name}</div>
+                            <div class="text-sm text-gray-500 mt-1">${c.orders.length}笔订单 · ${c.totalQty}件 · 未付¥${c.totalUnpaid.toFixed(2)}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold text-red-600">¥${c.totalAmount.toFixed(2)}</div>
+                            <div class="text-xs text-gray-400">总货款</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            modal.classList.add('active');
+        }
+
+        function selectStatementCustomer(customerId) {
+            selectedStatementCustomerId = customerId;
+            // 更新UI显示选中状态
+            document.querySelectorAll('.customer-select-item').forEach(el => {
+                if (el.dataset.customerId === customerId) {
+                    el.classList.remove('border-gray-200');
+                    el.classList.add('border-green-500', 'bg-green-50');
+                } else {
+                    el.classList.remove('border-green-500', 'bg-green-50');
+                    el.classList.add('border-gray-200');
+                }
+            });
+        }
+
+        function generateSelectedStatement() {
+            if (!selectedStatementCustomerId) {
+                showToast('⚠️ 请先选择一个客户', 'warning');
+                return;
+            }
+
+            closeModal('statementCustomerSelectModal');
+            generateCustomerStatement(selectedStatementCustomerId);
+        }
+
+        function generateCustomerStatement(customerId) {
+            const customer = data.customers.find(c => c.id === customerId);
+            if (!customer) return;
+
+            // 获取该客户的所有订单
+            const orders = data.salesOrders.filter(o => o.customerId === customerId).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (orders.length === 0) {
+                showToast('⚠️ 该客户暂无订单记录', 'warning');
+                return;
+            }
+
+            const totalAmount = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+            const totalPaid = orders.reduce((sum, o) => sum + o.paidAmount, 0);
+            const totalUnpaid = orders.reduce((sum, o) => sum + o.remainingAmount, 0);
+            const totalQty = orders.reduce((sum, o) => sum + (o.totalQty || 0), 0);
+
+            // 生成日期范围文本
+            const dates = orders.map(o => o.date).sort();
+            const startDate = dates[0];
+            const endDate = dates[dates.length - 1];
+            const dateRangeText = startDate === endDate ? startDate : `${startDate} 至 ${endDate}`;
+
+            // 获取该客户的收付款记录
+            const payments = data.transactions.filter(t => t.partyId === customerId && t.type === 'income').sort((a, b) => new Date(b.date) - new Date(a.date));
+            const totalPayments = payments.reduce((sum, p) => sum + p.amount, 0);
+            const remainingAmount = totalAmount - totalPayments;
+
+            // 生成订单明细HTML（不显示状态列）
+            const orderRows = orders.map((order, index) => {
+                return `
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 12px 8px; text-align: center; color: #6b7280; font-size: 13px;">${index + 1}</td>
+                        <td style="padding: 12px 8px; text-align: center; color: #111827; font-size: 13px; font-weight: 500;">${order.date}</td>
+                        <td style="padding: 12px 8px; text-align: center; color: #6b7280; font-size: 13px;">NO.${order.id.slice(-6)}</td>
+                        <td style="padding: 12px 8px; text-align: center; color: #111827; font-size: 13px; font-weight: 600;">${order.totalQty || 0}件</td>
+                        <td style="padding: 12px 8px; text-align: right; color: #dc2626; font-size: 13px; font-weight: 600;">¥${order.totalAmount.toFixed(2)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            // 生成支付明细HTML
+            const paymentRows = payments.map((payment, index) => {
+                return `
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 10px 8px; text-align: center; color: #6b7280; font-size: 12px;">${index + 1}</td>
+                        <td style="padding: 10px 8px; text-align: center; color: #111827; font-size: 12px;">${payment.date}</td>
+                        <td style="padding: 10px 8px; text-align: center; color: #059669; font-size: 12px; font-weight: 500;">¥${payment.amount.toFixed(2)}</td>
+                        <td style="padding: 10px 8px; text-align: center; color: #6b7280; font-size: 12px;">${payment.paymentMethod || '-'}</td>
+                        <td style="padding: 10px 8px; text-align: left; color: #6b7280; font-size: 12px;">${payment.remark || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            // 组装对账单HTML
+            const statementHTML = `
+                <div style="padding: 40px; background: white; font-family: 'Inter', 'Microsoft YaHei', sans-serif; color: #1f2937;">
+                    <!-- 头部 -->
+                    <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px solid #1e40af;">
+                        <h1 style="font-size: 28px; font-weight: 800; color: #1e3a5f; margin-bottom: 8px; letter-spacing: 2px;">佳信水产有限公司</h1>
+                        <h2 style="font-size: 20px; font-weight: 600; color: #3b82f6; margin-bottom: 16px;">客户对账单</h2>
+                        <div style="display: flex; justify-content: center; gap: 30px; font-size: 13px; color: #6b7280;">
+                            <span>电话：18077761212</span>
+                            <span>联系人：郑佳宝</span>
+                        </div>
+                    </div>
+
+                    <!-- 客户信息 -->
+                    <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 12px; padding: 20px; margin-bottom: 24px; border: 1px solid #bfdbfe;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div>
+                                <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">客户名称</div>
+                                <div style="font-size: 18px; font-weight: 700; color: #1e40af;">${customer.name}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">对账期间</div>
+                                <div style="font-size: 16px; font-weight: 600; color: #111827;">${dateRangeText}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">联系电话</div>
+                                <div style="font-size: 14px; color: #374151;">${customer.phone || '-'}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">单据数量</div>
+                                <div style="font-size: 16px; font-weight: 600; color: #111827;">${orders.length}笔订单 · 收款${payments.length}笔</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 汇总卡片 -->
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
+                        <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #fecaca;">
+                            <div style="font-size: 12px; color: #991b1b; margin-bottom: 4px;">总货款</div>
+                            <div style="font-size: 22px; font-weight: 800; color: #dc2626;">¥${totalAmount.toFixed(2)}</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #86efac;">
+                            <div style="font-size: 12px; color: #166534; margin-bottom: 4px;">已支付</div>
+                            <div style="font-size: 22px; font-weight: 800; color: #16a34a;">¥${totalPayments.toFixed(2)}</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #fde047;">
+                            <div style="font-size: 12px; color: #854d0e; margin-bottom: 4px;">未支付</div>
+                            <div style="font-size: 22px; font-weight: 800; color: #ca8a04;">¥${remainingAmount.toFixed(2)}</div>
+                        </div>
+                    </div>
+
+                    <!-- 订单明细表格 -->
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 12px; padding-left: 8px; border-left: 4px solid #3b82f6;">发货明细</div>
+                        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <thead>
+                                <tr style="background: #f8fafc;">
+                                    <th style="padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">序号</th>
+                                    <th style="padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">日期</th>
+                                    <th style="padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">单号</th>
+                                    <th style="padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">件数</th>
+                                    <th style="padding: 12px 8px; text-align: right; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">金额</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${orderRows}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 支付明细表格 -->
+                    ${payments.length > 0 ? `
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 12px; padding-left: 8px; border-left: 4px solid #10b981;">收款明细</div>
+                        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <thead>
+                                <tr style="background: #f0fdf4;">
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">序号</th>
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">日期</th>
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">金额</th>
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">支付方式</th>
+                                    <th style="padding: 10px 8px; text-align: left; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">备注</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${paymentRows}
+                            </tbody>
+                        </table>
+                    </div>
+                    ` : ''}
+
+                    <!-- 剩余未支付金额 -->
+                    <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 10px; padding: 16px; margin: 20px 0; border: 2px solid #f59e0b; text-align: center;">
+                        <div style="font-size: 14px; color: #92400e; margin-bottom: 4px;">剩余未支付金额</div>
+                        <div style="font-size: 28px; font-weight: 800; color: #b45309;">¥${remainingAmount.toFixed(2)}</div>
+                    </div>
+
+                    <!-- 底部信息 -->
+                    <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin-top: 30px; border: 1px solid #e5e7eb;">
+                        <div style="font-size: 12px; color: #6b7280; line-height: 1.8; text-align: center;">
+                            <p style="margin-bottom: 8px;">如有疑问，请联系：郑佳宝 18077761212</p>
+                            <p>感谢您选择佳信水产！</p>
+                        </div>
+                    </div>
+
+                    <!-- 生成时间 -->
+                    <div style="text-align: center; margin-top: 20px; font-size: 11px; color: #9ca3af;">
+                        对账单生成时间：${new Date().toLocaleString('zh-CN')}
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('customerStatementContent').innerHTML = statementHTML;
+            document.getElementById('customerStatementModal').classList.add('active');
+
+            // 保存当前对账单客户ID用于下载
+            document.getElementById('customerStatementModal').dataset.currentCustomerId = customerId;
+        }
+
+        function downloadCustomerStatement() {
+            const element = document.getElementById('customerStatementContent');
+            const customerId = document.getElementById('customerStatementModal').dataset.currentCustomerId;
+            const customer = data.customers.find(c => c.id === customerId);
+
+            document.getElementById('loading').classList.add('show');
+
+            html2canvas(element, { 
+                scale: 2, 
+                backgroundColor: '#ffffff',
+                useCORS: true,
+                logging: false
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `对账单_${customer ? customer.name : '客户'}_${new Date().toISOString().split('T')[0]}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                document.getElementById('loading').classList.remove('show');
+                showToast('✅ 对账单已保存');
+            }).catch(err => {
+                console.error('生成图片失败:', err);
+                document.getElementById('loading').classList.remove('show');
+                showToast('❌ 生成图片失败', 'error');
+            });
+        }
+
+</script>
+
+    <!-- 客户对账单模态框 -->
+    <div id="customerStatementModal" class="modal">
+        <div class="modal-content preview-modal-content">
+            <div class="preview-modal-header">
+                <h3 class="text-xl font-bold">客户对账单预览</h3>
+                <div>
+                    <button class="btn-download" onclick="downloadCustomerStatement()">📥 保存图片</button>
+                    <button class="btn-close-modal" onclick="closeModal('customerStatementModal')" style="margin-left: 10px;">关闭</button>
+                </div>
+            </div>
+            <div class="preview-modal-body">
+                <div id="customerStatementContent" class="purchase-receipt-wrapper" style="max-width: 800px; background: linear-gradient(to bottom, #ffffff 0%, #f8fafc 100%);">
+                    <!-- 对账单内容将通过JS生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 客户选择器模态框（用于对账单） -->
+    <div id="statementCustomerSelectModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="text-xl font-bold">选择要导出对账单的客户</h3>
+                <button onclick="closeModal('statementCustomerSelectModal')" class="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+            <div class="p-6">
+                <div id="statementCustomerList" class="space-y-2 max-h-80 overflow-y-auto">
+                    <!-- 客户列表将通过JS生成 -->
+                </div>
+                <div class="mt-6 pt-4 border-t border-gray-200">
+                    <button onclick="generateSelectedStatement()" class="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-semibold hover:from-green-600 hover:to-emerald-700">
+                        生成对账单
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
