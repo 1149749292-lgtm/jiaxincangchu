@@ -1780,6 +1780,32 @@
                         <button onclick="openPaymentModal('expense')" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">+ 付款</button>
                     </div>
                 </div>
+                <!-- 筛选栏 -->
+                <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
+                    <div class="flex flex-wrap gap-4 items-center">
+                        <div class="flex items-center gap-2">
+                            <label class="text-sm font-medium text-gray-600">类型：</label>
+                            <select id="transactionTypeFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none" onchange="renderTransactionList()">
+                                <option value="">全部</option>
+                                <option value="income">收款</option>
+                                <option value="expense">付款</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-2 flex-1 min-w-[200px]">
+                            <label class="text-sm font-medium text-gray-600">往来单位：</label>
+                            <select id="transactionPartyFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none w-full max-w-xs" onchange="renderTransactionList()">
+                                <option value="">全部客户/供应商</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label class="text-sm font-medium text-gray-600">日期：</label>
+                            <input type="date" id="transactionDateFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none" onchange="renderTransactionList()">
+                        </div>
+                        <button onclick="resetTransactionFilters()" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
+                            重置筛选
+                        </button>
+                    </div>
+                </div>
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
                     <table class="w-full">
                         <thead class="bg-gray-50">
@@ -2441,7 +2467,10 @@
                 case 'sales': renderSalesList(); break;
                 case 'products': renderProductList(); break;  // 新增
                 case 'customers': renderPartyList(); break;
-                case 'finance': renderTransactionList(); break;
+                case 'finance': 
+                    initTransactionFilters();
+                    renderTransactionList(); 
+                    break;
             }
         }
 
@@ -4435,8 +4464,34 @@
 
         // ==================== 收付款 ====================
         function renderTransactionList() {
+            const typeFilter = document.getElementById('transactionTypeFilter').value;
+            const partyFilter = document.getElementById('transactionPartyFilter').value;
+            const dateFilter = document.getElementById('transactionDateFilter').value;
+
+            let filteredTransactions = [...data.transactions];
+
+            // 类型筛选
+            if (typeFilter) {
+                filteredTransactions = filteredTransactions.filter(t => t.type === typeFilter);
+            }
+
+            // 往来单位筛选
+            if (partyFilter) {
+                filteredTransactions = filteredTransactions.filter(t => t.partyId === partyFilter);
+            }
+
+            // 日期筛选
+            if (dateFilter) {
+                filteredTransactions = filteredTransactions.filter(t => t.date === dateFilter);
+            }
+
+            // 计算筛选后的汇总
+            const totalIncome = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+            const totalExpense = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+
             const tbody = document.getElementById('transactionList');
-            tbody.innerHTML = data.transactions.sort((a, b) => new Date(b.date) - new Date(a.date)).map(t => `
+
+            let html = filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date)).map(t => `
                 <tr>
                     <td class="px-6 py-4 text-sm text-gray-500">${t.date}</td>
                     <td class="px-6 py-4 text-sm"><span class="status-badge ${t.type === 'income' ? 'status-paid' : 'status-pending'}">${t.type === 'income' ? '收款' : '付款'}</span></td>
@@ -4450,6 +4505,93 @@
                     </td>
                 </tr>
             `).join('');
+
+            // 添加汇总行
+            if (filteredTransactions.length > 0) {
+                html += `
+                    <tr style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-top: 2px solid #0ea5e9;">
+                        <td class="px-6 py-4 text-sm font-bold text-blue-900" colspan="3">
+                            合计（${filteredTransactions.length}笔）
+                        </td>
+                        <td class="px-6 py-4 text-sm" colspan="4">
+                            <span class="text-green-700 font-medium">收款: +¥${totalIncome.toFixed(2)}</span>
+                            <span class="text-gray-400 mx-2">|</span>
+                            <span class="text-red-700 font-medium">付款: -¥${totalExpense.toFixed(2)}</span>
+                            <span class="text-gray-400 mx-2">|</span>
+                            <span class="text-blue-700 font-bold">净额: ${totalIncome >= totalExpense ? '+' : '-'}¥${Math.abs(totalIncome - totalExpense).toFixed(2)}</span>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                html = `
+                    <tr>
+                        <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                            <div class="text-4xl mb-2">📭</div>
+                            <p>暂无符合条件的记录</p>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            tbody.innerHTML = html;
+        }
+
+        function initTransactionFilters() {
+            const partySelect = document.getElementById('transactionPartyFilter');
+
+            // 合并客户和供应商，按名称+类型去重
+            const allParties = [];
+            const seenKeys = new Set(); // 使用名称+类型作为唯一键
+
+            // 添加客户（按名称去重，保留第一个）
+            const uniqueCustomers = [];
+            const seenCustomerNames = new Set();
+            data.customers.forEach(c => {
+                if (!seenCustomerNames.has(c.name)) {
+                    seenCustomerNames.add(c.name);
+                    uniqueCustomers.push(c);
+                }
+            });
+
+            // 添加供应商（按名称去重，保留第一个）
+            const uniqueSuppliers = [];
+            const seenSupplierNames = new Set();
+            data.suppliers.forEach(s => {
+                if (!seenSupplierNames.has(s.name)) {
+                    seenSupplierNames.add(s.name);
+                    uniqueSuppliers.push(s);
+                }
+            });
+
+            // 合并并去重
+            uniqueCustomers.forEach(c => {
+                const key = c.name + '_客户';
+                if (!seenKeys.has(key)) {
+                    seenKeys.add(key);
+                    allParties.push({ id: c.id, name: c.name, type: '客户' });
+                }
+            });
+
+            uniqueSuppliers.forEach(s => {
+                const key = s.name + '_供应商';
+                if (!seenKeys.has(key)) {
+                    seenKeys.add(key);
+                    allParties.push({ id: s.id, name: s.name, type: '供应商' });
+                }
+            });
+
+            // 按名称排序
+            allParties.sort((a, b) => a.name.localeCompare(b.name));
+
+            partySelect.innerHTML = '<option value="">全部客户/供应商</option>' + 
+                allParties.map(p => `<option value="${p.id}">${p.name} (${p.type})</option>`).join('');
+        }
+
+        function resetTransactionFilters() {
+            document.getElementById('transactionTypeFilter').value = '';
+            document.getElementById('transactionPartyFilter').value = '';
+            document.getElementById('transactionDateFilter').value = '';
+            renderTransactionList();
         }
 
         let editingPaymentId = null;
