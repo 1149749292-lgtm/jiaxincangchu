@@ -357,11 +357,17 @@
   <div class="toast" id="toast"></div>
   <div class="container">
     <div class="header">
-      <div class="sync-status" id="syncStatus" style="cursor: pointer;" onclick="checkSyncStatus()" title="点击检查同步状态">
+      <div style="position: absolute; top: 16px; right: 16px; display: flex; gap: 10px; z-index: 1;">
+        <div class="sync-status" style="cursor: pointer; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border: none; position: static;" onclick="goToFinance()" title="点击跳转到财务系统">
+          <span style="margin-right: 4px;">💰</span>
+          <span>财务系统</span>
+        </div>
+        <div class="sync-status" id="syncStatus" style="cursor: pointer; position: static;" onclick="checkSyncStatus()" title="点击检查同步状态">
           <span class="sync-dot"></span>
           <span id="syncText">正在连接云端...</span>
         </div>
-        <div id="syncWarning" style="display: none; position: absolute; top: 50px; right: 16px; background: #fef3c7; border: 2px solid #f59e0b; padding: 12px; border-radius: 8px; font-size: 12px; color: #92400e; z-index: 100; max-width: 200px;">
+      </div>
+        <div id="syncWarning" style="display: none; position: absolute; top: 50px; right: 16px; background: #fef3c7; border: 2px solid #f59e0b; padding: 12px; border-radius: 8px; font-size: 12px; color: #92400e; z-index: 100; max-width: 200px; margin-top: 40px;">
           ⚠️ 离线模式：数据仅保存在本地，刷新页面会丢失！
         </div>
       <div style="position: relative; z-index: 1;">
@@ -3824,6 +3830,12 @@ function showLoading(text) {
       } else {
         showToast('✅ 已连接到云端，数据会自动同步');
       }
+    }
+
+    // 跳转到财务系统
+    function goToFinance() {
+      // 使用replace避免浏览器拦截，保留当前页面在history中
+      window.location.href = 'https://1149749292-lgtm.github.io/jiaxincangchu/finance.html';
     }
     
     window.onload = init;
