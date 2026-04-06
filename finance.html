@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>佳信水产进销存财务系统 v3.4</title>
+    <title>佳信水产进销存财务系统 v3.5</title>
     <script src="https://cdn.tailwindcss.com">
         
         // ==================== 销售列表排序功能 ====================
@@ -1459,7 +1459,73 @@
             background: #f0fdf4 !important;
             border-color: #22c55e !important;
         }
-</style>
+
+        /* 库存系统跳转按钮 - 渐变风格 */
+        .inventory-jump-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .inventory-jump-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+        }
+
+        .inventory-jump-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-icon {
+            font-size: 16px;
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
+        }
+
+        .btn-text {
+            letter-spacing: 0.5px;
+        }
+
+        .btn-arrow {
+            width: 14px;
+            height: 14px;
+            opacity: 0.8;
+            transition: transform 0.2s;
+        }
+
+        .inventory-jump-btn:hover .btn-arrow {
+            transform: translate(2px, -2px);
+            opacity: 1;
+        }
+
+        /* 手机端库存跳转按钮 */
+        .inventory-jump-btn-mobile {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+        }
+
+    </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
     <!-- 密码验证层 -->
@@ -1489,10 +1555,21 @@
                         </div>
                         <div>
                             <h1 class="text-xl font-bold text-gray-800">佳信水产财务系统</h1>
-                            <p class="text-xs text-gray-500">v3.4 | 产品库已集成</p>
+                            <p class="text-xs text-gray-500">v3.5 | 产品库已集成</p>
                         </div>
                     </div>
                     <div class="flex items-center space-x-3">
+                        <!-- 库存系统跳转按钮 -->
+                        <a href="https://1149749292-lgtm.github.io/jiaxincangchu/" 
+                           target="_blank" 
+                           class="inventory-jump-btn">
+                            <span class="btn-icon">📦</span>
+                            <span class="btn-text">库存系统</span>
+                            <svg class="btn-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                            </svg>
+                        </a>
+
                         <div class="sync-status" id="syncStatus">
                             <span class="sync-dot"></span>
                             <span id="syncText">正在连接...</span>
@@ -1508,13 +1585,23 @@
                             </div>
                             <div>
                                 <h1 class="text-lg font-bold text-gray-800">佳信水产财务</h1>
-                                <p class="text-xs text-gray-500">v3.4 | 自动同步</p>
+                                <p class="text-xs text-gray-500">v3.5 | 自动同步</p>
                             </div>
                         </div>
                         <div class="sync-status" id="syncStatusMobile">
                             <span class="sync-dot"></span>
                             <span id="syncTextMobile">连接中</span>
                         </div>
+                        <!-- 手机端库存跳转 -->
+                        <a href="https://1149749292-lgtm.github.io/jiaxincangchu/" 
+                           target="_blank" 
+                           class="inventory-jump-btn-mobile md:hidden mt-2">
+                            <span>📦</span>
+                            <span>库存系统</span>
+                            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                            </svg>
+                        </a>
                     </div>
                 </div>
             </div>
