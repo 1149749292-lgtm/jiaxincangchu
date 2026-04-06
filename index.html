@@ -357,17 +357,11 @@
   <div class="toast" id="toast"></div>
   <div class="container">
     <div class="header">
-      <div style="position: absolute; top: 16px; right: 16px; display: flex; gap: 10px; z-index: 1;">
-        <div class="sync-status" style="cursor: pointer; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border: none; position: static;" onclick="goToFinance()" title="点击跳转到财务系统">
-          <span style="margin-right: 4px;">💰</span>
-          <span>财务系统</span>
-        </div>
-        <div class="sync-status" id="syncStatus" style="cursor: pointer; position: static;" onclick="checkSyncStatus()" title="点击检查同步状态">
+      <div class="sync-status" id="syncStatus" style="cursor: pointer;" onclick="checkSyncStatus()" title="点击检查同步状态">
           <span class="sync-dot"></span>
           <span id="syncText">正在连接云端...</span>
         </div>
-      </div>
-        <div id="syncWarning" style="display: none; position: absolute; top: 50px; right: 16px; background: #fef3c7; border: 2px solid #f59e0b; padding: 12px; border-radius: 8px; font-size: 12px; color: #92400e; z-index: 100; max-width: 200px; margin-top: 40px;">
+        <div id="syncWarning" style="display: none; position: absolute; top: 50px; right: 16px; background: #fef3c7; border: 2px solid #f59e0b; padding: 12px; border-radius: 8px; font-size: 12px; color: #92400e; z-index: 100; max-width: 200px;">
           ⚠️ 离线模式：数据仅保存在本地，刷新页面会丢失！
         </div>
       <div style="position: relative; z-index: 1;">
@@ -2388,15 +2382,8 @@ async function doExecuteImport() {
 
         const totalQty = displayItems.reduce((sum, item) => sum + item.qty, 0);
 
-        // 显示备注（可编辑）
-        const remarkHtml = batch.remark ? 
-          `<div onclick="editBatchRemark('${batch.id}')" style="margin-top: 8px; padding: 8px 12px; background: white; border-radius: 6px; font-size: 13px; color: #0369a1; border-left: 3px solid #0ea5e9; cursor: pointer; position: relative;" title="点击修改备注">
-            📝 ${escapeHtml(batch.remark)}
-            <span style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); opacity: 0.6; font-size: 12px;">✏️</span>
-          </div>` : 
-          `<div onclick="editBatchRemark('${batch.id}')" style="margin-top: 8px; padding: 8px 12px; background: #f8fafc; border-radius: 6px; font-size: 13px; color: #94a3b8; border: 1px dashed #cbd5e1; cursor: pointer; text-align: center;" title="点击添加备注">
-            ➕ 点击添加备注
-          </div>`;
+        // 显示备注（如果有）
+        const remarkHtml = batch.remark ? `<div style="margin-top: 8px; padding: 8px 12px; background: white; border-radius: 6px; font-size: 13px; color: #0369a1; border-left: 3px solid #0ea5e9;">📝 ${escapeHtml(batch.remark)}</div>` : '';
 
         return `<div class="batch-card" id="batch-${batch.id}">
           <div class="batch-header" onclick="toggleBatch('${batch.id}')">
@@ -2644,42 +2631,6 @@ async function doExecuteImport() {
         showToast(msg);
         updateUI();
       } catch (err) { hideLoading(); showError('撤销失败', err.message); }
-    }
-
-    // 编辑批次备注
-    async function editBatchRemark(batchId) {
-      const batch = batches.find(b => b.id === batchId);
-      if (!batch) return;
-
-      // 弹出输入框
-      const newRemark = prompt('请输入备注（留空则删除备注）：', batch.remark || '');
-
-      // 用户点击取消
-      if (newRemark === null) return;
-
-      const trimmedRemark = newRemark.trim();
-
-      // 如果内容没有变化，不保存
-      if (trimmedRemark === (batch.remark || '')) return;
-
-      showLoading('正在保存...');
-
-      try {
-        // 更新备注
-        batch.remark = trimmedRemark || undefined; // 空值转为 undefined
-
-        // 保存到云端
-        await saveData();
-
-        hideLoading();
-        showToast('✅ 备注已更新');
-
-        // 刷新流水显示
-        renderFlow();
-      } catch (err) {
-        hideLoading();
-        showError('保存失败', err.message);
-      }
     }
 
     // ==================== 数据管理 ====================
@@ -3830,12 +3781,6 @@ function showLoading(text) {
       } else {
         showToast('✅ 已连接到云端，数据会自动同步');
       }
-    }
-
-    // 跳转到财务系统
-    function goToFinance() {
-      // 使用replace避免浏览器拦截，保留当前页面在history中
-      window.location.href = 'https://1149749292-lgtm.github.io/jiaxincangchu/finance.html';
     }
     
     window.onload = init;
