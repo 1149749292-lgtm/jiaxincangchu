@@ -4802,7 +4802,7 @@
             const partyType = partySelect.options[partySelect.selectedIndex].dataset.type;
 
             if (editingPaymentId) {
-                // 编辑模式
+                // 编辑模式（保持原有逻辑不变）
                 const oldPayment = data.transactions.find(t => t.id === editingPaymentId);
                 if (!oldPayment) return;
 
@@ -4847,13 +4847,13 @@
                     renderPartyList();
                     updateDashboard();
                     showToast('✅ 修改成功');
-                    return; // 编辑完成后直接返回，不要继续执行新增逻辑
+                    return;
                 } catch (err) {
                     console.error('保存失败:', err);
-                    return; // 错误时也要返回
+                    return;
                 }
             } else {
-                // 新增模式
+                // 新增模式 - 关键修复：自动分配金额到未付订单
                 const payment = {
                     id: 'TRX' + Date.now(),
                     date: document.getElementById('paymentDate').value,
@@ -4866,10 +4866,81 @@
 
                 if (partyType === 'customer') {
                     const customer = data.customers.find(c => c.id === partyId);
-                    if (customer) customer.balance = Math.max(0, (customer.balance || 0) - amount);
+                    if (customer) {
+                        // === 关键修复：自动将收款分配到该客户的未付销售订单 ===
+                        let remainingToAllocate = amount;
+
+                        // 获取该客户的所有未付订单（按日期从早到晚排序）
+                        const unpaidOrders = data.salesOrders
+                            .filter(o => o.customerId === partyId && o.remainingAmount > 0)
+                            .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                        // 自动分配收款到订单
+                        for (let order of unpaidOrders) {
+                            if (remainingToAllocate <= 0) break;
+                            const alloc = Math.min(order.remainingAmount, remainingToAllocate);
+
+                            order.paidAmount = (order.paidAmount || 0) + alloc;
+                            order.remainingAmount = (order.remainingAmount || 0) - alloc;
+
+                            if (order.remainingAmount <= 0) {
+                                order.paymentStatus = 'paid';
+                                order.remainingAmount = 0;
+                            } else {
+                                order.paymentStatus = 'partial';
+                            }
+
+                            remainingToAllocate -= alloc;
+                        }
+
+                        // 如果有剩余（预付款），更新客户余额
+                        if (remainingToAllocate > 0) {
+                            customer.balance = Math.max(0, (customer.balance || 0) - remainingToAllocate);
+                        }
+                        // 如果没有剩余（全部抵扣完），也要扣除已分配部分
+                        if (amount > remainingToAllocate) {
+                            const allocated = amount - remainingToAllocate;
+                            customer.balance = Math.max(0, (customer.balance || 0) - allocated);
+                        }
+                    }
                 } else {
+                    // 供应商付款 - 同样逻辑处理采购订单
                     const supplier = data.suppliers.find(s => s.id === partyId);
-                    if (supplier) supplier.balance = Math.max(0, (supplier.balance || 0) - amount);
+                    if (supplier) {
+                        let remainingToAllocate = amount;
+
+                        // 获取该供应商的所有未付采购订单（按日期从早到晚排序）
+                        const unpaidOrders = data.purchaseOrders
+                            .filter(o => o.supplierId === partyId && o.remainingAmount > 0)
+                            .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                        // 自动分配付款到订单
+                        for (let order of unpaidOrders) {
+                            if (remainingToAllocate <= 0) break;
+                            const alloc = Math.min(order.remainingAmount, remainingToAllocate);
+
+                            order.paidAmount = (order.paidAmount || 0) + alloc;
+                            order.remainingAmount = (order.remainingAmount || 0) - alloc;
+
+                            if (order.remainingAmount <= 0) {
+                                order.paymentStatus = 'paid';
+                                order.remainingAmount = 0;
+                            } else {
+                                order.paymentStatus = 'partial';
+                            }
+
+                            remainingToAllocate -= alloc;
+                        }
+
+                        // 更新供应商余额
+                        if (remainingToAllocate > 0) {
+                            supplier.balance = Math.max(0, (supplier.balance || 0) - remainingToAllocate);
+                        }
+                        if (amount > remainingToAllocate) {
+                            const allocated = amount - remainingToAllocate;
+                            supplier.balance = Math.max(0, (supplier.balance || 0) - allocated);
+                        }
+                    }
                 }
 
                 try {
@@ -4877,7 +4948,10 @@
                     closePaymentModal();
                     renderTransactionList();
                     renderPartyList();
-                    showToast('✅ 保存成功');
+                    renderSalesList();  // 刷新销售列表显示最新状态
+                    renderPurchaseList(); // 刷新采购列表
+                    updateDashboard();
+                    showToast('✅ 保存成功，已自动分配到未付订单');
                 } catch (err) {
                     console.error('同步失败:', err);
                 }
