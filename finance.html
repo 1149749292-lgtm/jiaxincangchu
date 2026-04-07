@@ -649,12 +649,13 @@
 
         <div class="bg-white border-b border-gray-200">
             <div class="max-w-7xl mx-auto px-4">
-                <nav class="grid grid-cols-3 gap-2 py-3">
+                <nav class="grid grid-cols-2 md:grid-cols-4 gap-2 py-3">
                     <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn py-3 px-2 rounded-lg text-center text-sm font-medium transition-all hover:bg-blue-50 tab-active bg-blue-50 text-blue-600 border border-blue-200">📊 仪表盘</button>
                     <button onclick="switchTab('purchase')" id="tab-purchase" class="tab-btn py-3 px-2 rounded-lg text-center text-sm font-medium transition-all hover:bg-blue-50 bg-white text-gray-600 border border-gray-200">📥 采购管理</button>
                     <button onclick="switchTab('sales')" id="tab-sales" class="tab-btn py-3 px-2 rounded-lg text-center text-sm font-medium transition-all hover:bg-blue-50 bg-white text-gray-600 border border-gray-200">📤 销售管理</button>
                     <button onclick="switchTab('products')" id="tab-products" class="tab-btn py-3 px-2 rounded-lg text-center text-sm font-medium transition-all hover:bg-blue-50 bg-white text-gray-600 border border-gray-200">🦐 产品库</button>
-                    <button onclick="switchTab('customers')" id="tab-customers" class="tab-btn py-3 px-2 rounded-lg text-center text-sm font-medium transition-all hover:bg-blue-50 bg-white text-gray-600 border border-gray-200">👥 客户/供应商</button>
+                    <button onclick="switchTab('customers')" id="tab-customers" class="tab-btn py-3 px-2 rounded-lg text-center text-sm font-medium transition-all hover:bg-blue-50 bg-white text-gray-600 border border-gray-200">👥 客户管理</button>
+                    <button onclick="switchTab('suppliers')" id="tab-suppliers" class="tab-btn py-3 px-2 rounded-lg text-center text-sm font-medium transition-all hover:bg-blue-50 bg-white text-gray-600 border border-gray-200">🏭 供应商管理</button>
                     <button onclick="switchTab('finance')" id="tab-finance" class="tab-btn py-3 px-2 rounded-lg text-center text-sm font-medium transition-all hover:bg-blue-50 bg-white text-gray-600 border border-gray-200">💵 收付款</button>
                 </nav>
             </div>
@@ -850,65 +851,73 @@
                 </div>
             </div>
 
-            <!-- 客户/供应商 -->
+            <!-- 客户管理 -->
             <div id="view-customers" class="view-section hidden">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div>
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-xl font-bold">客户管理</h2>
-                            <div class="flex gap-2">
-                                <button onclick="exportCustomerStatement()" class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-lg text-sm hover:from-green-600 hover:to-emerald-700 flex items-center gap-2 shadow-md">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                    导出对账单
-                                </button>
-                                <button onclick="openCustomerModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">+ 新增客户</button>
-                            </div>
-                        </div>
-                        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-                            <table class="w-full">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">客户信息</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">货款统计</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="customerList" class="divide-y divide-gray-200"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-xl font-bold">供应商管理</h2>
-                            <div class="flex gap-2">
-                                <button onclick="syncPaymentDataToOrders()" class="bg-gradient-to-r from-orange-500 to-red-600 text-white px-4 py-2 rounded-lg text-sm hover:from-orange-600 hover:to-red-700 flex items-center gap-2 shadow-md" title="根据收付款记录重新计算采购订单已付金额">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                                    同步数据
-                                </button>
-                                <button onclick="exportSupplierStatement()" class="bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:from-purple-600 hover:to-indigo-700 flex items-center gap-2 shadow-md">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2z"></path></svg>
-                                    导出对账单
-                                </button>
-                                <button onclick="openSupplierModal()" class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700">+ 新增供应商</button>
-                            </div>
-                        </div>
-                        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-                            <table class="w-full">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">供应商信息</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">货款统计</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="supplierList" class="divide-y divide-gray-200"></tbody>
-                            </table>
+                <div class="mb-6">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-2xl font-bold">客户管理</h2>
+                        <div class="flex gap-2">
+                            <button onclick="exportCustomerStatement()" class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-lg text-sm hover:from-green-600 hover:to-emerald-700 flex items-center gap-2 shadow-md">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2z"></path></svg>
+                                导出对账单
+                            </button>
+                            <button onclick="openCustomerModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                新增客户
+                            </button>
                         </div>
                     </div>
                 </div>
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">客户信息</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">货款统计</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customerList" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
             </div>
 
-            <!-- 收付款 -->
+            <!-- 供应商管理 -->
+            <div id="view-suppliers" class="view-section hidden">
+                <div class="mb-6">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-2xl font-bold">供应商管理</h2>
+                        <div class="flex gap-2">
+                            <button onclick="syncPaymentDataToOrders()" class="bg-gradient-to-r from-orange-500 to-red-600 text-white px-4 py-2 rounded-lg text-sm hover:from-orange-600 hover:to-red-700 flex items-center gap-2 shadow-md" title="根据收付款记录重新计算采购订单已付金额">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                同步数据
+                            </button>
+                            <button onclick="exportSupplierStatement()" class="bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:from-purple-600 hover:to-indigo-700 flex items-center gap-2 shadow-md">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2z"></path></svg>
+                                导出对账单
+                            </button>
+                            <button onclick="openSupplierModal()" class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                新增供应商
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">供应商信息</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">货款统计</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="supplierList" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 收付款 --><!-- 收付款 -->
             <div id="view-finance" class="view-section hidden">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold">收付款登记</h2>
@@ -1602,8 +1611,9 @@
                 case 'dashboard': updateDashboard(); break;
                 case 'purchase': renderPurchaseList(); break;
                 case 'sales': renderSalesList(); break;
-                case 'products': renderProductList(); break;  // 新增
-                case 'customers': renderPartyList(); break;
+                case 'products': renderProductList(); break;
+                case 'customers': renderCustomerList(); break;
+                case 'suppliers': renderSupplierList(); break;
                 case 'finance': 
                     initTransactionFilters();
                     renderTransactionList(); 
@@ -1615,8 +1625,9 @@
             updateDashboard();
             renderPurchaseList();
             renderSalesList();
-            renderProductList();  // 新增
-            renderPartyList();
+            renderProductList();
+            renderCustomerList();
+            renderSupplierList();
             renderTransactionList();
         }
 
@@ -3210,8 +3221,8 @@
         }
 
 
-        // ==================== 客户/供应商管理 ====================
-        function renderPartyList() {
+        // ==================== 客户管理 ====================
+        function renderCustomerList() {
             const customerMap = new Map();
 
             data.customers.forEach(c => {
@@ -3240,49 +3251,13 @@
                 }
             });
 
-            const supplierMap = new Map();
-
-            data.suppliers.forEach(s => {
-                if (!supplierMap.has(s.name)) {
-                    supplierMap.set(s.name, {
-                        id: s.id,
-                        name: s.name,
-                        phone: s.phone,
-                        remark: s.remark,
-                        totalAmount: 0,
-                        paidAmount: 0,
-                        remainingAmount: 0,
-                        orderCount: 0
-                    });
-                }
-            });
-
-            data.purchaseOrders.forEach(order => {
-                const supplier = data.suppliers.find(s => s.id === order.supplierId);
-                if (supplier && supplierMap.has(supplier.name)) {
-                    const s = supplierMap.get(supplier.name);
-                    s.totalAmount += order.totalAmount || 0;
-                    s.paidAmount += order.paidAmount || 0;
-                    s.remainingAmount += order.remainingAmount || 0;
-                    s.orderCount += 1;
-                }
-            });
-
             const uniqueCustomers = Array.from(customerMap.values());
-            const uniqueSuppliers = Array.from(supplierMap.values());
 
             const customerTotals = uniqueCustomers.reduce((acc, c) => ({
                 totalAmount: acc.totalAmount + c.totalAmount,
                 paidAmount: acc.paidAmount + c.paidAmount,
                 remainingAmount: acc.remainingAmount + c.remainingAmount,
                 orderCount: acc.orderCount + c.orderCount
-            }), { totalAmount: 0, paidAmount: 0, remainingAmount: 0, orderCount: 0 });
-
-            const supplierTotals = uniqueSuppliers.reduce((acc, s) => ({
-                totalAmount: acc.totalAmount + s.totalAmount,
-                paidAmount: acc.paidAmount + s.paidAmount,
-                remainingAmount: acc.remainingAmount + s.remainingAmount,
-                orderCount: acc.orderCount + s.orderCount
             }), { totalAmount: 0, paidAmount: 0, remainingAmount: 0, orderCount: 0 });
 
             document.getElementById('customerList').innerHTML = uniqueCustomers.map(c => `
@@ -3318,6 +3293,46 @@
                     <td class="px-4 py-3"></td>
                 </tr>
             `;
+        }
+
+        // ==================== 供应商管理 ====================
+        function renderSupplierList() {
+            const supplierMap = new Map();
+
+            data.suppliers.forEach(s => {
+                if (!supplierMap.has(s.name)) {
+                    supplierMap.set(s.name, {
+                        id: s.id,
+                        name: s.name,
+                        phone: s.phone,
+                        remark: s.remark,
+                        totalAmount: 0,
+                        paidAmount: 0,
+                        remainingAmount: 0,
+                        orderCount: 0
+                    });
+                }
+            });
+
+            data.purchaseOrders.forEach(order => {
+                const supplier = data.suppliers.find(s => s.id === order.supplierId);
+                if (supplier && supplierMap.has(supplier.name)) {
+                    const s = supplierMap.get(supplier.name);
+                    s.totalAmount += order.totalAmount || 0;
+                    s.paidAmount += order.paidAmount || 0;
+                    s.remainingAmount += order.remainingAmount || 0;
+                    s.orderCount += 1;
+                }
+            });
+
+            const uniqueSuppliers = Array.from(supplierMap.values());
+
+            const supplierTotals = uniqueSuppliers.reduce((acc, s) => ({
+                totalAmount: acc.totalAmount + s.totalAmount,
+                paidAmount: acc.paidAmount + s.paidAmount,
+                remainingAmount: acc.remainingAmount + s.remainingAmount,
+                orderCount: acc.orderCount + s.orderCount
+            }), { totalAmount: 0, paidAmount: 0, remainingAmount: 0, orderCount: 0 });
 
             document.getElementById('supplierList').innerHTML = uniqueSuppliers.map(s => `
                 <tr class="hover:bg-purple-50 transition-colors">
@@ -3351,6 +3366,12 @@
                     <td class="px-4 py-3"></td>
                 </tr>
             `;
+        }
+
+        // 保留旧的renderPartyList作为兼容
+        function renderPartyList() {
+            renderCustomerList();
+            renderSupplierList();
         }
 
         async function receivePaymentFromCustomer(customerId) {
