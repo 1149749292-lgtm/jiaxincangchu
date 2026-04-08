@@ -5351,7 +5351,11 @@ function syncPaymentDataToOrders() {
             const totalExpensePayment = (data.transactions || []).filter(t => t.type === 'expense' && t.remark?.includes('费用')).reduce((sum, t) => sum + (t.amount || 0), 0);
             const supplierDebt = (data.suppliers || []).reduce((sum, s) => sum + (s.balance || 0), 0);
             const expenseUnpaid = (data.expenses || []).reduce((sum, e) => sum + (e.remainingAmount || 0), 0);
-            const customerReceivable = (data.customers || []).reduce((sum, c) => sum + (c.balance || 0), 0);
+            // 计算客户欠款（使用remainingAmount，与客户管理保持一致）
+            // 从销售订单实时计算客户欠款（与客户管理板块保持一致）
+            const customerReceivable = (data.salesOrders || []).reduce((sum, order) => {
+                return sum + (order.remainingAmount || 0);
+            }, 0);
 
             const liquidity = totalInvestment + totalIncome - totalPayment - totalExpensePayment;
             const totalLiability = supplierDebt + expenseUnpaid;
