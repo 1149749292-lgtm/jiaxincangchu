@@ -1839,6 +1839,7 @@
                 data.transactions = cloudData.transactions || [];
                 data.lastPurchaseDocNumber = cloudData.lastPurchaseDocNumber || 0;
                 data.expenses = cloudData.expenses || [];  // 加载费用数据
+                data.shareholders = cloudData.shareholders || [];  // 加载股东投资数据
 
                 isOnline = true;
                 updateSyncStatus('synced', '已同步到云端');
@@ -1858,6 +1859,7 @@
                         data.transactions = parsed.transactions || [];
                         data.lastPurchaseDocNumber = parsed.lastPurchaseDocNumber || 0;
                         data.expenses = parsed.expenses || [];
+                        data.shareholders = parsed.shareholders || [];
                         showToast('⚠️ 离线模式，使用本地数据', 'warning');
                     } catch(e) {
                         showToast('❌ 加载失败', 'error');
@@ -5287,29 +5289,47 @@ function syncPaymentDataToOrders() {
         }
 
         async function saveShareholder() {
+            console.log('saveShareholder开始执行');
+            console.log('当前data.shareholders:', data.shareholders);
+
             const id = document.getElementById('shareholderId').value;
             const name = document.getElementById('shareholderName').value.trim();
             const amount = parseFloat(document.getElementById('shareholderAmount').value) || 0;
             const date = document.getElementById('shareholderDate').value;
+
+            console.log('表单数据:', { id, name, amount, date });
 
             if (!name || amount <= 0 || !date) {
                 showToast('请填写完整信息', 'warning');
                 return;
             }
 
+            // 确保data.shareholders是数组
+            if (!Array.isArray(data.shareholders)) {
+                console.log('初始化data.shareholders为数组');
+                data.shareholders = [];
+            }
+
             if (id) {
                 const index = data.shareholders.findIndex(s => s.id === id);
                 if (index !== -1) {
                     data.shareholders[index] = { ...data.shareholders[index], name, amount, date };
+                    console.log('更新现有股东:', data.shareholders[index]);
                 }
             } else {
-                data.shareholders.push({ id: 'SH' + Date.now(), name, amount, date });
+                const newShareholder = { id: 'SH' + Date.now(), name, amount, date };
+                data.shareholders.push(newShareholder);
+                console.log('添加新股东:', newShareholder);
             }
 
+            console.log('保存前的data.shareholders:', data.shareholders);
+
             await saveData();
+            console.log('saveData完成');
             closeModal('shareholderModal');
             renderShareholderList();
             showToast('保存成功');
+            console.log('saveShareholder执行完成');
         }
 
         async function deleteShareholder(id) {
