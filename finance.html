@@ -848,6 +848,37 @@
                         </thead>
                         <tbody id="shareholderList" class="divide-y divide-gray-200"></tbody>
                     </table>
+
+                <!-- 数据导出导入区域 - 右下角 -->
+                <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 20px; padding-top: 16px; border-top: 2px solid #e5e7eb;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 13px; color: #6b7280; margin-right: 8px;">💾 数据备份:</span>
+
+                        <!-- 导出JSON按钮 -->
+                        <button onclick="exportAllData('json')" 
+                                class="inventory-jump-btn" 
+                                style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); padding: 8px 14px; font-size: 12px;">
+                            <span style="font-size: 14px;">📄</span>
+                            <span class="btn-text">导出JSON</span>
+                        </button>
+
+                        <!-- 导出Excel按钮 -->
+                        <button onclick="exportAllData('excel')" 
+                                class="inventory-jump-btn" 
+                                style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 8px 14px; font-size: 12px;">
+                            <span style="font-size: 14px;">📊</span>
+                            <span class="btn-text">导出Excel</span>
+                        </button>
+
+                        <!-- 导入按钮 -->
+                        <button onclick="showImportModal()" 
+                                class="inventory-jump-btn" 
+                                style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 8px 14px; font-size: 12px;">
+                            <span style="font-size: 14px;">📂</span>
+                            <span class="btn-text">导入数据</span>
+                        </button>
+                    </div>
+                </div>
                 </div>
             </div>
 
@@ -6167,57 +6198,169 @@ function syncPaymentDataToOrders() {
         // ==================== 数据备份与导出功能 ====================
 
         // 导出所有数据
-        function exportAllData() {
+        function exportAllData(format = 'json') {
             if (!checkExportImportPermission()) return;
-            const exportData = {
-                exportTime: new Date().toISOString(),
-                exportDate: new Date().toLocaleString('zh-CN'),
-                version: 'v3.6',
-                systemName: '佳信水产财务系统',
-                data: {
-                    suppliers: data.suppliers || [],
-                    customers: data.customers || [],
-                    products: data.products || [],
-                    purchaseOrders: data.purchaseOrders || [],
-                    salesOrders: data.salesOrders || [],
-                    transactions: data.transactions || [],
-                    expenses: data.expenses || [],
-                    shareholders: data.shareholders || [],
-                    lastPurchaseDocNumber: data.lastPurchaseDocNumber || 0
-                },
-                statistics: {
-                    suppliers: (data.suppliers || []).length,
-                    customers: (data.customers || []).length,
-                    products: (data.products || []).length,
-                    purchaseOrders: (data.purchaseOrders || []).length,
-                    salesOrders: (data.salesOrders || []).length,
-                    transactions: (data.transactions || []).length,
-                    expenses: (data.expenses || []).length,
-                    shareholders: (data.shareholders || []).length
-                }
-            };
-
-            const dataStr = JSON.stringify(exportData, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-
-            const url = URL.createObjectURL(dataBlob);
-            const link = document.createElement('a');
-            link.href = url;
 
             const date = new Date();
             const dateStr = date.toISOString().split('T')[0];
             const timeStr = date.toTimeString().slice(0,5).replace(':', '');
-            link.download = `佳信水产财务数据备份_${dateStr}_${timeStr}.json`;
 
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
+            if (format === 'excel') {
+                // 导出为Excel多工作表格式
+                const wb = XLSX.utils.book_new();
 
-            // 记录本次导出时间
+                // 1. 供应商数据表
+                const suppliersWs = XLSX.utils.json_to_sheet((data.suppliers || []).map(s => ({
+                    'ID': s.id,
+                    '名称': s.name,
+                    '电话': s.phone || '',
+                    '备注': s.remark || '',
+                    '欠款余额': s.balance || 0
+                })));
+                XLSX.utils.book_append_sheet(wb, suppliersWs, '供应商');
+
+                // 2. 客户数据表
+                const customersWs = XLSX.utils.json_to_sheet((data.customers || []).map(c => ({
+                    'ID': c.id,
+                    '名称': c.name,
+                    '电话': c.phone || '',
+                    '备注': c.remark || '',
+                    '欠款余额': c.balance || 0
+                })));
+                XLSX.utils.book_append_sheet(wb, customersWs, '客户');
+
+                // 3. 产品库数据表
+                const productsWs = XLSX.utils.json_to_sheet((data.products || []).map(p => ({
+                    'ID': p.id,
+                    '名称': p.name,
+                    '规格': p.spec,
+                    '品牌': p.brand || '',
+                    '默认重量(kg)': p.defaultWeight,
+                    '单价': p.price,
+                    '计价方式': p.priceType === 'kg' ? '按公斤' : '按件',
+                    '类别': p.category === 'shrimp' ? '虾类' : p.category === 'fish' ? '鱼类' : '其他'
+                })));
+                XLSX.utils.book_append_sheet(wb, productsWs, '产品库');
+
+                // 4. 采购订单表
+                const purchaseWs = XLSX.utils.json_to_sheet((data.purchaseOrders || []).map(o => ({
+                    '单号': o.docNumber || o.id,
+                    '日期': o.date,
+                    '供应商': o.supplierName,
+                    '品名': o.product || '',
+                    '总重量(斤)': o.totalWeight,
+                    '单价': o.price,
+                    '总金额': o.totalAmount,
+                    '已付金额': o.paidAmount || 0,
+                    '未付金额': o.remainingAmount || 0,
+                    '付款状态': o.paymentStatus === 'paid' ? '已付' : o.paymentStatus === 'partial' ? '部分' : '未付'
+                })));
+                XLSX.utils.book_append_sheet(wb, purchaseWs, '采购订单');
+
+                // 5. 销售订单表
+                const salesWs = XLSX.utils.json_to_sheet((data.salesOrders || []).map(o => ({
+                    '单号': o.id.slice(-6),
+                    '日期': o.date,
+                    '客户': o.customerName,
+                    '总件数': o.totalQty,
+                    '总金额': o.totalAmount,
+                    '已收金额': o.paidAmount || 0,
+                    '未收金额': o.remainingAmount || 0,
+                    '收款状态': o.paymentStatus === 'paid' ? '已收' : o.paymentStatus === 'partial' ? '部分' : '未收'
+                })));
+                XLSX.utils.book_append_sheet(wb, salesWs, '销售订单');
+
+                // 6. 收付款记录表
+                const transactionsWs = XLSX.utils.json_to_sheet((data.transactions || []).map(t => ({
+                    '日期': t.date,
+                    '类型': t.type === 'income' ? '收款' : '付款',
+                    '往来单位': t.partyName,
+                    '金额': t.amount,
+                    '支付方式': t.paymentMethod || '',
+                    '备注': t.remark || ''
+                })));
+                XLSX.utils.book_append_sheet(wb, transactionsWs, '收付款记录');
+
+                // 7. 费用管理表
+                const expensesWs = XLSX.utils.json_to_sheet((data.expenses || []).map(e => {
+                    const typeNames = {
+                        'processing': '加工费用',
+                        'packaging': '包装费用',
+                        'carton': '纸箱',
+                        'office': '办公杂费',
+                        'other': '其他费用'
+                    };
+                    return {
+                        '日期': e.date,
+                        '费用类型': typeNames[e.type] || e.type,
+                        '总费用': e.totalAmount,
+                        '已付': e.paidAmount || 0,
+                        '未付': e.remainingAmount || 0,
+                        '备注': e.remark || ''
+                    };
+                }));
+                XLSX.utils.book_append_sheet(wb, expensesWs, '费用管理');
+
+                // 8. 股东投资表
+                const shareholdersWs = XLSX.utils.json_to_sheet((data.shareholders || []).map(s => ({
+                    '股东姓名': s.name,
+                    '投资金额': s.amount,
+                    '投资日期': s.date
+                })));
+                XLSX.utils.book_append_sheet(wb, shareholdersWs, '股东投资');
+
+                // 导出Excel文件
+                XLSX.writeFile(wb, `佳信水产财务数据备份_${dateStr}_${timeStr}.xlsx`);
+
+                showToast(`✅ Excel导出成功！共导出8个工作表`);
+            } else {
+                // 导出为JSON格式（原有逻辑）
+                const exportData = {
+                    exportTime: new Date().toISOString(),
+                    exportDate: new Date().toLocaleString('zh-CN'),
+                    version: 'v3.6',
+                    systemName: '佳信水产财务系统',
+                    data: {
+                        suppliers: data.suppliers || [],
+                        customers: data.customers || [],
+                        products: data.products || [],
+                        purchaseOrders: data.purchaseOrders || [],
+                        salesOrders: data.salesOrders || [],
+                        transactions: data.transactions || [],
+                        expenses: data.expenses || [],
+                        shareholders: data.shareholders || [],
+                        lastPurchaseDocNumber: data.lastPurchaseDocNumber || 0
+                    },
+                    statistics: {
+                        suppliers: (data.suppliers || []).length,
+                        customers: (data.customers || []).length,
+                        products: (data.products || []).length,
+                        purchaseOrders: (data.purchaseOrders || []).length,
+                        salesOrders: (data.salesOrders || []).length,
+                        transactions: (data.transactions || []).length,
+                        expenses: (data.expenses || []).length,
+                        shareholders: (data.shareholders || []).length
+                    }
+                };
+
+                const dataStr = JSON.stringify(exportData, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `佳信水产财务数据备份_${dateStr}_${timeStr}.json`;
+
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                showToast('✅ JSON导出成功！文件已保存到下载文件夹');
+            }
+
+            // 记录本次导出时间（用于15/25号提醒）
             localStorage.setItem('lastExportDate', date.toISOString());
-
-            showToast('✅ 数据导出成功！文件已保存到下载文件夹');
         }
 
         // 检查是否需要提醒导出数据（每月5号、15号、25号）
@@ -6226,8 +6369,8 @@ function syncPaymentDataToOrders() {
             const day = today.getDate();
             const lastExportStr = localStorage.getItem('lastExportDate');
 
-            // 检查今天是否是提醒日期（5号、15号、25号）
-            if (day === 5 || day === 15 || day === 25) {
+            // 检查今天是否是提醒日期（每月15号和25号）
+            if (day === 15 || day === 25) {
                 // 检查今天是否已经导出过
                 if (lastExportStr) {
                     const lastExport = new Date(lastExportStr);
@@ -6257,13 +6400,14 @@ function syncPaymentDataToOrders() {
                     <div class="p-6">
                         <div style="font-size: 64px; margin-bottom: 16px;">💾</div>
                         <h3 style="font-size: 20px; font-weight: bold; color: #1f2937; margin-bottom: 8px;">数据备份提醒</h3>
-                        <p style="color: #6b7280; margin-bottom: 16px;">今天是 <strong>${dateStr}</strong>（每月${day}号）</p>
+                        <p style="color: #6b7280; margin-bottom: 16px;">今天是 <strong>${dateStr}</strong>（每月${day}号，数据备份日）</p>
                         <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 12px; padding: 16px; margin-bottom: 20px; text-align: left;">
                             <p style="color: #92400e; font-weight: 600; margin-bottom: 8px;">📋 建议定期备份数据：</p>
                             <ul style="color: #92400e; font-size: 14px; margin: 0; padding-left: 20px;">
+                                <li>系统设定每月<strong>15号和25号</strong>为数据备份日</li>
                                 <li>防止云端数据意外丢失</li>
-                                <li>保留历史数据记录</li>
-                                <li>便于数据迁移和恢复</li>
+                                <li>保留历史数据记录便于追溯</li>
+                                <li>支持JSON和Excel两种格式导出</li>
                             </ul>
                         </div>
                         <div style="display: flex; gap: 12px;">
