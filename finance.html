@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>佳信水产进销存财务系统 v3.5</title>
+    <title>佳信水产进销存财务系统 v3.6（收付款修复版）</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -565,7 +565,144 @@
             box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
         }
 
-    </style>
+    
+
+        /* ==================== 手机端响应式优化 ==================== */
+
+        /* 手机端表格横向滚动优化 - 只通过CSS控制，不修改HTML */
+        @media (max-width: 640px) {
+            /* 所有包含表格的容器自动添加横向滚动 */
+            .view-section .bg-white {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* 表格样式优化 */
+            .view-section table {
+                min-width: 600px; /* 确保表格有最小宽度 */
+                width: auto;
+                white-space: nowrap;
+            }
+
+            /* 减小表格内边距 */
+            .view-section th,
+            .view-section td {
+                padding: 8px 6px !important;
+                font-size: 12px !important;
+            }
+
+            /* 减小标题字体 */
+            .view-section th {
+                font-size: 11px !important;
+                font-weight: 600;
+            }
+
+            /* 资金概况卡片优化 */
+            #view-capital .grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 8px !important;
+            }
+
+            #view-capital .grid > div {
+                padding: 12px !important;
+            }
+
+            #view-capital .text-3xl {
+                font-size: 1.25rem !important;
+            }
+
+            /* 仪表盘卡片优化 */
+            #view-dashboard .grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 8px !important;
+            }
+
+            #view-dashboard .bg-white {
+                padding: 12px !important;
+            }
+
+            #view-dashboard .text-2xl {
+                font-size: 1.125rem !important;
+            }
+
+            /* 导航按钮优化 */
+            .tab-btn {
+                font-size: 11px !important;
+                padding: 8px 4px !important;
+            }
+
+            /* 减小状态标签 */
+            .status-badge {
+                padding: 2px 6px !important;
+                font-size: 10px !important;
+            }
+
+            /* 操作按钮优化 */
+            .view-section button {
+                padding: 2px 6px !important;
+                font-size: 11px !important;
+            }
+
+            /* 模态框宽度优化 */
+            .modal-content {
+                width: 95% !important;
+                max-width: 95vw !important;
+                margin: 10px !important;
+            }
+        }
+
+        /* 超小屏幕优化 (max-width: 380px) */
+        @media (max-width: 380px) {
+            .view-section th,
+            .view-section td {
+                padding: 6px 4px !important;
+                font-size: 11px !important;
+            }
+
+            #view-capital .grid,
+            #view-dashboard .grid {
+                grid-template-columns: 1fr !important;
+            }
+
+        /* 导出/导入按钮手机端优化 */
+        @media (max-width: 768px) {
+            .inventory-jump-btn {
+                padding: 6px 10px !important;
+                font-size: 11px !important;
+            }
+
+            .inventory-jump-btn .btn-text {
+                display: none; /* 手机端隐藏文字，只显示图标 */
+            }
+
+            .inventory-jump-btn .btn-icon {
+                font-size: 18px !important;
+                margin: 0 !important;
+            }
+
+            .inventory-jump-btn svg {
+                display: none; /* 手机端隐藏箭头图标 */
+            }
+        }
+
+        /* 超小屏幕进一步优化 */
+        @media (max-width: 380px) {
+            header .flex.items-center.space-x-3 {
+                gap: 4px !important;
+            }
+
+            .inventory-jump-btn {
+                padding: 4px 8px !important;
+            }
+        }
+
+
+            .tab-btn {
+                font-size: 10px !important;
+                padding: 6px 2px !important;
+            }
+        }
+</style>
 </head>
 <body class="bg-gray-50 min-h-screen">
     <!-- 密码验证层 -->
@@ -595,7 +732,7 @@
                         </div>
                         <div>
                             <h1 class="text-xl font-bold text-gray-800">佳信水产财务系统</h1>
-                            <p class="text-xs text-gray-500">v3.5 | 产品库已集成</p>
+                            <p class="text-xs text-gray-500">v3.6 | 收付款已修复</p>
                         </div>
                     </div>
                     <div class="flex items-center space-x-3">
@@ -609,6 +746,31 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
                             </svg>
                         </a>
+
+                        <!-- 一键导出数据按钮 -->
+                        <button onclick="exportAllData()" 
+                                class="inventory-jump-btn" 
+                                style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; cursor: pointer;">
+                            <span class="btn-icon">💾</span>
+                            <span class="btn-text">导出数据</span>
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-left: 4px;">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                        </button>
+
+                        <!-- 导入数据按钮 -->
+                        <button onclick="showImportModal()" 
+                                class="inventory-jump-btn" 
+                                style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border: none; cursor: pointer;">
+                            <span class="btn-icon">📂</span>
+                            <span class="btn-text">导入数据</span>
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-left: 4px;">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                            </svg>
+                        </button>
+
+                        <!-- 隐藏的文件输入框用于导入 -->
+                        <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="importData(this)">
 
                         <div class="sync-status" id="syncStatus">
                             <span class="sync-dot"></span>
@@ -625,7 +787,7 @@
                             </div>
                             <div>
                                 <h1 class="text-lg font-bold text-gray-800">佳信水产财务</h1>
-                                <p class="text-xs text-gray-500">v3.5 | 自动同步</p>
+                                <p class="text-xs text-gray-500">v3.6 | 自动同步</p>
                             </div>
                         </div>
                         <div class="sync-status" id="syncStatusMobile">
@@ -666,7 +828,31 @@
 
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <!-- 仪表盘 -->
-            <div id="view-dashboard" class="view-section">
+            <!-- 股东投资 -->
+            <div id="view-shareholders" class="view-section hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">股东投资管理</h2>
+                    <button onclick="openShareholderModal()" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-2 rounded-lg hover:from-purple-700 hover:to-indigo-700 flex items-center space-x-2 shadow-md">
+                        <span>新增投资</span>
+                    </button>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">股东姓名</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">投资金额</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">投资日期</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="shareholderList" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 资金概况 -->
+            <div id="view-dashboard" class="view-section hidden">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     <div class="bg-white rounded-xl p-6 shadow-sm">
                         <div class="flex items-center justify-between">
@@ -716,7 +902,103 @@
             </div>
 
             <!-- 采购管理 -->
-            <div id="view-purchase" class="view-section hidden">
+            <div id="view-capital" class="view-section">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">实时资金概况</h2>
+                    <button onclick="updateCapitalOverview()" class="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-cyan-600 flex items-center space-x-2 shadow-md text-sm">
+                        <span>刷新数据</span>
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-6 shadow-lg text-white">
+                        <p class="text-sm text-green-100">💰 剩余流动资金</p>
+                        <p class="text-3xl font-bold mt-1" id="capitalLiquidity">¥0</p>
+                        <p class="text-xs text-green-200 mt-2">投资+收款-付款</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-red-500 to-rose-600 rounded-xl p-6 shadow-lg text-white">
+                        <p class="text-sm text-red-100">📉 总负债</p>
+                        <p class="text-3xl font-bold mt-1" id="capitalLiability">¥0</p>
+                        <p class="text-xs text-red-200 mt-2">供应商欠款+费用未付</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-6 shadow-lg text-white">
+                        <p class="text-sm text-blue-100">📊 净资产</p>
+                        <p class="text-3xl font-bold mt-1" id="capitalNetWorth">¥0</p>
+                        <p class="text-xs text-blue-200 mt-2">流动资金-负债</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-6 shadow-lg text-white">
+                        <p class="text-sm text-amber-100">💳 客户欠款（应收款）</p>
+                        <p class="text-3xl font-bold mt-1" id="capitalReceivable">¥0</p>
+                        <p class="text-xs text-amber-200 mt-2">待收客户货款</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-xl shadow-sm p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">资金来源</h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                <span class="text-gray-600">股东投资</span>
+                                <span class="font-bold text-gray-800" id="capitalSourceInvestment">¥0</span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                <span class="text-gray-600">客户收款</span>
+                                <span class="font-bold text-green-600" id="capitalSourceIncome">¥0</span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg border border-green-200">
+                                <span class="font-medium text-green-800">资金流入合计</span>
+                                <span class="font-bold text-green-700" id="capitalSourceTotal">¥0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">资金占用</h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                <span class="text-gray-600">供应商付款</span>
+                                <span class="font-bold text-red-600" id="capitalUsePayment">¥0</span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                <span class="text-gray-600">费用支出</span>
+                                <span class="font-bold text-red-600" id="capitalUseExpense">¥0</span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-red-50 rounded-lg border border-red-200">
+                                <span class="font-medium text-red-800">资金流出合计</span>
+                                <span class="font-bold text-red-700" id="capitalUseTotal">¥0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">负债明细</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="p-4 bg-red-50 rounded-lg border border-red-100">
+                            <p class="text-sm text-red-600 mb-1">供应商欠款</p>
+                            <p class="text-xl font-bold text-red-700" id="capitalLiabilitySupplier">¥0</p>
+                        </div>
+                        <div class="p-4 bg-orange-50 rounded-lg border border-orange-100">
+                            <p class="text-sm text-orange-600 mb-1">费用未付</p>
+                            <p class="text-xl font-bold text-orange-700" id="capitalLiabilityExpense">¥0</p>
+                        </div>
+                        <div class="p-4 bg-rose-50 rounded-lg border border-rose-100">
+                            <p class="text-sm text-rose-600 mb-1">总负债</p>
+                            <p class="text-xl font-bold text-rose-700" id="capitalLiabilityTotal">¥0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 bg-blue-50 rounded-xl p-6 border border-blue-200">
+                    <h4 class="font-bold text-blue-800 mb-3">计算公式说明</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <p class="text-blue-700 mb-1"><strong>剩余流动资金</strong> = 股东投资总额 + 客户收款总额 - 供应商付款总额 - 费用支出总额</p>
+                            <p class="text-blue-700 mb-1"><strong>总负债</strong> = 供应商欠款 + 费用未付金额</p>
+                        </div>
+                        <div>
+                            <p class="text-blue-700 mb-1"><strong>净资产</strong> = 剩余流动资金 - 总负债</p>
+                            <p class="text-blue-700 mb-1"><strong>客户欠款</strong> = 所有客户未付货款总和（应收款）</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+<div id="view-purchase" class="view-section hidden">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold">采购管理</h2>
                     <button onclick="openPurchaseModal()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2">
@@ -943,8 +1225,38 @@
                         <div class="flex items-center gap-2 flex-1 min-w-[200px]">
                             <label class="text-sm font-medium text-gray-600">往来单位：</label>
                             <select id="transactionPartyFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none w-full max-w-xs" onchange="renderTransactionList()">
-                                <option value="">全部客户/供应商</option>
+                                <option value="">全部客户/供应商/费用</option>
                             </select>
+                        </div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <label class="text-sm font-medium text-gray-600">费用类型：</label>
+                            <div id="expenseTypeMultiSelect" class="flex gap-2 flex-wrap">
+                                <label class="inline-flex items-center px-3 py-1.5 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors">
+                                    <input type="checkbox" value="processing" class="expense-type-checkbox mr-2 text-blue-600 focus:ring-blue-500" onchange="renderTransactionList()">
+                                    <span class="text-sm">加工费</span>
+                                </label>
+                                <label class="inline-flex items-center px-3 py-1.5 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors">
+                                    <input type="checkbox" value="packaging" class="expense-type-checkbox mr-2 text-blue-600 focus:ring-blue-500" onchange="renderTransactionList()">
+                                    <span class="text-sm">包装费</span>
+                                </label>
+                                <label class="inline-flex items-center px-3 py-1.5 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors">
+                                    <input type="checkbox" value="carton" class="expense-type-checkbox mr-2 text-blue-600 focus:ring-blue-500" onchange="renderTransactionList()">
+                                    <span class="text-sm">纸箱</span>
+                                </label>
+                                <label class="inline-flex items-center px-3 py-1.5 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors">
+                                    <input type="checkbox" value="office" class="expense-type-checkbox mr-2 text-blue-600 focus:ring-blue-500" onchange="renderTransactionList()">
+                                    <span class="text-sm">办公杂费</span>
+                                </label>
+                                <label class="inline-flex items-center px-3 py-1.5 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors">
+                                    <input type="checkbox" value="other" class="expense-type-checkbox mr-2 text-blue-600 focus:ring-blue-500" onchange="renderTransactionList()">
+                                    <span class="text-sm">其他费用</span>
+                                </label>
+                                <label class="inline-flex items-center px-3 py-1.5 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors border border-blue-200">
+                                    <input type="checkbox" value="not_expense" class="expense-type-checkbox mr-2 text-blue-600 focus:ring-blue-500" onchange="renderTransactionList()">
+                                    <span class="text-sm font-medium">非费用付款</span>
+                                </label>
+                            </div>
+                            <button onclick="clearExpenseTypeFilter()" class="text-xs text-gray-500 hover:text-gray-700 underline">清除</button>
                         </div>
                         <div class="flex items-center gap-2">
                             <label class="text-sm font-medium text-gray-600">日期：</label>
@@ -953,6 +1265,23 @@
                         <button onclick="resetTransactionFilters()" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
                             重置筛选
                         </button>
+                    </div>
+
+                    <!-- 历史费用同步按钮 -->
+                    <div class="mt-4 pt-4 border-t border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div class="text-sm text-gray-600">
+                                <span class="font-medium">💡 提示：</span>
+                                <span class="text-gray-500">费用付款会自动显示在这里，历史费用可手动同步</span>
+                            </div>
+                            <button onclick="syncExpensesToTransactions()" 
+                                    class="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white text-sm rounded-lg hover:from-orange-600 hover:to-red-600 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                同步历史费用
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -1055,127 +1384,7 @@
                 </div>
             </div>
         
-            <!-- 股东投资 -->
-            <div id="view-shareholders" class="view-section hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold">股东投资管理</h2>
-                    <button onclick="openShareholderModal()" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-2 rounded-lg hover:from-purple-700 hover:to-indigo-700 flex items-center space-x-2 shadow-md">
-                        <span>新增投资</span>
-                    </button>
-                </div>
-                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-                    <table class="w-full">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">股东姓名</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">投资金额</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">投资日期</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="shareholderList" class="divide-y divide-gray-200"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- 资金概况 -->
-            <div id="view-capital" class="view-section hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold">实时资金概况</h2>
-                    <button onclick="updateCapitalOverview()" class="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-cyan-600 flex items-center space-x-2 shadow-md text-sm">
-                        <span>刷新数据</span>
-                    </button>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div class="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-6 shadow-lg text-white">
-                        <p class="text-sm text-green-100">💰 剩余流动资金</p>
-                        <p class="text-3xl font-bold mt-1" id="capitalLiquidity">¥0</p>
-                        <p class="text-xs text-green-200 mt-2">投资+收款-付款</p>
-                    </div>
-                    <div class="bg-gradient-to-br from-red-500 to-rose-600 rounded-xl p-6 shadow-lg text-white">
-                        <p class="text-sm text-red-100">📉 总负债</p>
-                        <p class="text-3xl font-bold mt-1" id="capitalLiability">¥0</p>
-                        <p class="text-xs text-red-200 mt-2">供应商欠款+费用未付</p>
-                    </div>
-                    <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-6 shadow-lg text-white">
-                        <p class="text-sm text-blue-100">📊 净资产</p>
-                        <p class="text-3xl font-bold mt-1" id="capitalNetWorth">¥0</p>
-                        <p class="text-xs text-blue-200 mt-2">流动资金-负债</p>
-                    </div>
-                    <div class="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-6 shadow-lg text-white">
-                        <p class="text-sm text-amber-100">💳 客户欠款（应收款）</p>
-                        <p class="text-3xl font-bold mt-1" id="capitalReceivable">¥0</p>
-                        <p class="text-xs text-amber-200 mt-2">待收客户货款</p>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="bg-white rounded-xl shadow-sm p-6">
-                        <h3 class="text-lg font-bold text-gray-800 mb-4">资金来源</h3>
-                        <div class="space-y-4">
-                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                                <span class="text-gray-600">股东投资</span>
-                                <span class="font-bold text-gray-800" id="capitalSourceInvestment">¥0</span>
-                            </div>
-                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                                <span class="text-gray-600">客户收款</span>
-                                <span class="font-bold text-green-600" id="capitalSourceIncome">¥0</span>
-                            </div>
-                            <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg border border-green-200">
-                                <span class="font-medium text-green-800">资金流入合计</span>
-                                <span class="font-bold text-green-700" id="capitalSourceTotal">¥0</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-xl shadow-sm p-6">
-                        <h3 class="text-lg font-bold text-gray-800 mb-4">资金占用</h3>
-                        <div class="space-y-4">
-                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                                <span class="text-gray-600">供应商付款</span>
-                                <span class="font-bold text-red-600" id="capitalUsePayment">¥0</span>
-                            </div>
-                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                                <span class="text-gray-600">费用支出</span>
-                                <span class="font-bold text-red-600" id="capitalUseExpense">¥0</span>
-                            </div>
-                            <div class="flex justify-between items-center p-3 bg-red-50 rounded-lg border border-red-200">
-                                <span class="font-medium text-red-800">资金流出合计</span>
-                                <span class="font-bold text-red-700" id="capitalUseTotal">¥0</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="mt-6 bg-white rounded-xl shadow-sm p-6">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4">负债明细</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="p-4 bg-red-50 rounded-lg border border-red-100">
-                            <p class="text-sm text-red-600 mb-1">供应商欠款</p>
-                            <p class="text-xl font-bold text-red-700" id="capitalLiabilitySupplier">¥0</p>
-                        </div>
-                        <div class="p-4 bg-orange-50 rounded-lg border border-orange-100">
-                            <p class="text-sm text-orange-600 mb-1">费用未付</p>
-                            <p class="text-xl font-bold text-orange-700" id="capitalLiabilityExpense">¥0</p>
-                        </div>
-                        <div class="p-4 bg-rose-50 rounded-lg border border-rose-100">
-                            <p class="text-sm text-rose-600 mb-1">总负债</p>
-                            <p class="text-xl font-bold text-rose-700" id="capitalLiabilityTotal">¥0</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="mt-6 bg-blue-50 rounded-xl p-6 border border-blue-200">
-                    <h4 class="font-bold text-blue-800 mb-3">计算公式说明</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div>
-                            <p class="text-blue-700 mb-1"><strong>剩余流动资金</strong> = 股东投资总额 + 客户收款总额 - 供应商付款总额 - 费用支出总额</p>
-                            <p class="text-blue-700 mb-1"><strong>总负债</strong> = 供应商欠款 + 费用未付金额</p>
-                        </div>
-                        <div>
-                            <p class="text-blue-700 mb-1"><strong>净资产</strong> = 剩余流动资金 - 总负债</p>
-                            <p class="text-blue-700 mb-1"><strong>客户欠款</strong> = 所有客户未付货款总和（应收款）</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-</main>
+            </main>
     </div>
 
     <!-- 采购单录入模态框 -->
@@ -1634,6 +1843,47 @@
     <script>
 
         // ==================== 配置 ====================
+        
+        // ==================== 编辑密码保护 ====================
+        const EDIT_PASSWORD = '03261';
+        let isEditVerified = sessionStorage.getItem('finance_edit_verified') === 'true';
+
+        // 检查编辑权限
+        function checkEditPermission() {
+            if (isEditVerified) {
+                return true;
+            }
+
+            const input = prompt('请输入编辑密码（03261）：');
+            if (input === EDIT_PASSWORD) {
+                isEditVerified = true;
+                sessionStorage.setItem('finance_edit_verified', 'true');
+                showToast('✅ 密码验证通过，当前会话可自由编辑');
+                return true;
+            } else {
+                showToast('❌ 密码错误，无法编辑', 'error');
+                return false;
+            }
+        }
+
+        // 导出/导入密码检查
+        function checkExportImportPermission() {
+            if (isEditVerified) {
+                return true;
+            }
+
+            const input = prompt('请输入操作密码（03261）：');
+            if (input === EDIT_PASSWORD) {
+                isEditVerified = true;
+                sessionStorage.setItem('finance_edit_verified', 'true');
+                showToast('✅ 密码验证通过');
+                return true;
+            } else {
+                showToast('❌ 密码错误，无法操作', 'error');
+                return false;
+            }
+        }
+
         const CONFIG = {
             BIN_ID: '69cf0acbaaba882197bd1c53',
             API_KEY: '$2a$10$42R1HUnhc8El3s8IEf4sO.j6KnDq9wF/7gkHB1trcltILhKXafovu',
@@ -1987,6 +2237,7 @@
         }
 
         function importDefaultProducts() {
+            if (!checkEditPermission()) return;
             // 先清空现有产品库
             const oldCount = data.products ? data.products.length : 0;
             data.products = [];
@@ -2036,6 +2287,8 @@
         }
 
         async function saveProduct() {
+            if (!checkEditPermission()) return;
+
             const id = document.getElementById('productId').value;
             const name = document.getElementById('productName').value.trim();
             const spec = document.getElementById('productSpec').value.trim();
@@ -2085,6 +2338,7 @@
         }
 
         async function deleteProduct(productId) {
+            if (!checkEditPermission()) return;
             const product = data.products.find(p => p.id === productId);
             if (!product) return;
 
@@ -2311,10 +2565,10 @@
             const todayIncome = todayTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
             const todayExpense = todayTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
 
-            // Add today's expenses to today's expense
-            const todayExpenses = (data.expenses || []).filter(e => e.date === today);
-            const todayExpenseTotal = todayExpenses.reduce((sum, e) => sum + (e.totalAmount || 0), 0);
-            const totalTodayExpense = todayExpense + todayExpenseTotal;
+            // 费用付款已经在transactions中体现，不再重复计算
+            // const todayExpenses = (data.expenses || []).filter(e => e.date === today);
+            // const todayExpenseTotal = todayExpenses.reduce((sum, e) => sum + (e.totalAmount || 0), 0);
+            const totalTodayExpense = todayExpense;  // 只使用transactions中的数据
 
             document.getElementById('todayIncome').textContent = `¥${todayIncome.toFixed(0)}`;
             document.getElementById('todayExpense').textContent = `¥${totalTodayExpense.toFixed(0)}`;
@@ -2583,6 +2837,8 @@
         }
 
         async function saveEditPurchaseOrder() {
+            if (!checkEditPermission()) return;
+
             if (!editingPurchaseOrderId) return;
 
             const order = data.purchaseOrders.find(o => o.id === editingPurchaseOrderId);
@@ -2677,6 +2933,8 @@
         }
 
         async function savePurchaseOrder() {
+            if (!checkEditPermission()) return;
+
             const supplierId = document.getElementById('purchaseSupplier').value;
             if (!supplierId) { showToast('⚠️ 请选择供应商', 'warning'); return; }
 
@@ -2919,6 +3177,7 @@
         }
 
         async function addPurchasePayment(orderId) {
+            if (!checkEditPermission()) return;
             const order = data.purchaseOrders.find(o => o.id === orderId);
             if (!order) return;
             const amount = prompt(`请输入付款金额 (未付: ¥${order.remainingAmount.toFixed(2)}):`);
@@ -3183,6 +3442,8 @@
         }
 
         async function saveEditSalesOrder() {
+            if (!checkEditPermission()) return;
+
             if (!editingSalesOrderId) return;
 
             const order = data.salesOrders.find(o => o.id === editingSalesOrderId);
@@ -3271,6 +3532,8 @@
         }
 
         async function saveSalesOrder() {
+            if (!checkEditPermission()) return;
+
             const customerSelect = document.getElementById('salesCustomer');
             if (!customerSelect.value) { showToast('⚠️ 请选择客户', 'warning'); return; }
 
@@ -3495,6 +3758,7 @@
         }
 
         async function addSalesPayment(orderId) {
+            if (!checkEditPermission()) return;
             const order = data.salesOrders.find(o => o.id === orderId);
             if (!order) return;
             const amount = prompt(`请输入收款金额 (未收: ¥${order.remainingAmount.toFixed(2)}):`);
@@ -3680,6 +3944,7 @@
         }
 
         async function receivePaymentFromCustomer(customerId) {
+            if (!checkEditPermission()) return;
             const customer = data.customers.find(c => c.id === customerId);
             if (!customer) return;
 
@@ -3731,6 +3996,7 @@
         }
 
         async function paySupplier(supplierId) {
+            if (!checkEditPermission()) return;
             const supplier = data.suppliers.find(s => s.id === supplierId);
             if (!supplier) return;
 
@@ -3808,6 +4074,8 @@
         }
 
         async function saveParty() {
+            if (!checkEditPermission()) return;
+
             const type = document.getElementById('partyType').value;
             const name = document.getElementById('partyName').value.trim();
             if (!name) { showToast('⚠️ 请输入名称', 'warning'); return; }
@@ -3879,6 +4147,7 @@
         }
 
         async function executeDeleteParty(partyId, type) {
+            if (!checkEditPermission()) return;
             const modal = document.getElementById('deletePartyModal');
             if (modal) modal.remove();
 
@@ -3926,10 +4195,59 @@
         }
 
         // ==================== 收付款 ====================
-        function renderTransactionList() {
+        
+
+        // ==================== 同步历史费用到收付款 ====================
+        function syncExpensesToTransactions() {
+            // 获取所有已付金额大于0的费用记录
+            const paidExpenses = (data.expenses || []).filter(e => (e.paidAmount || 0) > 0);
+            let syncedCount = 0;
+
+            paidExpenses.forEach(expense => {
+                // 检查是否已经在transactions中存在对应的付款记录
+                const typeInfo = EXPENSE_TYPES[expense.type] || { name: expense.type };
+                const existingPayment = data.transactions.find(t => 
+                    t.isExpensePayment && 
+                    t.partyId === expense.id &&
+                    t.amount === expense.paidAmount
+                );
+
+                // 如果不存在，则创建记录
+                if (!existingPayment) {
+                    data.transactions.push({
+                        id: 'TRX' + Date.now() + Math.random().toString(36).substr(2, 5),
+                        date: expense.date,
+                        type: 'expense',
+                        partyId: expense.id,
+                        partyName: typeInfo.name,
+                        amount: expense.paidAmount,
+                        paymentMethod: '',
+                        remark: `费用付款 - ${typeInfo.name}${expense.remark ? ' - ' + expense.remark : ''}`,
+                        isExpensePayment: true,
+                        expenseType: expense.type,
+                        isHistoricalSync: true  // 标记为历史同步
+                    });
+                    syncedCount++;
+                }
+            });
+
+            if (syncedCount > 0) {
+                console.log(`已同步 ${syncedCount} 条历史费用付款到收付款`);
+                saveData();
+                renderTransactionList();
+                showToast(`✅ 已同步 ${syncedCount} 条历史费用记录`);
+            } else {
+                showToast('ℹ️ 所有历史费用已同步，无新记录');
+            }
+        }
+
+function renderTransactionList() {
             const typeFilter = document.getElementById('transactionTypeFilter').value;
             const partyFilter = document.getElementById('transactionPartyFilter').value;
             const dateFilter = document.getElementById('transactionDateFilter').value;
+
+            // 修复：获取多选的费用类型checkboxes
+            const selectedExpenseTypes = Array.from(document.querySelectorAll('.expense-type-checkbox:checked')).map(cb => cb.value);
 
             let filteredTransactions = [...data.transactions];
 
@@ -3946,6 +4264,22 @@
             // 日期筛选
             if (dateFilter) {
                 filteredTransactions = filteredTransactions.filter(t => t.date === dateFilter);
+            }
+
+            // 费用类型筛选（多选）- 修复：使用已获取的selectedExpenseTypes
+            if (selectedExpenseTypes.length > 0) {
+                const includeNonExpense = selectedExpenseTypes.includes('not_expense');
+                const expenseTypesOnly = selectedExpenseTypes.filter(t => t !== 'not_expense');
+
+                filteredTransactions = filteredTransactions.filter(t => {
+                    if (includeNonExpense && !t.isExpensePayment) {
+                        return true;
+                    }
+                    if (t.isExpensePayment && expenseTypesOnly.includes(t.expenseType)) {
+                        return true;
+                    }
+                    return false;
+                });
             }
 
             // 计算筛选后的汇总
@@ -3971,10 +4305,40 @@
 
             // 添加汇总行
             if (filteredTransactions.length > 0) {
+                // 计算选中费用类型的汇总
+                const selectedExpenseTypes = Array.from(document.querySelectorAll('.expense-type-checkbox:checked')).map(cb => cb.value);
+                let expenseTypeSummary = '';
+
+                if (selectedExpenseTypes.length > 0 && selectedExpenseTypes.some(t => t !== 'not_expense')) {
+                    const expenseTypesOnly = selectedExpenseTypes.filter(t => t !== 'not_expense');
+                    const typeNames = {
+                        'processing': '加工费',
+                        'packaging': '包装费',
+                        'carton': '纸箱',
+                        'office': '办公杂费',
+                        'other': '其他费用'
+                    };
+
+                    let typeDetails = [];
+                    expenseTypesOnly.forEach(type => {
+                        const typeTotal = filteredTransactions
+                            .filter(t => t.isExpensePayment && t.expenseType === type && t.type === 'expense')
+                            .reduce((sum, t) => sum + t.amount, 0);
+                        if (typeTotal > 0) {
+                            typeDetails.push(`${typeNames[type]}: ¥${typeTotal.toFixed(0)}`);
+                        }
+                    });
+
+                    if (typeDetails.length > 0) {
+                        expenseTypeSummary = `<div class="mt-2 text-xs text-orange-700 bg-orange-50 inline-block px-2 py-1 rounded">📊 选中费用合计: ${typeDetails.join(' + ')} = ¥${expenseTypesOnly.reduce((sum, type) => sum + filteredTransactions.filter(t => t.isExpensePayment && t.expenseType === type && t.type === 'expense').reduce((s, t) => s + t.amount, 0), 0).toFixed(2)}</div>`;
+                    }
+                }
+
                 html += `
                     <tr style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-top: 2px solid #0ea5e9;">
                         <td class="px-6 py-4 text-sm font-bold text-blue-900" colspan="3">
                             合计（${filteredTransactions.length}笔）
+                            ${expenseTypeSummary}
                         </td>
                         <td class="px-6 py-4 text-sm" colspan="4">
                             <span class="text-green-700 font-medium">收款: +¥${totalIncome.toFixed(2)}</span>
@@ -4002,9 +4366,9 @@
         function initTransactionFilters() {
             const partySelect = document.getElementById('transactionPartyFilter');
 
-            // 合并客户和供应商，按名称+类型去重
+            // 合并客户、供应商和费用类型
             const allParties = [];
-            const seenKeys = new Set(); // 使用名称+类型作为唯一键
+            const seenKeys = new Set();
 
             // 添加客户（按名称去重，保留第一个）
             const uniqueCustomers = [];
@@ -4026,6 +4390,15 @@
                 }
             });
 
+            // 添加费用类型作为选项
+            const expenseTypes = [
+                { id: 'EXP_processing', name: '加工费用', type: '费用' },
+                { id: 'EXP_packaging', name: '包装费用', type: '费用' },
+                { id: 'EXP_carton', name: '纸箱', type: '费用' },
+                { id: 'EXP_office', name: '办公杂费', type: '费用' },
+                { id: 'EXP_other', name: '其他费用', type: '费用' }
+            ];
+
             // 合并并去重
             uniqueCustomers.forEach(c => {
                 const key = c.name + '_客户';
@@ -4043,17 +4416,36 @@
                 }
             });
 
+            // 添加费用类型
+            expenseTypes.forEach(e => {
+                allParties.push({ id: e.id, name: e.name, type: e.type, isExpenseCategory: true, expenseType: e.id.replace('EXP_', '') });
+            });
+
             // 按名称排序
             allParties.sort((a, b) => a.name.localeCompare(b.name));
 
-            partySelect.innerHTML = '<option value="">全部客户/供应商</option>' + 
-                allParties.map(p => `<option value="${p.id}">${p.name} (${p.type})</option>`).join('');
+            partySelect.innerHTML = '<option value="">全部客户/供应商/费用</option>' + 
+                allParties.map(p => `<option value="${p.id}" ${p.isExpenseCategory ? 'data-is-expense="true" data-expense-type="' + p.expenseType + '"' : ''}>${p.name} (${p.type})</option>`).join('');
+
+            // 添加change事件监听费用类型筛选
+            partySelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                if (selectedOption.dataset.isExpense === 'true') {
+                    // 自动选择对应的费用类型checkbox
+                    const expenseType = selectedOption.dataset.expenseType;
+                    document.querySelectorAll('.expense-type-checkbox').forEach(cb => {
+                        cb.checked = (cb.value === expenseType);
+                    });
+                    renderTransactionList();
+                }
+            });
         }
 
         function resetTransactionFilters() {
             document.getElementById('transactionTypeFilter').value = '';
             document.getElementById('transactionPartyFilter').value = '';
             document.getElementById('transactionDateFilter').value = '';
+            clearExpenseTypeFilter();
             renderTransactionList();
         }
 
@@ -4115,6 +4507,7 @@
         }
 
         async function deletePayment(paymentId) {
+            if (!checkEditPermission()) return;
             if (!confirm('确定要删除这条收付款记录吗？')) return;
 
             const payment = data.transactions.find(t => t.id === paymentId);
@@ -4227,6 +4620,8 @@
         }
 
         async function savePayment() {
+            if (!checkEditPermission()) return;
+
             const type = document.getElementById('paymentModal').dataset.type;
             const partyId = document.getElementById('paymentParty').value;
             const amount = parseFloat(document.getElementById('paymentAmount').value);
@@ -4553,6 +4948,7 @@
         }
 
         async function deletePurchaseOrder(orderId) {
+            if (!checkEditPermission()) return;
             const orderIndex = data.purchaseOrders.findIndex(o => o.id === orderId);
             if (orderIndex === -1) {
                 showToast('❌ 订单不存在', 'error');
@@ -4586,6 +4982,7 @@
         }
 
         async function deleteSalesOrder(orderId) {
+            if (!checkEditPermission()) return;
             const orderIndex = data.salesOrders.findIndex(o => o.id === orderId);
             if (orderIndex === -1) {
                 showToast('❌ 订单不存在', 'error');
@@ -4946,6 +5343,350 @@
 
 
 // 数据同步功能 - 根据收付款记录重新计算采购订单
+
+// ==================== 供应商对账单功能 ====================
+        let selectedStatementSupplierId = null;
+
+        function exportSupplierStatement() {
+            // 生成交互式供应商列表供选择
+            const modal = document.getElementById('statementSupplierSelectModal');
+            if (!modal) {
+                createSupplierStatementModal();
+            }
+            const list = document.getElementById('statementSupplierList');
+
+            // 获取有交易记录的供应商
+            const supplierMap = new Map();
+            data.suppliers.forEach(s => {
+                if (!supplierMap.has(s.name)) {
+                    supplierMap.set(s.name, s);
+                }
+            });
+
+            // 计算每个供应商的交易统计
+            const suppliersWithOrders = [];
+            supplierMap.forEach((supplier, name) => {
+                const orders = data.purchaseOrders.filter(o => {
+                    const s = data.suppliers.find(sup => sup.id === o.supplierId);
+                    return s && s.name === name;
+                });
+
+                if (orders.length > 0) {
+                    const totalAmount = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+                    const totalPaid = orders.reduce((sum, o) => sum + o.paidAmount, 0);
+                    const totalUnpaid = orders.reduce((sum, o) => sum + o.remainingAmount, 0);
+                    const totalWeight = orders.reduce((sum, o) => sum + (o.totalWeight || 0), 0);
+
+                    suppliersWithOrders.push({
+                        ...supplier,
+                        orders,
+                        totalAmount,
+                        totalPaid,
+                        totalUnpaid,
+                        totalWeight
+                    });
+                }
+            });
+
+            if (suppliersWithOrders.length === 0) {
+                showToast('⚠️ 暂无供应商交易记录', 'warning');
+                return;
+            }
+
+            list.innerHTML = suppliersWithOrders.map(s => `
+                <div onclick="selectStatementSupplier('${s.id}')" 
+                     class="supplier-select-item p-4 border-2 rounded-lg cursor-pointer transition-all hover:shadow-md ${selectedStatementSupplierId === s.id ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}"
+                     data-supplier-id="${s.id}">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="font-bold text-gray-800">${s.name}</div>
+                            <div class="text-sm text-gray-500 mt-1">${s.orders.length}单 · ${s.totalWeight}斤 · 未付¥${s.totalUnpaid.toFixed(2)}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold text-purple-600">¥${s.totalAmount.toFixed(2)}</div>
+                            <div class="text-xs text-gray-400">总货款</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('statementSupplierSelectModal').classList.add('active');
+        }
+
+        function selectStatementSupplier(supplierId) {
+            selectedStatementSupplierId = supplierId;
+            // 更新UI显示选中状态
+            document.querySelectorAll('.supplier-select-item').forEach(el => {
+                if (el.dataset.supplierId === supplierId) {
+                    el.classList.remove('border-gray-200');
+                    el.classList.add('border-purple-500', 'bg-purple-50');
+                } else {
+                    el.classList.remove('border-purple-500', 'bg-purple-50');
+                    el.classList.add('border-gray-200');
+                }
+            });
+        }
+
+        function generateSelectedSupplierStatement() {
+            if (!selectedStatementSupplierId) {
+                showToast('⚠️ 请先选择一个供应商', 'warning');
+                return;
+            }
+
+            closeModal('statementSupplierSelectModal');
+            generateSupplierStatement(selectedStatementSupplierId);
+        }
+
+        function generateSupplierStatement(supplierId) {
+            const supplier = data.suppliers.find(s => s.id === supplierId);
+            if (!supplier) return;
+
+            // 获取该供应商的所有采购订单
+            const orders = data.purchaseOrders.filter(o => o.supplierId === supplierId).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (orders.length === 0) {
+                showToast('⚠️ 该供应商暂无订单记录', 'warning');
+                return;
+            }
+
+            const totalAmount = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+            const totalPaid = orders.reduce((sum, o) => sum + o.paidAmount, 0);
+            const totalUnpaid = orders.reduce((sum, o) => sum + o.remainingAmount, 0);
+            const totalWeight = orders.reduce((sum, o) => sum + (o.totalWeight || 0), 0);
+
+            // 生成日期范围文本
+            const dates = orders.map(o => o.date).sort();
+            const startDate = dates[0];
+            const endDate = dates[dates.length - 1];
+            const dateRangeText = startDate === endDate ? startDate : `${startDate} 至 ${endDate}`;
+
+            // 获取该供应商的付款记录
+            const payments = data.transactions.filter(t => t.partyId === supplierId && t.type === 'expense').sort((a, b) => new Date(b.date) - new Date(a.date));
+            const totalPayments = payments.reduce((sum, p) => sum + p.amount, 0);
+            const remainingAmount = totalAmount - totalPayments;
+
+            // 生成订单明细HTML
+            const orderRows = orders.map((order, index) => {
+                return `
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 12px 8px; text-align: center; color: #6b7280; font-size: 13px;">${index + 1}</td>
+                        <td style="padding: 12px 8px; text-align: center; color: #111827; font-size: 13px; font-weight: 500;">${order.date}</td>
+                        <td style="padding: 12px 8px; text-align: center; color: #6b7280; font-size: 13px;">${order.docNumber || order.id.slice(-6)}</td>
+                        <td style="padding: 12px 8px; text-align: center; color: #111827; font-size: 13px; font-weight: 600;">${order.product || '-'}</td>
+                        <td style="padding: 12px 8px; text-align: center; color: #111827; font-size: 13px; font-weight: 600;">${order.totalWeight || 0}斤</td>
+                        <td style="padding: 12px 8px; text-align: right; color: #dc2626; font-size: 13px; font-weight: 600;">¥${order.totalAmount.toFixed(2)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            // 生成付款明细HTML
+            const paymentRows = payments.map((payment, index) => {
+                return `
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 10px 8px; text-align: center; color: #6b7280; font-size: 12px;">${index + 1}</td>
+                        <td style="padding: 10px 8px; text-align: center; color: #111827; font-size: 12px;">${payment.date}</td>
+                        <td style="padding: 10px 8px; text-align: center; color: #059669; font-size: 12px; font-weight: 500;">¥${payment.amount.toFixed(2)}</td>
+                        <td style="padding: 10px 8px; text-align: center; color: #6b7280; font-size: 12px;">${payment.paymentMethod || '-'}</td>
+                        <td style="padding: 10px 8px; text-align: left; color: #6b7280; font-size: 12px;">${payment.remark || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            // 组装对账单HTML
+            const statementHTML = `
+                <div style="padding: 40px; background: white; font-family: 'Inter', 'Microsoft YaHei', sans-serif; color: #1f2937;">
+                    <!-- 头部 -->
+                    <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px solid #7c3aed;">
+                        <h1 style="font-size: 28px; font-weight: 800; color: #5b21b6; margin-bottom: 8px; letter-spacing: 2px;">佳信水产有限公司</h1>
+                        <h2 style="font-size: 20px; font-weight: 600; color: #7c3aed; margin-bottom: 16px;">供应商对账单</h2>
+                        <div style="display: flex; justify-content: center; gap: 30px; font-size: 13px; color: #6b7280;">
+                            <span>电话：18077761212</span>
+                            <span>联系人：郑佳宝</span>
+                        </div>
+                    </div>
+
+                    <!-- 供应商信息 -->
+                    <div style="background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%); border-radius: 12px; padding: 20px; margin-bottom: 24px; border: 1px solid #d8b4fe;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div>
+                                <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">供应商名称</div>
+                                <div style="font-size: 18px; font-weight: 700; color: #6b21a8;">${supplier.name}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">对账期间</div>
+                                <div style="font-size: 16px; font-weight: 600; color: #111827;">${dateRangeText}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">联系电话</div>
+                                <div style="font-size: 14px; color: #374151;">${supplier.phone || '-'}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">单据数量</div>
+                                <div style="font-size: 16px; font-weight: 600; color: #111827;">${orders.length}单 · 付款${payments.length}笔</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 汇总卡片 -->
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
+                        <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #fecaca;">
+                            <div style="font-size: 12px; color: #991b1b; margin-bottom: 4px;">总货款</div>
+                            <div style="font-size: 22px; font-weight: 800; color: #dc2626;">¥${totalAmount.toFixed(2)}</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #86efac;">
+                            <div style="font-size: 12px; color: #166534; margin-bottom: 4px;">已支付</div>
+                            <div style="font-size: 22px; font-weight: 800; color: #16a34a;">¥${totalPayments.toFixed(2)}</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #fde047;">
+                            <div style="font-size: 12px; color: #854d0e; margin-bottom: 4px;">未支付</div>
+                            <div style="font-size: 22px; font-weight: 800; color: #ca8a04;">¥${remainingAmount.toFixed(2)}</div>
+                        </div>
+                    </div>
+
+                    <!-- 订单明细表格 -->
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 12px; padding-left: 8px; border-left: 4px solid #7c3aed;">采购明细</div>
+                        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <thead>
+                                <tr style="background: #f8fafc;">
+                                    <th style="padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">序号</th>
+                                    <th style="padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">日期</th>
+                                    <th style="padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">单号</th>
+                                    <th style="padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">品名</th>
+                                    <th style="padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">重量</th>
+                                    <th style="padding: 12px 8px; text-align: right; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">金额</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${orderRows}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 付款明细表格 -->
+                    ${payments.length > 0 ? `
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 12px; padding-left: 8px; border-left: 4px solid #10b981;">付款明细</div>
+                        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <thead>
+                                <tr style="background: #f0fdf4;">
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">序号</th>
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">日期</th>
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">金额</th>
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">支付方式</th>
+                                    <th style="padding: 10px 8px; text-align: left; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">备注</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${paymentRows}
+                            </tbody>
+                        </table>
+                    </div>
+                    ` : ''}
+
+                    <!-- 剩余未支付金额 -->
+                    <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 10px; padding: 16px; margin: 20px 0; border: 2px solid #f59e0b; text-align: center;">
+                        <div style="font-size: 14px; color: #92400e; margin-bottom: 4px;">剩余未支付金额</div>
+                        <div style="font-size: 28px; font-weight: 800; color: #b45309;">¥${remainingAmount.toFixed(2)}</div>
+                    </div>
+
+                    <!-- 底部信息 -->
+                    <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin-top: 30px; border: 1px solid #e5e7eb;">
+                        <div style="font-size: 12px; color: #6b7280; line-height: 1.8; text-align: center;">
+                            <p style="margin-bottom: 8px;">如有疑问，请联系：郑佳宝 18077761212</p>
+                            <p>感谢贵司对佳信水产的支持！</p>
+                        </div>
+                    </div>
+
+                    <!-- 生成时间 -->
+                    <div style="text-align: center; margin-top: 20px; font-size: 11px; color: #9ca3af;">
+                        对账单生成时间：${new Date().toLocaleString('zh-CN')}
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('supplierStatementContent').innerHTML = statementHTML;
+            document.getElementById('supplierStatementModal').classList.add('active');
+
+            // 保存当前对账单供应商ID用于下载
+            document.getElementById('supplierStatementModal').dataset.currentSupplierId = supplierId;
+        }
+
+        function downloadSupplierStatement() {
+            const element = document.getElementById('supplierStatementContent');
+            const supplierId = document.getElementById('supplierStatementModal').dataset.currentSupplierId;
+            const supplier = data.suppliers.find(s => s.id === supplierId);
+
+            document.getElementById('loading').classList.add('show');
+
+            html2canvas(element, { 
+                scale: 2, 
+                backgroundColor: '#ffffff',
+                useCORS: true,
+                logging: false
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `供应商对账单_${supplier ? supplier.name : '供应商'}_${new Date().toISOString().split('T')[0]}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                document.getElementById('loading').classList.remove('show');
+                showToast('✅ 对账单已保存');
+            }).catch(err => {
+                console.error('生成图片失败:', err);
+                document.getElementById('loading').classList.remove('show');
+                showToast('❌ 生成图片失败', 'error');
+            });
+        }
+
+        function createSupplierStatementModal() {
+            // 创建供应商选择器模态框
+            const selectModal = document.createElement('div');
+            selectModal.id = 'statementSupplierSelectModal';
+            selectModal.className = 'modal';
+            selectModal.innerHTML = `
+                <div class="modal-content" style="max-width: 500px;">
+                    <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="text-xl font-bold">选择要导出对账单的供应商</h3>
+                        <button onclick="closeModal('statementSupplierSelectModal')" class="text-gray-400 hover:text-gray-600">✕</button>
+                    </div>
+                    <div class="p-6">
+                        <div id="statementSupplierList" class="space-y-2 max-h-80 overflow-y-auto">
+                            <!-- 供应商列表将通过JS生成 -->
+                        </div>
+                        <div class="mt-6 pt-4 border-t border-gray-200">
+                            <button onclick="generateSelectedSupplierStatement()" class="w-full py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-indigo-700">
+                                生成对账单
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(selectModal);
+
+            // 创建供应商对账单预览模态框
+            const previewModal = document.createElement('div');
+            previewModal.id = 'supplierStatementModal';
+            previewModal.className = 'modal';
+            previewModal.innerHTML = `
+                <div class="modal-content preview-modal-content">
+                    <div class="preview-modal-header">
+                        <h3 class="text-xl font-bold">供应商对账单预览</h3>
+                        <div>
+                            <button class="btn-download" onclick="downloadSupplierStatement()">📥 保存图片</button>
+                            <button class="btn-close-modal" onclick="closeModal('supplierStatementModal')" style="margin-left: 10px;">关闭</button>
+                        </div>
+                    </div>
+                    <div class="preview-modal-body">
+                        <div id="supplierStatementContent" class="purchase-receipt-wrapper" style="max-width: 800px; background: linear-gradient(to bottom, #ffffff 0%, #f8fafc 100%);">
+                            <!-- 对账单内容将通过JS生成 -->
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(previewModal);
+        }
+
+
 function syncPaymentDataToOrders() {
     if (!confirm('此操作将根据收付款记录重新计算所有采购订单的已付金额，是否继续？')) {
         return;
@@ -5128,6 +5869,8 @@ function syncPaymentDataToOrders() {
         }
 
         async function saveExpense() {
+            if (!checkEditPermission()) return;
+
             const id = document.getElementById('expenseId').value;
             const type = document.getElementById('expenseType').value;
             const date = document.getElementById('expenseDate').value;
@@ -5188,6 +5931,8 @@ function syncPaymentDataToOrders() {
         }
 
         async function saveExpensePayment() {
+            if (!checkEditPermission()) return;
+
             const expenseId = document.getElementById('expensePaymentId').value;
             const amount = parseFloat(document.getElementById('expensePaymentAmount').value) || 0;
             const date = document.getElementById('expensePaymentDate').value;
@@ -5212,7 +5957,10 @@ function syncPaymentDataToOrders() {
             data.transactions.push({
                 id: 'TRX' + Date.now(), date: date, type: 'expense',
                 partyId: expenseId, partyName: typeInfo.name, amount: amount,
-                remark: `费用付款 - ${typeInfo.name}${remark ? ' - ' + remark : ''}`
+                paymentMethod: '',
+                remark: `费用付款 - ${typeInfo.name}${remark ? ' - ' + remark : ''}`,
+                isExpensePayment: true,  // 标记为费用付款
+                expenseType: expense.type  // 记录费用类型
             });
 
             try {
@@ -5228,12 +5976,27 @@ function syncPaymentDataToOrders() {
         }
 
         async function deleteExpense(expenseId) {
+            if (!checkEditPermission()) return;
             if (!confirm('确定要删除这条费用记录吗？')) return;
+
+            // 获取费用信息，用于删除关联的交易记录
+            const expense = data.expenses.find(e => e.id === expenseId);
+            if (!expense) return;
+
+            // 删除关联的交易记录（费用付款记录）
+            data.transactions = data.transactions.filter(t => 
+                !(t.remark && t.remark.includes(`费用付款 - ${EXPENSE_TYPES[expense.type]?.name || expense.type}`) && 
+                  t.partyId === expenseId)
+            );
+
             data.expenses = data.expenses.filter(e => e.id !== expenseId);
+
             try {
                 await saveData();
                 renderExpenseList();
                 updateExpenseStats();
+                updateDashboard();
+                updateCapitalOverview();
                 showToast('✅ 删除成功');
             } catch (err) {
                 console.error('删除失败:', err);
@@ -5244,6 +6007,11 @@ function syncPaymentDataToOrders() {
             document.getElementById('expenseTypeFilter').value = '';
             document.getElementById('expenseDateFilter').value = '';
             renderExpenseList();
+        }
+
+        function clearExpenseTypeFilter() {
+            document.querySelectorAll('.expense-type-checkbox').forEach(cb => cb.checked = false);
+            renderTransactionList();
         }
 
 
@@ -5257,7 +6025,9 @@ function syncPaymentDataToOrders() {
                 return;
             }
 
-            tbody.innerHTML = shareholders.map(s => `
+            const totalAmount = shareholders.reduce((sum, s) => sum + (s.amount || 0), 0);
+
+            let html = shareholders.map(s => `
                 <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4">${s.name}</td>
                     <td class="px-6 py-4">¥${s.amount.toFixed(2)}</td>
@@ -5268,6 +6038,17 @@ function syncPaymentDataToOrders() {
                     </td>
                 </tr>
             `).join('');
+
+            // 添加合计行
+            html += `
+                <tr style="background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%); border-top: 2px solid #9333ea;">
+                    <td class="px-6 py-4 font-bold text-purple-900">合计 (${shareholders.length}位股东)</td>
+                    <td class="px-6 py-4 font-bold text-purple-900">¥${totalAmount.toFixed(2)}</td>
+                    <td class="px-6 py-4" colspan="2"></td>
+                </tr>
+            `;
+
+            tbody.innerHTML = html;
         }
 
         function openShareholderModal() {
@@ -5289,6 +6070,8 @@ function syncPaymentDataToOrders() {
         }
 
         async function saveShareholder() {
+            if (!checkEditPermission()) return;
+
             console.log('saveShareholder开始执行');
             console.log('当前data.shareholders:', data.shareholders);
 
@@ -5333,12 +6116,14 @@ function syncPaymentDataToOrders() {
         }
 
         async function deleteShareholder(id) {
+            if (!checkEditPermission()) return;
             const s = data.shareholders.find(x => x.id === id);
             if (!s) return;
             if (!confirm(`确定要删除股东 "${s.name}" 的投资记录吗？`)) return;
             data.shareholders = data.shareholders.filter(x => x.id !== id);
             await saveData();
             renderShareholderList();
+            updateCapitalOverview();
             showToast('删除成功');
         }
 
@@ -5347,8 +6132,11 @@ function syncPaymentDataToOrders() {
         function updateCapitalOverview() {
             const totalInvestment = (data.shareholders || []).reduce((sum, s) => sum + (s.amount || 0), 0);
             const totalIncome = (data.transactions || []).filter(t => t.type === 'income').reduce((sum, t) => sum + (t.amount || 0), 0);
-            const totalPayment = (data.transactions || []).filter(t => t.type === 'expense' && !t.remark?.includes('费用')).reduce((sum, t) => sum + (t.amount || 0), 0);
-            const totalExpensePayment = (data.transactions || []).filter(t => t.type === 'expense' && t.remark?.includes('费用')).reduce((sum, t) => sum + (t.amount || 0), 0);
+            // 所有付款（供应商付款 + 费用付款）都算作资金流出
+            // 注意：只从transactions计算，避免与expenses重复
+            const totalPayment = (data.transactions || []).filter(t => t.type === 'expense').reduce((sum, t) => sum + (t.amount || 0), 0);
+            // 不再重复计算expenses中的paidAmount，因为已经在transactions中体现
+            const totalExpensePayment = 0;
             const supplierDebt = (data.suppliers || []).reduce((sum, s) => sum + (s.balance || 0), 0);
             const expenseUnpaid = (data.expenses || []).reduce((sum, e) => sum + (e.remainingAmount || 0), 0);
             // 计算客户欠款（使用remainingAmount，与客户管理保持一致）
@@ -5375,6 +6163,285 @@ function syncPaymentDataToOrders() {
             document.getElementById('capitalLiabilityExpense').textContent = '¥' + expenseUnpaid.toFixed(0);
             document.getElementById('capitalLiabilityTotal').textContent = '¥' + totalLiability.toFixed(0);
         }
+
+        // ==================== 数据备份与导出功能 ====================
+
+        // 导出所有数据
+        function exportAllData() {
+            if (!checkExportImportPermission()) return;
+            const exportData = {
+                exportTime: new Date().toISOString(),
+                exportDate: new Date().toLocaleString('zh-CN'),
+                version: 'v3.6',
+                systemName: '佳信水产财务系统',
+                data: {
+                    suppliers: data.suppliers || [],
+                    customers: data.customers || [],
+                    products: data.products || [],
+                    purchaseOrders: data.purchaseOrders || [],
+                    salesOrders: data.salesOrders || [],
+                    transactions: data.transactions || [],
+                    expenses: data.expenses || [],
+                    shareholders: data.shareholders || [],
+                    lastPurchaseDocNumber: data.lastPurchaseDocNumber || 0
+                },
+                statistics: {
+                    suppliers: (data.suppliers || []).length,
+                    customers: (data.customers || []).length,
+                    products: (data.products || []).length,
+                    purchaseOrders: (data.purchaseOrders || []).length,
+                    salesOrders: (data.salesOrders || []).length,
+                    transactions: (data.transactions || []).length,
+                    expenses: (data.expenses || []).length,
+                    shareholders: (data.shareholders || []).length
+                }
+            };
+
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+
+            const date = new Date();
+            const dateStr = date.toISOString().split('T')[0];
+            const timeStr = date.toTimeString().slice(0,5).replace(':', '');
+            link.download = `佳信水产财务数据备份_${dateStr}_${timeStr}.json`;
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            // 记录本次导出时间
+            localStorage.setItem('lastExportDate', date.toISOString());
+
+            showToast('✅ 数据导出成功！文件已保存到下载文件夹');
+        }
+
+        // 检查是否需要提醒导出数据（每月5号、15号、25号）
+        function checkExportReminder() {
+            const today = new Date();
+            const day = today.getDate();
+            const lastExportStr = localStorage.getItem('lastExportDate');
+
+            // 检查今天是否是提醒日期（5号、15号、25号）
+            if (day === 5 || day === 15 || day === 25) {
+                // 检查今天是否已经导出过
+                if (lastExportStr) {
+                    const lastExport = new Date(lastExportStr);
+                    if (lastExport.toDateString() === today.toDateString()) {
+                        return; // 今天已经导出过，不再提醒
+                    }
+                }
+
+                // 显示导出提醒
+                showExportReminderModal();
+            }
+        }
+
+        // 显示导出提醒模态框
+        function showExportReminderModal() {
+            const today = new Date();
+            const day = today.getDate();
+            const dateStr = today.toLocaleDateString('zh-CN');
+
+            // 创建提醒模态框
+            const modal = document.createElement('div');
+            modal.id = 'exportReminderModal';
+            modal.className = 'modal active';
+            modal.style.zIndex = '9999';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 450px; text-align: center;">
+                    <div class="p-6">
+                        <div style="font-size: 64px; margin-bottom: 16px;">💾</div>
+                        <h3 style="font-size: 20px; font-weight: bold; color: #1f2937; margin-bottom: 8px;">数据备份提醒</h3>
+                        <p style="color: #6b7280; margin-bottom: 16px;">今天是 <strong>${dateStr}</strong>（每月${day}号）</p>
+                        <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 12px; padding: 16px; margin-bottom: 20px; text-align: left;">
+                            <p style="color: #92400e; font-weight: 600; margin-bottom: 8px;">📋 建议定期备份数据：</p>
+                            <ul style="color: #92400e; font-size: 14px; margin: 0; padding-left: 20px;">
+                                <li>防止云端数据意外丢失</li>
+                                <li>保留历史数据记录</li>
+                                <li>便于数据迁移和恢复</li>
+                            </ul>
+                        </div>
+                        <div style="display: flex; gap: 12px;">
+                            <button onclick="closeExportReminder()" style="flex: 1; padding: 12px; border: 1px solid #d1d5db; background: white; color: #6b7280; border-radius: 8px; font-weight: 500; cursor: pointer;">
+                                稍后再说
+                            </button>
+                            <button onclick="exportFromReminder()" style="flex: 2; padding: 12px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                                立即导出数据
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // 点击外部关闭
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeExportReminder();
+                }
+            });
+        }
+
+        // 关闭导出提醒
+        function closeExportReminder() {
+            const modal = document.getElementById('exportReminderModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // 从提醒模态框导出数据
+        function exportFromReminder() {
+            closeExportReminder();
+            setTimeout(() => {
+                exportAllData();
+            }, 300);
+        }
+
+        
+        // 显示导入数据模态框
+        function showImportModal() {
+            const modal = document.createElement('div');
+            modal.id = 'importModal';
+            modal.className = 'modal active';
+            modal.style.zIndex = '9999';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 500px;">
+                    <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="text-xl font-bold">导入数据</h3>
+                        <button onclick="closeImportModal()" class="text-gray-400 hover:text-gray-600">✕</button>
+                    </div>
+                    <div class="p-6">
+                        <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                            <p style="color: #92400e; font-weight: 600; margin-bottom: 8px;">⚠️ 导入前请注意：</p>
+                            <ul style="color: #92400e; font-size: 14px; margin: 0; padding-left: 20px; line-height: 1.8;">
+                                <li>导入数据将<strong>覆盖</strong>当前所有数据</li>
+                                <li>建议先导出当前数据作为备份</li>
+                                <li>仅支持导入本系统导出的JSON文件</li>
+                                <li>导入后请检查数据完整性</li>
+                            </ul>
+                        </div>
+
+                        <div style="border: 2px dashed #cbd5e1; border-radius: 12px; padding: 32px; text-align: center; background: #f8fafc;">
+                            <div style="font-size: 48px; margin-bottom: 12px;">📂</div>
+                            <p style="color: #64748b; margin-bottom: 16px;">选择备份文件进行导入</p>
+                            <button onclick="document.getElementById('importFileInput').click()" 
+                                    style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                                选择文件
+                            </button>
+                        </div>
+
+                        <div style="margin-top: 16px; padding: 12px; background: #f0fdf4; border-radius: 8px; border: 1px solid #86efac;">
+                            <p style="color: #166534; font-size: 13px; margin: 0;">
+                                <strong>提示：</strong>导入成功后，系统会自动同步到云端。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeImportModal();
+                }
+            });
+        }
+
+        // 关闭导入模态框
+        function closeImportModal() {
+            const modal = document.getElementById('importModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // 导入数据
+        async function importData(input) {
+            if (!checkExportImportPermission()) return;
+            const file = input.files[0];
+            if (!file) return;
+
+            if (!file.name.endsWith('.json')) {
+                showToast('❌ 请选择JSON格式的备份文件', 'error');
+                return;
+            }
+
+            try {
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    try {
+                        const importData = JSON.parse(e.target.result);
+
+                        // 验证数据格式
+                        if (!importData.data || !importData.systemName) {
+                            throw new Error('无效的备份文件格式');
+                        }
+
+                        // 显示确认对话框
+                        if (!confirm(`确认导入备份数据？\n\n备份时间：${importData.exportDate || '未知'}\n系统版本：${importData.version || '未知'}\n数据内容：\n- 供应商：${importData.statistics?.suppliers || 0} 条\n- 客户：${importData.statistics?.customers || 0} 条\n- 产品：${importData.statistics?.products || 0} 条\n- 采购订单：${importData.statistics?.purchaseOrders || 0} 条\n- 销售订单：${importData.statistics?.salesOrders || 0} 条\n- 交易记录：${importData.statistics?.transactions || 0} 条\n- 费用：${importData.statistics?.expenses || 0} 条\n- 股东：${importData.statistics?.shareholders || 0} 条\n\n⚠️ 这将覆盖当前所有数据！`)) {
+                            closeImportModal();
+                            return;
+                        }
+
+                        // 导入数据
+                        data.suppliers = importData.data.suppliers || [];
+                        data.customers = importData.data.customers || [];
+                        data.products = importData.data.products || [];
+                        data.purchaseOrders = importData.data.purchaseOrders || [];
+                        data.salesOrders = importData.data.salesOrders || [];
+                        data.transactions = importData.data.transactions || [];
+                        data.expenses = importData.data.expenses || [];
+                        data.shareholders = importData.data.shareholders || [];
+                        data.lastPurchaseDocNumber = importData.data.lastPurchaseDocNumber || 0;
+
+                        // 保存到云端
+                        await saveData();
+
+                        // 刷新所有视图
+                        updateAllViews();
+                        updateDashboard();
+                        updateCapitalOverview();
+
+                        closeImportModal();
+                        showToast('✅ 数据导入成功！所有数据已恢复');
+
+                    } catch (parseError) {
+                        console.error('解析错误:', parseError);
+                        showToast('❌ 文件解析失败：' + parseError.message, 'error');
+                    }
+                };
+
+                reader.onerror = function() {
+                    showToast('❌ 文件读取失败', 'error');
+                };
+
+                reader.readAsText(file);
+
+            } catch (error) {
+                console.error('导入错误:', error);
+                showToast('❌ 导入失败：' + error.message, 'error');
+            }
+
+            // 清空input以便可以重复选择同一文件
+            input.value = '';
+        }
+// 在初始化时检查是否需要提醒
+        document.addEventListener('DOMContentLoaded', function() {
+            // 延迟5秒检查，避免页面加载时立即弹出
+            setTimeout(() => {
+                if (document.getElementById('app') && !document.getElementById('app').classList.contains('hidden')) {
+                    checkExportReminder();
+                }
+            }, 5000);
+        });
 </script>
 
     <!-- 客户对账单模态框 -->
