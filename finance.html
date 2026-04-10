@@ -1885,7 +1885,7 @@
                 return true;
             }
 
-            const input = prompt('请输入编辑密码（03261）：');
+            const input = prompt('请输入编辑密码：');
             if (input === EDIT_PASSWORD) {
                 isEditVerified = true;
                 sessionStorage.setItem('finance_edit_verified', 'true');
@@ -1903,7 +1903,7 @@
                 return true;
             }
 
-            const input = prompt('请输入操作密码（03261）：');
+            const input = prompt('请输入操作密码：');
             if (input === EDIT_PASSWORD) {
                 isEditVerified = true;
                 sessionStorage.setItem('finance_edit_verified', 'true');
