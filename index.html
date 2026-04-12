@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="timestamp" content="2026-03-30 16:51">
-  <title>佳信水产仓库管理系统 v4.4</title>
+  <meta name="timestamp" content="2026-04-12 10:41">
+  <title>佳信水产仓库管理系统 v4.5 - 批次编辑版</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
@@ -176,16 +176,24 @@
     .batch-toggle { font-size: 14px; color: var(--text-tertiary); transition: transform 0.3s; }
     .batch-card.expanded .batch-toggle { transform: rotate(180deg); }
     .batch-items { padding: 16px 24px; }
-    .batch-item { display: grid; grid-template-columns: 1fr 100px 80px 100px; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--border); align-items: center; font-size: 14px; }
+    .batch-item { display: grid; grid-template-columns: 1fr 80px 80px 100px 90px; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); align-items: center; font-size: 14px; }
     .batch-item:last-child { border-bottom: none; }
     .batch-item-info { display: flex; flex-direction: column; gap: 4px; }
     .batch-item-name { font-weight: 600; color: var(--text-primary); }
     .batch-item-spec { font-size: 12px; color: var(--text-secondary); }
-    .batch-item-qty { text-align: center; font-weight: 700; font-size: 16px; }
+    .batch-item-qty { text-align: center; font-weight: 700; font-size: 16px; cursor: pointer; padding: 4px; border-radius: 4px; transition: all 0.2s; }
+    .batch-item-qty:hover { background: var(--bg); }
     .batch-item-qty.in { color: var(--success); }
     .batch-item-qty.out { color: var(--danger); }
+    .batch-item-qty input { width: 60px; text-align: center; font-weight: 700; font-size: 16px; border: 2px solid var(--primary); border-radius: 6px; padding: 4px; }
     .batch-item-stock { text-align: center; font-size: 13px; color: var(--text-secondary); }
     .batch-item-stock strong { color: var(--primary); font-size: 15px; }
+    .batch-item-actions { display: flex; gap: 6px; justify-content: center; }
+    .batch-item-btn { padding: 6px 10px; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; transition: all 0.2s; font-weight: 600; }
+    .batch-item-btn.edit { background: var(--primary-light); color: var(--primary); }
+    .batch-item-btn.edit:hover { background: var(--primary); color: white; }
+    .batch-item-btn.delete { background: var(--danger-light); color: var(--danger); }
+    .batch-item-btn.delete:hover { background: var(--danger); color: white; }
     .stock-filter { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
     @media (min-width: 768px) { .stock-filter { grid-template-columns: repeat(4, 1fr); } }
     .form-group { display: flex; flex-direction: column; gap: 6px; }
@@ -257,6 +265,17 @@
     .date-list-item .qty.in { color: var(--success); }
     .date-list-item .qty.out { color: var(--danger); }
 
+    /* 批次编辑新增样式 */
+    .batch-add-product { margin-top: 16px; padding: 16px; background: var(--bg); border-radius: var(--radius-lg); border: 2px dashed var(--border); }
+    .batch-add-product-title { font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+    .batch-add-row { display: grid; grid-template-columns: 1fr 1fr 1fr 80px 80px; gap: 8px; align-items: end; }
+    @media (max-width: 640px) { 
+      .batch-add-row { grid-template-columns: 1fr 1fr; }
+      .batch-add-row .form-group:nth-child(3),
+      .batch-add-row .form-group:nth-child(4) { display: none; }
+    }
+    .batch-edit-hint { font-size: 12px; color: var(--text-tertiary); margin-top: 8px; font-style: italic; }
+    
     /* 移动端适配 */
     @media (max-width: 640px) { 
       .header h1 { font-size: 22px; } 
@@ -265,8 +284,10 @@
       .card { padding: 20px; } 
       .batch-header { padding: 16px 20px; } 
       .batch-items { padding: 12px 20px; } 
-      .batch-item { grid-template-columns: 1fr 80px 60px; gap: 12px; } 
+      .batch-item { grid-template-columns: 1fr 70px 70px 80px; gap: 8px; } 
       .batch-item-stock { display: none; } 
+      .batch-item-actions { flex-direction: column; gap: 4px; }
+      .batch-item-actions .batch-item-btn { padding: 4px 6px; font-size: 11px; }
       .preview-header { flex-direction: column; align-items: flex-start; } 
       .table-wrapper { max-height: 400px; }
       table { font-size: 11px; }
@@ -294,6 +315,7 @@
       .product-tag { font-size: 9px; padding: 2px 4px; }
       .stock-badge { font-size: 9px; padding: 2px 4px; }
       td:nth-child(2) { font-size: 9px; }
+      .batch-item { grid-template-columns: 1fr 60px 60px 70px; }
     }
 
     .product-tag { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--primary-light); color: var(--primary); border-radius: 20px; font-size: 12px; font-weight: 600; }
@@ -351,6 +373,7 @@
       }
     }
 </style>
+<base target="_blank">
 </head>
 <body>
   <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><div class="loading-text">正在处理...</div></div>
@@ -366,7 +389,7 @@
         </div>
       <div style="position: relative; z-index: 1;">
         <h1>🦐 佳信水产</h1>
-        <p>智能仓库管理系统 v4.4 · 图二格式版</p>
+        <p>智能仓库管理系统 v4.5 · 批次编辑版</p>
       </div>
     </div>
 
@@ -485,7 +508,7 @@
     <!-- 流水页面 -->
     <div class="page" id="flow">
       <div class="card">
-        <div class="card-title">📋 出入库流水</div>
+        <div class="card-title">📋 出入库流水（支持批次编辑）</div>
 
         <!-- 三联动筛选 -->
         <div class="cascade-filter">
@@ -844,12 +867,83 @@
     </div>
   </div>
 
+
+<!-- 纸箱管理页面 -->
+  <div class="page" id="carton">
+    <div class="stats-grid" style="margin-bottom: 20px;">
+      <div class="stat-card">
+        <div class="stat-label">📦 纸箱种类</div>
+        <div class="stat-value" id="cartonTypeCount">8</div>
+        <div class="stat-unit">种</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">📊 库存总量</div>
+        <div class="stat-value" id="cartonTotalStock">0</div>
+        <div class="stat-unit">个/套</div>
+      </div>
+      <div class="stat-card" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);">
+        <div class="stat-label">⚠️ 预警库存</div>
+        <div class="stat-value" id="cartonAlertCount" style="color: #d97706;">0</div>
+        <div class="stat-unit">种不足</div>
+      </div>
+      <div class="stat-card" style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);">
+        <div class="stat-label">🚨 缺货库存</div>
+        <div class="stat-value" id="cartonZeroCount" style="color: #dc2626;">0</div>
+        <div class="stat-unit">种为零</div>
+      </div>
+    </div>
+
+    <!-- 预警横幅 -->
+    <div id="cartonAlertBanner" style="display: none; margin-bottom: 20px;">
+      <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 12px; padding: 16px;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <span style="font-size: 32px;">⚠️</span>
+          <div style="flex: 1;">
+            <div style="font-weight: 700; color: #92400e; font-size: 16px;">纸箱库存预警</div>
+            <div style="font-size: 13px; color: #a16207;">以下纸箱库存不足，请及时采购补充</div>
+          </div>
+          <button onclick="closeCartonAlertBanner()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #92400e;">×</button>
+        </div>
+        <div id="cartonAlertList" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>📦 纸箱库存管理</span>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <div style="font-size: 13px; color: var(--text-secondary);">
+            预警阈值：<input type="number" id="cartonThresholdInput" value="50" min="0" style="width: 60px; padding: 4px 8px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px; text-align: center;" onchange="updateCartonThreshold(this.value)">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="showCartonAddModal()" style="padding: 8px 16px;">➕ 入库补货</button>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table id="cartonTable">
+          <thead>
+            <tr>
+              <th style="width: 8%;">编号</th>
+              <th style="width: 25%;">纸箱名称</th>
+              <th style="width: 20%;">规格尺寸</th>
+              <th style="width: 12%;">适用品牌</th>
+              <th style="width: 15%;">当前库存</th>
+              <th style="width: 10%;">状态</th>
+              <th style="width: 10%;">操作</th>
+            </tr>
+          </thead>
+          <tbody id="cartonTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 <div class="nav-bar">
     <div class="nav-item active" data-page="stock" onclick="switchPage('stock')"><span class="icon">📊</span><span>库存</span></div>
     <div class="nav-item" data-page="import" onclick="switchPage('import')"><span class="icon">📁</span><span>导入</span></div>
     <div class="nav-item" data-page="flow" onclick="switchPage('flow')"><span class="icon">📋</span><span>流水</span></div>
     <div class="nav-item" data-page="manual" onclick="switchPage('manual')"><span class="icon">⚡</span><span>手动出入库</span></div>
     <div class="nav-item" data-page="products" onclick="switchPage('products')"><span class="icon">📦</span><span>产品</span></div>
+    <div class="nav-item" data-page="carton" onclick="switchPage('carton')"><span class="icon">📦</span><span>纸箱</span></div>
   </div>
 
   <!-- 库存超出确认弹窗 -->
@@ -935,6 +1029,145 @@
     </div>
   </div>
 
+  <!-- 批次编辑-修改数量弹窗 -->
+  <div class="modal-overlay" id="batchEditQtyModal">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header">
+        <div class="modal-icon" style="background: var(--primary-light); color: var(--primary);">✏️</div>
+        <div class="modal-title">修改数量</div>
+      </div>
+      <div class="modal-body">
+        <div class="modal-info" style="margin-bottom: 16px;">
+          <div class="modal-info-row">
+            <span class="modal-info-label">产品</span>
+            <span class="modal-info-value" id="editQtyProductName">-</span>
+          </div>
+          <div class="modal-info-row">
+            <span class="modal-info-label">当前数量</span>
+            <span class="modal-info-value" id="editQtyCurrent" style="color: var(--primary);">-</span>
+          </div>
+          <div class="modal-info-row">
+            <span class="modal-info-label">批次类型</span>
+            <span class="modal-info-value" id="editQtyBatchType">-</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>新数量</label>
+          <input type="number" id="editQtyNewValue" min="1" style="font-size: 18px; font-weight: 600; text-align: center;" onkeypress="if(event.key==='Enter') confirmEditQty()">
+        </div>
+        <p class="batch-edit-hint" id="editQtyHint">修改后会自动调整库存数量</p>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-secondary" onclick="closeBatchEditQtyModal()">取消</button>
+        <button class="modal-btn modal-btn-primary" onclick="confirmEditQty()">确认修改</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 批次编辑-删除单品确认弹窗 -->
+  <div class="modal-overlay" id="batchDeleteItemModal">
+    <div class="modal-content" style="max-width: 420px;">
+      <div class="modal-header">
+        <div class="modal-icon danger">🗑️</div>
+        <div class="modal-title">删除产品</div>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom: 16px; color: var(--text-secondary);">您即将从批次中删除以下产品：</p>
+        <div class="modal-info" style="margin-bottom: 16px;">
+          <div class="modal-info-row">
+            <span class="modal-info-label">产品</span>
+            <span class="modal-info-value" id="deleteItemProductName">-</span>
+          </div>
+          <div class="modal-info-row">
+            <span class="modal-info-label">数量</span>
+            <span class="modal-info-value" id="deleteItemQty" style="color: var(--danger);">-</span>
+          </div>
+          <div class="modal-info-row">
+            <span class="modal-info-label">批次类型</span>
+            <span class="modal-info-value" id="deleteItemBatchType">-</span>
+          </div>
+        </div>
+        <div style="background: var(--warning-light); padding: 12px; border-radius: var(--radius); border-left: 3px solid var(--warning);">
+          <p style="font-size: 13px; color: var(--warning); margin: 0; font-weight: 600;">⚠️ 删除后将自动调整库存</p>
+          <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">入库批次删除将减少库存，出库批次删除将增加库存</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-secondary" onclick="closeBatchDeleteItemModal()">取消</button>
+        <button class="modal-btn modal-btn-danger" onclick="confirmDeleteBatchItem()">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 批次编辑-新增产品弹窗 -->
+  <div class="modal-overlay" id="batchAddItemModal">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <div class="modal-icon success">➕</div>
+        <div class="modal-title">向批次添加产品</div>
+      </div>
+      <div class="modal-body">
+        <div class="modal-info" style="margin-bottom: 16px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1px solid #0ea5e9;">
+          <div class="modal-info-row">
+            <span class="modal-info-label">批次ID</span>
+            <span class="modal-info-value" id="addItemBatchId">-</span>
+          </div>
+          <div class="modal-info-row">
+            <span class="modal-info-label">批次类型</span>
+            <span class="modal-info-value" id="addItemBatchType" style="font-weight: 700;">-</span>
+          </div>
+          <div class="modal-info-row">
+            <span class="modal-info-label">日期</span>
+            <span class="modal-info-value" id="addItemBatchDate">-</span>
+          </div>
+        </div>
+        
+        <div style="background: var(--bg); padding: 16px; border-radius: var(--radius); margin-bottom: 16px;">
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label>品牌</label>
+            <select id="addItemBrand" onchange="updateAddItemCascade('brand')" style="width: 100%;">
+              <option value="">请选择品牌</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label>品名</label>
+            <select id="addItemName" onchange="updateAddItemCascade('name')" style="width: 100%;">
+              <option value="">请选择品名</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label>规格</label>
+            <select id="addItemSku" onchange="updateAddItemCascade('sku')" style="width: 100%;">
+              <option value="">请选择规格</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>净重</label>
+            <select id="addItemNet" onchange="updateAddItemSelected()" style="width: 100%;">
+              <option value="">请选择净重</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>数量（件）</label>
+          <input type="number" id="addItemQty" value="1" min="1" style="font-size: 18px; font-weight: 600; text-align: center;">
+        </div>
+        
+        <div style="margin-top: 12px; padding: 10px; background: white; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border);">
+          <span style="color: #64748b; font-size: 14px;">选中产品当前库存：</span>
+          <span id="addItemCurrentStock" style="font-size: 18px; font-weight: 700; color: #0284c7;">请选择产品</span>
+        </div>
+
+        <p class="batch-edit-hint" style="margin-top: 12px;">添加后会自动更新库存数量</p>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-secondary" onclick="closeBatchAddItemModal()">取消</button>
+        <button class="modal-btn modal-btn-primary" onclick="confirmAddBatchItem()">确认添加</button>
+      </div>
+    </div>
+  </div>
+
   <script>
 
     const BIN_ID = '69c7eeb45fdde574550ab18e';
@@ -946,6 +1179,12 @@
     let batches = [];
     let currentPreview = null;
     let isOnline = false;
+
+    // 批次编辑相关状态
+    let currentEditingBatchId = null;
+    let currentEditingItemIndex = null;
+    let currentAddItemBatchId = null;
+    let currentAddItemProduct = null;
 
     function toHalfWidth(str) {
       if (!str || typeof str !== 'string') return '';
@@ -1131,6 +1370,7 @@ async function init() {
       else if (page === 'flow') { renderFlow(); updateFlowCascadeOptions(); }
       else if (page === 'manual') { initManualPage(); }
     else if (page === 'products') { initProductPage(); }
+    else if (page === 'carton') { initCartonModule(); }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -2412,18 +2652,36 @@ async function doExecuteImport() {
           </div>
           <div class="batch-content">
             <div class="batch-items">
-              ${displayItems.map(item => {
+              ${displayItems.map((item, index) => {
                 const currentQty = stock[item.productId] || 0;
                 return `<div class="batch-item">
                   <div class="batch-item-info">
                     <div class="batch-item-name">${item.brand} ${item.name}</div>
                     <div class="batch-item-spec">${item.sku} · 净重${item.net}kg</div>
                   </div>
-                  <div class="batch-item-qty ${batch.type}">${batch.type === 'in' ? '+' : '-'}${item.qty}</div>
+                  <div class="batch-item-qty ${batch.type}" onclick="showBatchEditQty('${batch.id}', ${index}, event)">
+                    ${batch.type === 'in' ? '+' : '-'}${item.qty}
+                  </div>
                   <div class="batch-item-stock">当前库存<br><strong>${currentQty}</strong></div>
                   <div class="batch-item-stock">日期<br>${item.date}</div>
+                  <div class="batch-item-actions" onclick="event.stopPropagation()">
+                    <button class="batch-item-btn edit" onclick="showBatchEditQty('${batch.id}', ${index}, event)">修改</button>
+                    <button class="batch-item-btn delete" onclick="showBatchDeleteItem('${batch.id}', ${index}, event)">删除</button>
+                  </div>
                 </div>`;
               }).join('')}
+            </div>
+            <!-- 批次内新增产品区域 -->
+            <div class="batch-add-product">
+              <div class="batch-add-product-title">
+                <span>➕</span> 向此批次添加新产品
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <button class="btn btn-primary btn-sm" onclick="showBatchAddItem('${batch.id}', event)" style="flex: 1;">
+                  添加产品到批次
+                </button>
+              </div>
+              <div class="batch-edit-hint">添加后会自动更新库存数量</div>
             </div>
           </div>
         </div>`;
@@ -2433,6 +2691,345 @@ async function doExecuteImport() {
     function toggleBatch(batchId) {
       const card = document.getElementById(`batch-${batchId}`);
       card.classList.toggle('expanded');
+    }
+
+    // ==================== 批次编辑功能 ====================
+
+    // 显示修改数量弹窗
+    function showBatchEditQty(batchId, itemIndex, event) {
+      if (event) event.stopPropagation();
+      
+      const batch = batches.find(b => b.id === batchId);
+      if (!batch || !batch.items[itemIndex]) return;
+
+      const item = batch.items[itemIndex];
+      currentEditingBatchId = batchId;
+      currentEditingItemIndex = itemIndex;
+
+      // 填充弹窗信息
+      document.getElementById('editQtyProductName').textContent = `${item.brand} ${item.name} ${item.sku}`;
+      document.getElementById('editQtyCurrent').textContent = (batch.type === 'in' ? '+' : '-') + item.qty + ' 件';
+      document.getElementById('editQtyCurrent').style.color = batch.type === 'in' ? 'var(--success)' : 'var(--danger)';
+      document.getElementById('editQtyBatchType').textContent = batch.type === 'in' ? '入库' : '出库';
+      document.getElementById('editQtyBatchType').style.color = batch.type === 'in' ? 'var(--success)' : 'var(--danger)';
+      document.getElementById('editQtyNewValue').value = item.qty;
+      document.getElementById('editQtyHint').textContent = `修改后库存将${batch.type === 'in' ? '相应调整' : '相应调整'}（当前库存: ${stock[item.productId] || 0}件）`;
+
+      document.getElementById('batchEditQtyModal').classList.add('show');
+      setTimeout(() => document.getElementById('editQtyNewValue').select(), 100);
+    }
+
+    function closeBatchEditQtyModal() {
+      document.getElementById('batchEditQtyModal').classList.remove('show');
+      currentEditingBatchId = null;
+      currentEditingItemIndex = null;
+    }
+
+    // 确认修改数量
+    async function confirmEditQty() {
+      if (!currentEditingBatchId || currentEditingItemIndex === null) return;
+
+      const newQty = parseInt(document.getElementById('editQtyNewValue').value);
+      if (isNaN(newQty) || newQty < 1) {
+        showToast('⚠️ 请输入有效的数量（至少1件）', 'warning');
+        return;
+      }
+
+      const batch = batches.find(b => b.id === currentEditingBatchId);
+      const item = batch.items[currentEditingItemIndex];
+      const oldQty = item.qty;
+
+      if (newQty === oldQty) {
+        closeBatchEditQtyModal();
+        return;
+      }
+
+      showLoading('正在更新...');
+
+      // 计算库存调整量
+      const qtyDiff = newQty - oldQty;
+      
+      // 更新库存
+      if (batch.type === 'in') {
+        // 入库批次：增加差值
+        stock[item.productId] = (stock[item.productId] || 0) + qtyDiff;
+      } else {
+        // 出库批次：检查库存是否足够
+        const currentStockQty = stock[item.productId] || 0;
+        if (currentStockQty < qtyDiff) {
+          hideLoading();
+          showToast(`❌ 库存不足！当前库存${currentStockQty}件，需要增加出库${newQty - oldQty}件`, 'error');
+          return;
+        }
+        // 出库批次：减少差值（增加出库意味着减少库存）
+        stock[item.productId] = currentStockQty - qtyDiff;
+      }
+
+      // 更新批次数据
+      item.qty = newQty;
+      batch.totalQty = batch.items.reduce((sum, i) => sum + i.qty, 0);
+
+      try {
+        await saveData();
+        hideLoading();
+        closeBatchEditQtyModal();
+        showToast(`✅ 数量已修改：${oldQty} → ${newQty}，库存已自动调整`);
+        updateUI();
+      } catch (err) {
+        hideLoading();
+        showError('保存失败', err.message);
+      }
+    }
+
+    // 显示删除单品确认弹窗
+    function showBatchDeleteItem(batchId, itemIndex, event) {
+      if (event) event.stopPropagation();
+
+      const batch = batches.find(b => b.id === batchId);
+      if (!batch || !batch.items[itemIndex]) return;
+
+      const item = batch.items[itemIndex];
+      currentEditingBatchId = batchId;
+      currentEditingItemIndex = itemIndex;
+
+      document.getElementById('deleteItemProductName').textContent = `${item.brand} ${item.name} ${item.sku}`;
+      document.getElementById('deleteItemQty').textContent = (batch.type === 'in' ? '+' : '-') + item.qty + ' 件';
+      document.getElementById('deleteItemBatchType').textContent = batch.type === 'in' ? '入库' : '出库';
+      document.getElementById('deleteItemBatchType').style.color = batch.type === 'in' ? 'var(--success)' : 'var(--danger)';
+
+      document.getElementById('batchDeleteItemModal').classList.add('show');
+    }
+
+    function closeBatchDeleteItemModal() {
+      document.getElementById('batchDeleteItemModal').classList.remove('show');
+      currentEditingBatchId = null;
+      currentEditingItemIndex = null;
+    }
+
+    // 确认删除单品
+    async function confirmDeleteBatchItem() {
+      if (!currentEditingBatchId || currentEditingItemIndex === null) return;
+
+      const batch = batches.find(b => b.id === currentEditingBatchId);
+      const item = batch.items[currentEditingItemIndex];
+
+      showLoading('正在删除...');
+
+      // 反向调整库存
+      if (batch.type === 'in') {
+        // 删除入库项：减少库存
+        stock[item.productId] = (stock[item.productId] || 0) - item.qty;
+      } else {
+        // 删除出库项：增加库存
+        stock[item.productId] = (stock[item.productId] || 0) + item.qty;
+      }
+
+      // 从批次中移除
+      batch.items.splice(currentEditingItemIndex, 1);
+      batch.totalQty = batch.items.reduce((sum, i) => sum + i.qty, 0);
+
+      // 如果批次为空，删除整个批次
+      if (batch.items.length === 0) {
+        batches = batches.filter(b => b.id !== currentEditingBatchId);
+      }
+
+      try {
+        await saveData();
+        hideLoading();
+        closeBatchDeleteItemModal();
+        showToast(`✅ 已删除产品并调整库存`);
+        updateUI();
+      } catch (err) {
+        hideLoading();
+        showError('删除失败', err.message);
+      }
+    }
+
+    // 显示添加产品到批次弹窗
+    function showBatchAddItem(batchId, event) {
+      if (event) event.stopPropagation();
+
+      const batch = batches.find(b => b.id === batchId);
+      if (!batch) return;
+
+      currentAddItemBatchId = batchId;
+      currentAddItemProduct = null;
+
+      // 填充批次信息
+      document.getElementById('addItemBatchId').textContent = '#' + batchId.substr(-6);
+      document.getElementById('addItemBatchType').textContent = batch.type === 'in' ? '入库' : '出库';
+      document.getElementById('addItemBatchType').style.color = batch.type === 'in' ? 'var(--success)' : 'var(--danger)';
+      document.getElementById('addItemBatchDate').textContent = batch.dateRange.min;
+
+      // 初始化级联选择
+      initAddItemCascade();
+      document.getElementById('addItemQty').value = '1';
+      document.getElementById('addItemCurrentStock').textContent = '请选择产品';
+      document.getElementById('addItemCurrentStock').style.color = '#94a3b8';
+
+      document.getElementById('batchAddItemModal').classList.add('show');
+    }
+
+    function closeBatchAddItemModal() {
+      document.getElementById('batchAddItemModal').classList.remove('show');
+      currentAddItemBatchId = null;
+      currentAddItemProduct = null;
+    }
+
+    // 初始化添加产品的级联选择
+    function initAddItemCascade() {
+      const brands = [...new Set(products.map(p => p.brand).filter(b => b && b !== 'undefined' && String(b).trim() !== ''))].sort();
+      const brandSelect = document.getElementById('addItemBrand');
+      brandSelect.innerHTML = '<option value="">请选择品牌</option>' + 
+        brands.map(b => `<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`).join('');
+      
+      document.getElementById('addItemName').innerHTML = '<option value="">请选择品名</option>';
+      document.getElementById('addItemSku').innerHTML = '<option value="">请选择规格</option>';
+      document.getElementById('addItemNet').innerHTML = '<option value="">请选择净重</option>';
+    }
+
+    function updateAddItemCascade(changedField) {
+      const brand = document.getElementById('addItemBrand').value;
+      const nameSelect = document.getElementById('addItemName');
+      const skuSelect = document.getElementById('addItemSku');
+      const netSelect = document.getElementById('addItemNet');
+
+      let filteredProducts = products;
+      if (brand) filteredProducts = products.filter(p => p.brand === brand);
+
+      if (changedField === 'brand') {
+        const names = [...new Set(filteredProducts.map(p => p.name).filter(n => n && n !== 'undefined' && String(n).trim() !== ''))].sort();
+        nameSelect.innerHTML = '<option value="">请选择品名</option>' + 
+          names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+        skuSelect.innerHTML = '<option value="">请选择规格</option>';
+        netSelect.innerHTML = '<option value="">请选择净重</option>';
+      }
+
+      if (changedField === 'name' || (changedField === 'brand' && nameSelect.value)) {
+        let nameFiltered = filteredProducts;
+        if (nameSelect.value) nameFiltered = filteredProducts.filter(p => p.name === nameSelect.value);
+        const skus = [...new Set(nameFiltered.map(p => p.sku).filter(s => s && s !== 'undefined' && String(s).trim() !== ''))].sort();
+        skuSelect.innerHTML = '<option value="">请选择规格</option>' + 
+          skus.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+        netSelect.innerHTML = '<option value="">请选择净重</option>';
+      }
+
+      if (changedField === 'sku' || ((changedField === 'name' || changedField === 'brand') && skuSelect.value)) {
+        let skuFiltered = filteredProducts;
+        if (nameSelect.value) skuFiltered = skuFiltered.filter(p => p.name === nameSelect.value);
+        if (skuSelect.value) skuFiltered = skuFiltered.filter(p => p.sku === skuSelect.value);
+        const nets = [...new Set(skuFiltered.map(p => p.net).filter(n => n !== undefined && n !== null && !isNaN(n)))].sort((a, b) => a - b);
+        netSelect.innerHTML = '<option value="">请选择净重</option>' + 
+          nets.map(n => `<option value="${n}">${n}kg</option>`).join('');
+      }
+
+      updateAddItemSelected();
+    }
+
+    function updateAddItemSelected() {
+      const brand = document.getElementById('addItemBrand').value;
+      const name = document.getElementById('addItemName').value;
+      const sku = document.getElementById('addItemSku').value;
+      const net = document.getElementById('addItemNet').value;
+
+      if (brand && name && sku && net) {
+        currentAddItemProduct = products.find(p => 
+          p.brand === brand && p.name === name && p.sku === sku && 
+          Math.abs(p.net - parseFloat(net)) < 0.001
+        );
+      } else {
+        currentAddItemProduct = null;
+      }
+
+      // 更新库存显示
+      const stockEl = document.getElementById('addItemCurrentStock');
+      if (currentAddItemProduct) {
+        const qty = stock[currentAddItemProduct.id] || 0;
+        stockEl.textContent = qty + ' 件';
+        stockEl.style.color = qty > 0 ? '#059669' : qty < 0 ? '#dc2626' : '#94a3b8';
+      } else {
+        stockEl.textContent = '请选择产品';
+        stockEl.style.color = '#94a3b8';
+      }
+    }
+
+    // 确认添加产品到批次
+    async function confirmAddBatchItem() {
+      if (!currentAddItemBatchId || !currentAddItemProduct) {
+        showToast('⚠️ 请先选择完整的产品信息', 'warning');
+        return;
+      }
+
+      const qty = parseInt(document.getElementById('addItemQty').value);
+      if (isNaN(qty) || qty < 1) {
+        showToast('⚠️ 请输入有效的数量', 'warning');
+        return;
+      }
+
+      const batch = batches.find(b => b.id === currentAddItemBatchId);
+      
+      // 检查产品是否已存在
+      const existingItem = batch.items.find(item => item.productId === currentAddItemProduct.id);
+      if (existingItem) {
+        if (!confirm('该产品已存在于批次中，是否累加数量？')) return;
+        // 累加数量逻辑在下方统一处理
+      }
+
+      showLoading('正在添加...');
+
+      // 保存产品信息到局部变量，避免在关闭弹窗后currentAddItemProduct被置为null导致无法访问name属性
+      const productName = currentAddItemProduct.name;
+      const productId = currentAddItemProduct.id;
+      const productBrand = currentAddItemProduct.brand;
+      const productSku = currentAddItemProduct.sku;
+      const productNet = currentAddItemProduct.net;
+      const productGross = currentAddItemProduct.gross;
+
+      // 更新库存
+      if (batch.type === 'in') {
+        // 入库：增加库存
+        stock[productId] = (stock[productId] || 0) + qty;
+      } else {
+        // 出库：检查库存
+        const currentQty = stock[productId] || 0;
+        if (currentQty < qty) {
+          hideLoading();
+          showToast(`❌ 库存不足！当前库存${currentQty}件`, 'error');
+          return;
+        }
+        stock[productId] = currentQty - qty;
+      }
+
+      // 添加或更新批次项
+      if (existingItem) {
+        existingItem.qty += qty;
+      } else {
+        batch.items.push({
+          productId: productId,
+          name: productName,
+          sku: productSku,
+          brand: productBrand,
+          net: productNet,
+          gross: productGross,
+          date: batch.dateRange.min,
+          qty: qty,
+          remark: ''
+        });
+      }
+
+      batch.totalQty = batch.items.reduce((sum, i) => sum + i.qty, 0);
+
+      try {
+        await saveData();
+        hideLoading();
+        closeBatchAddItemModal();
+        // 使用局部变量productName，避免访问currentAddItemProduct.name时为null
+        showToast(`✅ 已添加 ${productName} ${qty}件 到批次`);
+        updateUI();
+      } catch (err) {
+        hideLoading();
+        showError('添加失败', err.message);
+      }
     }
 
     // ==================== 导出流水（图二格式） ====================
@@ -3784,6 +4381,312 @@ function showLoading(text) {
     }
     
     window.onload = init;
-  </script>
+  
+
+// ==================== 纸箱管理模块 ====================
+
+    // 8种标准纸箱
+    const CARTON_TYPES = [
+        {id: "carton1", name: "佳信精品熟虾(黑)合", spec: "39×29×10.1cm", unit: "套", brand: "佳信"},
+        {id: "carton2", name: "佳信精品熟虾(黑)彩箱", spec: "47×31×16.5cm", unit: "个", brand: "佳信"},
+        {id: "carton3", name: "佳信精选香虾合", spec: "24.5×15.5×3.3cm", unit: "套", brand: "佳信"},
+        {id: "carton4", name: "佳信精选香虾彩箱", spec: "33.5×26×18.5cm", unit: "个", brand: "佳信"},
+        {id: "carton5", name: "大富翁熟冻黑虎虾合(黑)", spec: "24.5×15.5×3.3cm", unit: "套", brand: "大富肴"},
+        {id: "carton6", name: "大富翁熟冻黑虎虾彩箱(黑)", spec: "33.5×26×18.5cm", unit: "个", brand: "大富肴"},
+        {id: "carton7", name: "大富翁香虾合(白)", spec: "24.5×15.5×3.3cm", unit: "套", brand: "大富肴"},
+        {id: "carton8", name: "大富翁香虾彩箱(白)", spec: "33.5×26×18.5cm", unit: "个", brand: "大富肴"}
+    ];
+
+    // 产品-纸箱关联配置（包含16-20）
+    const PRODUCT_CARTON_MAP = {
+        "干冰熟虾|特大A|佳信": {carton1: "carton1", ratio1: 1},
+        "干冰熟虾|特大|佳信": {carton1: "carton1", ratio1: 1},
+        "干冰熟虾|1-2|佳信": {carton1: "carton1", ratio1: 1},
+        "干冰熟虾|2-4|佳信": {carton1: "carton1", ratio1: 1},
+        "干冰熟虾|4-6|佳信": {carton1: "carton1", ratio1: 1},
+        "干冰熟虾|6-8|佳信": {carton1: "carton1", ratio1: 1},
+        "干冰熟虾|8-12|佳信": {carton1: "carton1", ratio1: 1},
+        "干冰熟虾|13-15|佳信": {carton1: "carton1", ratio1: 1},
+        "干冰熟虾|特大红封|佳信": {carton1: "carton1", ratio1: 1},
+        "干冰B级熟虾|B级特大|佳信": {carton1: "carton2", ratio1: 1},
+        "干冰B级熟虾|B级2-4|佳信": {carton1: "carton2", ratio1: 1},
+        "干冰B级熟虾|B级4-6|佳信": {carton1: "carton2", ratio1: 1},
+        "黑虎B级熟虾|B级2-4|佳信": {carton1: "carton2", ratio1: 1},
+        "黑虎B级熟虾|B级4-6|佳信": {carton1: "carton2", ratio1: 1},
+        "盒冻熟虾|16-20|佳信": {carton1: "carton3", ratio1: 10, carton2: "carton4", ratio2: 1},
+        "盒冻熟虾|21-25|佳信": {carton1: "carton3", ratio1: 10, carton2: "carton4", ratio2: 1},
+        "盒冻熟虾|13-15|佳信": {carton1: "carton3", ratio1: 10, carton2: "carton4", ratio2: 1},
+        "盒冻熟虾|16-20升13-15(绿圈)|佳信": {carton1: "carton3", ratio1: 10, carton2: "carton4", ratio2: 1},
+        "盒冻熟虾|21-25升16-20|佳信": {carton1: "carton3", ratio1: 10, carton2: "carton4", ratio2: 1},
+        "白灼黑虎熟虾|特大|大富肴": {carton1: "carton5", ratio1: 10, carton2: "carton6", ratio2: 1},
+        "白灼黑虎熟虾|16-20|大富肴": {carton1: "carton5", ratio1: 10, carton2: "carton6", ratio2: 1},
+        "白灼黑虎熟虾|21-25|大富肴": {carton1: "carton5", ratio1: 10, carton2: "carton6", ratio2: 1},
+        "白灼黑虎熟虾|26-30|大富肴": {carton1: "carton5", ratio1: 10, carton2: "carton6", ratio2: 1},
+        "白灼黑虎熟虾|30-40|大富肴": {carton1: "carton5", ratio1: 10, carton2: "carton6", ratio2: 1},
+        "白灼黑虎熟虾|40-50|大富肴": {carton1: "carton5", ratio1: 10, carton2: "carton6", ratio2: 1},
+        "白灼黑虎熟虾|50-60|大富肴": {carton1: "carton5", ratio1: 10, carton2: "carton6", ratio2: 1},
+        "白灼黑虎熟虾|21-25(黄封)|大富肴": {carton1: "carton5", ratio1: 10, carton2: "carton6", ratio2: 1},
+        "B级黑虎熟虾|B级16-20|大富肴": {carton1: "carton5", ratio1: 10, carton2: "carton6", ratio2: 1},
+        "B级黑虎熟虾|B级21-25|大富肴": {carton1: "carton5", ratio1: 10, carton2: "carton6", ratio2: 1},
+        "B级黑虎熟虾|B级26-30|大富肴": {carton1: "carton5", ratio1: 10, carton2: "carton6", ratio2: 1},
+        "B级黑虎熟虾|B级30-40|大富肴": {carton1: "carton5", ratio1: 10, carton2: "carton6", ratio2: 1},
+        "B级黑虎熟虾|B级40-50|大富肴": {carton1: "carton5", ratio1: 10, carton2: "carton6", ratio2: 1},
+        "盒冻熟虾|30-40|大富肴": {carton1: "carton7", ratio1: 10, carton2: "carton8", ratio2: 1},
+        "盒冻熟虾|40-50|大富肴": {carton1: "carton7", ratio1: 10, carton2: "carton8", ratio2: 1},
+        "盒冻熟虾|50-60|大富肴": {carton1: "carton7", ratio1: 10, carton2: "carton8", ratio2: 1},
+        "软虾|软虾|软虾": {carton1: "carton2", ratio1: 1}
+    };
+
+    // 纸箱数据（独立本地存储）
+    let cartonStockData = {};
+    let cartonAlertThreshold = 50;
+
+    // 初始化纸箱模块
+    function initCartonModule() {
+        loadCartonDataLocal();
+        renderCartonTable();
+        updateCartonStats();
+        checkCartonAlerts();
+    }
+
+    // 从本地加载
+    function loadCartonDataLocal() {
+        const saved = localStorage.getItem('warehouse_carton_stock_v1');
+        const savedThreshold = localStorage.getItem('warehouse_carton_threshold_v1');
+        if (saved) {
+            cartonStockData = JSON.parse(saved);
+        } else {
+            cartonStockData = {};
+            CARTON_TYPES.forEach(c => cartonStockData[c.id] = 0);
+        }
+        if (savedThreshold) {
+            cartonAlertThreshold = parseInt(savedThreshold);
+        }
+        const input = document.getElementById('cartonThresholdInput');
+        if (input) input.value = cartonAlertThreshold;
+    }
+
+    // 保存到本地
+    function saveCartonDataLocal() {
+        localStorage.setItem('warehouse_carton_stock_v1', JSON.stringify(cartonStockData));
+        localStorage.setItem('warehouse_carton_threshold_v1', cartonAlertThreshold);
+    }
+
+    // 获取产品纸箱配置
+    function getProductCartonConfig(product) {
+        const key = `${product.name}|${product.sku}|${product.brand}`;
+        return PRODUCT_CARTON_MAP[key] || null;
+    }
+
+    // 入库时扣减纸箱
+    function deductCartonStockOnImport(batchItems, batchDate) {
+        let deducted = false;
+        batchItems.forEach(item => {
+            const product = products.find(p => p.id === item.productId);
+            if (!product) return;
+            const config = getProductCartonConfig(product);
+            if (!config) return;
+            deducted = true;
+            if (config.carton1) {
+                const current = cartonStockData[config.carton1] || 0;
+                cartonStockData[config.carton1] = Math.max(0, current - (item.qty * config.ratio1));
+            }
+            if (config.carton2 && config.ratio2 > 0) {
+                const current = cartonStockData[config.carton2] || 0;
+                cartonStockData[config.carton2] = Math.max(0, current - (item.qty * config.ratio2));
+            }
+        });
+        if (deducted) {
+            saveCartonDataLocal();
+            if (document.getElementById('carton').classList.contains('show')) {
+                renderCartonTable();
+                updateCartonStats();
+                checkCartonAlerts();
+            }
+            showToast('📦 纸箱库存已自动扣减');
+        }
+    }
+
+    // 渲染纸箱表格
+    function renderCartonTable() {
+        const tbody = document.getElementById('cartonTableBody');
+        if (!tbody) return;
+        let html = '';
+        CARTON_TYPES.forEach((carton, index) => {
+            const stock = cartonStockData[carton.id] || 0;
+            const isWarning = stock > 0 && stock <= cartonAlertThreshold;
+            const isDanger = stock === 0;
+            let statusBadge = '<span class="stock-badge ok">充足</span>';
+            let stockStyle = 'color: #059669;';
+            let rowStyle = '';
+            if (isDanger) {
+                statusBadge = '<span class="stock-badge empty">缺货</span>';
+                stockStyle = 'color: #dc2626;';
+                rowStyle = 'background: #fef2f2;';
+            } else if (isWarning) {
+                statusBadge = '<span class="stock-badge low">预警</span>';
+                stockStyle = 'color: #d97706;';
+                rowStyle = 'background: #fffbeb;';
+            }
+            html += `<tr style="${rowStyle}">
+                <td style="font-weight: 600; color: var(--text-secondary);">${index + 1}</td>
+                <td>
+                    <div style="font-weight: 600; color: var(--text-primary);">${carton.name}</div>
+                    <div style="font-size: 12px; color: var(--text-tertiary);">单位：${carton.unit}</div>
+                </td>
+                <td style="color: var(--text-secondary); font-size: 13px;">${carton.spec}</td>
+                <td><span class="product-tag" style="font-size: 11px;">${carton.brand}</span></td>
+                <td>
+                    <div style="font-size: 24px; font-weight: 700; ${stockStyle}">${stock}</div>
+                    <div style="font-size: 11px; color: var(--text-tertiary);">${carton.unit}</div>
+                </td>
+                <td>${statusBadge}</td>
+                <td>
+                    <button class="btn btn-primary btn-sm btn-icon" onclick="showCartonAddModal('${carton.id}')" title="补货">
+                        <span>➕</span>
+                    </button>
+                </td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    // 更新统计
+    function updateCartonStats() {
+        let totalStock = 0, alertCount = 0, zeroCount = 0;
+        CARTON_TYPES.forEach(carton => {
+            const stock = cartonStockData[carton.id] || 0;
+            totalStock += stock;
+            if (stock === 0) zeroCount++;
+            else if (stock <= cartonAlertThreshold) alertCount++;
+        });
+        const totalEl = document.getElementById('cartonTotalStock');
+        const alertEl = document.getElementById('cartonAlertCount');
+        const zeroEl = document.getElementById('cartonZeroCount');
+        if (totalEl) totalEl.textContent = totalStock.toLocaleString();
+        if (alertEl) alertEl.textContent = alertCount;
+        if (zeroEl) zeroEl.textContent = zeroCount;
+    }
+
+    // 检查预警
+    function checkCartonAlerts() {
+        const alerts = [];
+        CARTON_TYPES.forEach(carton => {
+            const stock = cartonStockData[carton.id] || 0;
+            if (stock > 0 && stock <= cartonAlertThreshold) alerts.push({...carton, stock});
+        });
+        const banner = document.getElementById('cartonAlertBanner');
+        const list = document.getElementById('cartonAlertList');
+        if (banner && list) {
+            if (alerts.length > 0) {
+                banner.style.display = 'block';
+                list.innerHTML = alerts.map(a => `<span style="display: inline-flex; align-items: center; padding: 6px 12px; background: white; border-radius: 20px; font-size: 13px; font-weight: 600; color: #92400e; border: 1px solid #fbbf24;">${a.name}: ${a.stock}${a.unit}</span>`).join('');
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+    }
+
+    function closeCartonAlertBanner() {
+        const banner = document.getElementById('cartonAlertBanner');
+        if (banner) banner.style.display = 'none';
+    }
+
+    function updateCartonThreshold(value) {
+        cartonAlertThreshold = parseInt(value) || 50;
+        saveCartonDataLocal();
+        renderCartonTable();
+        updateCartonStats();
+        checkCartonAlerts();
+    }
+
+    // 显示纸箱入库弹窗 - 使用自己的实现，不依赖原系统
+    function showCartonAddModal(cartonId = null) {
+        // 创建弹窗HTML
+        let itemsHtml = '';
+        CARTON_TYPES.forEach(carton => {
+            const currentStock = cartonStockData[carton.id] || 0;
+            const isSelected = cartonId === carton.id;
+            itemsHtml += `
+                <div style="padding: 12px; border: 2px solid ${isSelected ? '#3b82f6' : '#e2e8f0'}; border-radius: 8px; margin-bottom: 12px; background: ${isSelected ? '#eff6ff' : 'white'};">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div>
+                            <div style="font-weight: 600; font-size: 14px;">${carton.name}</div>
+                            <div style="font-size: 12px; color: #64748b;">${carton.spec} · 单位：${carton.unit}</div>
+                        </div>
+                        <div style="font-size: 13px; color: #64748b;">当前: <strong>${currentStock}</strong>${carton.unit}</div>
+                    </div>
+                    <input type="number" id="carton_add_${carton.id}" placeholder="入库数量" min="0" 
+                        style="width: 100%; padding: 10px; border: 1.5px solid #e2e8f0; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
+                </div>
+            `;
+        });
+
+        const modalHtml = `
+            <div id="cartonAddModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 16px;">
+                <div style="background: white; border-radius: 16px; width: 100%; max-width: 500px; max-height: 80vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
+                    <div style="padding: 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="font-size: 18px; font-weight: 700;">📦 纸箱入库补货</div>
+                        <button onclick="closeCartonAddModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">×</button>
+                    </div>
+                    <div style="padding: 20px;">
+                        <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">请输入各类型纸箱的入库数量：</p>
+                        ${itemsHtml}
+                    </div>
+                    <div style="padding: 16px 20px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px;">
+                        <button onclick="closeCartonAddModal()" style="padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; background: #e2e8f0; color: #475569;">取消</button>
+                        <button onclick="confirmCartonAdd()" style="padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; background: #2563eb; color: white;">确认入库</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 插入到body
+        const existing = document.getElementById('cartonAddModal');
+        if (existing) existing.remove();
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+
+    // 关闭弹窗
+    function closeCartonAddModal() {
+        const modal = document.getElementById('cartonAddModal');
+        if (modal) modal.remove();
+    }
+
+    // 确认入库
+    function confirmCartonAdd() {
+        let hasAdded = false;
+        let addedList = [];
+        CARTON_TYPES.forEach(carton => {
+            const input = document.getElementById(`carton_add_${carton.id}`);
+            const qty = parseInt(input?.value) || 0;
+            if (qty > 0) {
+                cartonStockData[carton.id] = (cartonStockData[carton.id] || 0) + qty;
+                hasAdded = true;
+                addedList.push(`${carton.name}: +${qty}${carton.unit}`);
+            }
+        });
+        if (hasAdded) {
+            saveCartonDataLocal();
+            renderCartonTable();
+            updateCartonStats();
+            checkCartonAlerts();
+            closeCartonAddModal();
+            showToast('✅ 纸箱入库成功！<br>' + addedList.join('<br>'));
+        } else {
+            showToast('⚠️ 请输入入库数量', 'warning');
+        }
+    }
+
+    // 点击弹窗外部关闭
+    document.addEventListener('click', function(e) {
+        const modal = document.getElementById('cartonAddModal');
+        if (modal && e.target.id === 'cartonAddModal') {
+            closeCartonAddModal();
+        }
+    });
+
+
+</script>
 </body>
 </html>
