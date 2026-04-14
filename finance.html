@@ -172,14 +172,14 @@
         .sales-list-main-table th { background: #a8ddd8; border: 1.5px solid #333; padding: 8px 4px; text-align: center; font-weight: normal; }
         .sales-list-main-table td { border: 1.5px solid #333; padding: 6px 4px; text-align: center; height: 28px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .sales-list-main-table .td-seq { width: 50px; }
-        .sales-list-main-table .td-product { width: 110px; }
-        .sales-list-main-table .td-spec { width: 80px; }
-        .sales-list-main-table .td-brand { width: 90px; }
-        .sales-list-main-table .td-qty { width: 70px; }
-        .sales-list-main-table .td-weight { width: 80px; }
-        .sales-list-main-table .td-price { width: 80px; }
-        .sales-list-main-table .td-amount { width: 100px; }
-        .sales-list-main-table .td-remark { width: 90px; }
+.sales-list-main-table .td-product { width: 100px; }
+.sales-list-main-table .td-spec { width: 140px; }
+.sales-list-main-table .td-brand { width: 80px; }
+.sales-list-main-table .td-qty { width: 70px; }
+.sales-list-main-table .td-weight { width: 75px; }
+.sales-list-main-table .td-price { width: 80px; }
+.sales-list-main-table .td-amount { width: 95px; }
+.sales-list-main-table .td-remark { width: 80px; }
         .sales-list-total-row td { border: 1.5px solid #333; padding: 8px 4px; }
         .sales-list-total-label { text-align: left; padding-left: 15px !important; }
         .sales-list-chinese-row td { border: 1.5px solid #333; border-top: none; padding: 10px 4px; }
@@ -3504,7 +3504,7 @@
                     const total = parseFloat(row.querySelector('.si-total').value) || 0;
                     const remark = row.querySelector('.si-remark').value || '';
 
-                    items.push({ seq: items.length + 1, name, spec, brand, qty, weight: weight.toFixed(1), priceType, price: price.toFixed(1), total: total.toFixed(2), remark });
+                    items.push({ seq: items.length + 1, name, spec, brand, qty, weight: weight, priceType, price: price.toFixed(2), total: total.toFixed(2), remark });
                     totalQty += qty;
                     totalAmount += total;
                 }
@@ -3590,7 +3590,7 @@
                     const total = parseFloat(row.querySelector('.si-total').value) || 0;
                     const remark = row.querySelector('.si-remark').value || '';
 
-                    items.push({ seq: items.length + 1, name, spec, brand, qty, weight: weight.toFixed(1), priceType, price: price.toFixed(1), total: total.toFixed(2), remark });
+                    items.push({ seq: items.length + 1, name, spec, brand, qty, weight: weight, priceType, price: price.toFixed(2), total: total.toFixed(2), remark });
                     totalQty += qty;
                     totalAmount += total;
                 }
@@ -3621,19 +3621,20 @@
         }
 
         function showSalesReceipt(order) {
-            let tableRows = '';
-            for (let i = 1; i <= 10; i++) {
-                const item = order.items.find(it => it.seq === i);
-                if (item) {
-                    tableRows += `<tr><td class="td-seq">${item.seq}</td><td class="td-product">${item.name}</td><td class="td-spec">${item.spec}</td><td class="td-brand">${item.brand}</td><td class="td-qty">${item.qty}</td><td class="td-weight">${item.weight}</td><td class="td-price">${item.price}</td><td class="td-amount" style="color: #c00; font-weight: bold;">${item.total}</td><td class="td-remark">${item.remark}</td></tr>`;
-                } else {
-                    tableRows += `<tr><td class="td-seq">${i}</td><td class="td-product"></td><td class="td-spec"></td><td class="td-brand"></td><td class="td-qty"></td><td class="td-weight"></td><td class="td-price"></td><td class="td-amount"></td><td class="td-remark"></td></tr>`;
-                }
-            }
+    let tableRows = '';
+    const maxSeq = Math.max(...order.items.map(it => it.seq || 0), 10);
+    for (let i = 1; i <= maxSeq; i++) {
+        const item = order.items.find(it => it.seq === i);
+        if (item) {
+            tableRows += `<tr><td class="td-seq">${item.seq}</td><td class="td-product">${item.name}</td><td class="td-spec">${item.spec}</td><td class="td-brand">${item.brand}</td><td class="td-qty">${item.qty}</td><td class="td-weight">${item.weight ? parseFloat(item.weight) : ''}</td><td class="td-price">${parseFloat(item.price).toFixed(2)}</td><td class="td-amount" style="color: #c00; font-weight: bold;">${parseFloat(item.total).toFixed(2)}</td><td class="td-remark">${item.remark || ''}</td></tr>`;
+        } else {
+            tableRows += `<tr><td class="td-seq">${i}</td><td class="td-product"></td><td class="td-spec"></td><td class="td-brand"></td><td class="td-qty"></td><td class="td-weight"></td><td class="td-price"></td><td class="td-amount"></td><td class="td-remark"></td></tr>`;
+        }
+    }
 
             const hasPiecePrice = order.items.some(item => item.priceType === 'piece');
             const hasKgPrice = order.items.some(item => item.priceType === 'kg');
-            let priceHeaderText = '单价';
+            let priceHeaderText = '单价/件';
             if (hasPiecePrice && !hasKgPrice) priceHeaderText = '单价/件';
             else if (!hasPiecePrice && hasKgPrice) priceHeaderText = '单价/kg';
 
