@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>佳信水产进销存财务系统 v3.6（收付款修复版）</title>
+    <title>佳信水产进销存财务系统 v3.13（采购单三列单价版）</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -732,7 +732,7 @@
                         </div>
                         <div>
                             <h1 class="text-xl font-bold text-gray-800">佳信水产财务系统</h1>
-                            <p class="text-xs text-gray-500">v3.7 | 收付款已修复+费用同步</p>
+                            <p class="text-xs text-gray-500">v3.13 | 采购单三列单价版</p>
                         </div>
                     </div>
                     <div class="flex items-center space-x-3">
@@ -787,7 +787,7 @@
                             </div>
                             <div>
                                 <h1 class="text-lg font-bold text-gray-800">佳信水产财务</h1>
-                                <p class="text-xs text-gray-500">v3.7 | 费用同步版</p>
+                                <p class="text-xs text-gray-500">v3.13 | 采购单三列单价版</p>
                             </div>
                         </div>
                         <div class="sync-status" id="syncStatusMobile">
@@ -1259,36 +1259,6 @@
                                 <option value="">全部客户/供应商/费用</option>
                             </select>
                         </div>
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <label class="text-sm font-medium text-gray-600">费用类型：</label>
-                            <div id="expenseTypeMultiSelect" class="flex gap-2 flex-wrap">
-                                <label class="inline-flex items-center px-3 py-1.5 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors">
-                                    <input type="checkbox" value="processing" class="expense-type-checkbox mr-2 text-blue-600 focus:ring-blue-500" onchange="renderTransactionList()">
-                                    <span class="text-sm">加工费</span>
-                                </label>
-                                <label class="inline-flex items-center px-3 py-1.5 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors">
-                                    <input type="checkbox" value="packaging" class="expense-type-checkbox mr-2 text-blue-600 focus:ring-blue-500" onchange="renderTransactionList()">
-                                    <span class="text-sm">包装费</span>
-                                </label>
-                                <label class="inline-flex items-center px-3 py-1.5 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors">
-                                    <input type="checkbox" value="carton" class="expense-type-checkbox mr-2 text-blue-600 focus:ring-blue-500" onchange="renderTransactionList()">
-                                    <span class="text-sm">纸箱</span>
-                                </label>
-                                <label class="inline-flex items-center px-3 py-1.5 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors">
-                                    <input type="checkbox" value="office" class="expense-type-checkbox mr-2 text-blue-600 focus:ring-blue-500" onchange="renderTransactionList()">
-                                    <span class="text-sm">办公杂费</span>
-                                </label>
-                                <label class="inline-flex items-center px-3 py-1.5 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors">
-                                    <input type="checkbox" value="other" class="expense-type-checkbox mr-2 text-blue-600 focus:ring-blue-500" onchange="renderTransactionList()">
-                                    <span class="text-sm">其他费用</span>
-                                </label>
-                                <label class="inline-flex items-center px-3 py-1.5 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors border border-blue-200">
-                                    <input type="checkbox" value="not_expense" class="expense-type-checkbox mr-2 text-blue-600 focus:ring-blue-500" onchange="renderTransactionList()">
-                                    <span class="text-sm font-medium">非费用付款</span>
-                                </label>
-                            </div>
-                            <button onclick="clearExpenseTypeFilter()" class="text-xs text-gray-500 hover:text-gray-700 underline">清除</button>
-                        </div>
                         <div class="flex items-center gap-2">
                             <label class="text-sm font-medium text-gray-600">日期：</label>
                             <input type="date" id="transactionDateFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none" onchange="renderTransactionList()">
@@ -1298,20 +1268,13 @@
                         </button>
                     </div>
 
-                    <!-- 历史费用同步按钮 -->
+                    <!-- 提示信息 -->
                     <div class="mt-4 pt-4 border-t border-gray-200">
                         <div class="flex items-center justify-between">
                             <div class="text-sm text-gray-600">
                                 <span class="font-medium">💡 提示：</span>
-                                <span class="text-gray-500">费用付款会自动显示在这里，历史费用可手动同步</span>
+                                <span class="text-gray-500">费用付款请在"费用管理"板块操作，此处仅显示流水记录</span>
                             </div>
-                            <button onclick="syncExpensesToTransactions()" 
-                                    class="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white text-sm rounded-lg hover:from-orange-600 hover:to-red-600 flex items-center gap-2">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                </svg>
-                                同步历史费用
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -1335,7 +1298,15 @@
 
             <!-- 费用管理 -->
             <div id="view-expenses" class="view-section hidden">
-                <!-- 费用统计卡片 -->
+                <!-- 费用统计卡片和类别管理 -->
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center gap-2">
+                        <button onclick="openExpenseCategoryModal()" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 text-sm flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                            管理类别
+                        </button>
+                    </div>
+                </div>
                 <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                     <div class="bg-white rounded-xl p-4 shadow-sm border-l-4 border-blue-500">
                         <p class="text-xs text-gray-500">加工费用</p>
@@ -1371,10 +1342,17 @@
 
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold">费用管理</h2>
-                    <button onclick="openExpenseModal()" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 flex items-center space-x-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                        <span>新增费用</span>
-                    </button>
+                    <div class="flex space-x-3">
+                        <!-- 付款登记按钮 -->
+                        <button onclick="openExpensePaymentSimpleModal()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span>付款登记</span>
+                        </button>
+                        <button onclick="openExpenseModal()" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 flex items-center space-x-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            <span>新增费用</span>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- 筛选栏 -->
@@ -1466,6 +1444,12 @@
                                 <td id="col2Total" style="border: 1px solid #334155; padding: 8px; text-align: center;">0斤</td>
                                 <td id="col3Total" style="border: 1px solid #334155; padding: 8px; text-align: center;">0斤</td>
                             </tr>
+                            <tr style="background: #fef3c7; font-weight: bold;">
+                                <td style="border: 1px solid #334155; padding: 8px; text-align: center;">单价</td>
+                                <td style="border: 1px solid #334155; padding: 8px; text-align: center;"><input type="number" id="col1Price" step="0.01" placeholder="元/斤" style="width: 80px; border: none; background: transparent; text-align: center; font-weight: bold; color: #92400e;" oninput="calculatePurchaseTotal()"></td>
+                                <td style="border: 1px solid #334155; padding: 8px; text-align: center;"><input type="number" id="col2Price" step="0.01" placeholder="元/斤" style="width: 80px; border: none; background: transparent; text-align: center; font-weight: bold; color: #92400e;" oninput="calculatePurchaseTotal()"></td>
+                                <td style="border: 1px solid #334155; padding: 8px; text-align: center;"><input type="number" id="col3Price" step="0.01" placeholder="元/斤" style="width: 80px; border: none; background: transparent; text-align: center; font-weight: bold; color: #92400e;" oninput="calculatePurchaseTotal()"></td>
+                            </tr>
                         </tfoot>
                     </table>
                     <div style="display: flex; justify-content: space-between; margin: 10px 0;">
@@ -1475,7 +1459,6 @@
                     <div style="border: 2px solid #334155; padding: 16px; margin-top: 16px; background: #f8fafc; border-radius: 8px;">
                         <div style="display: flex; justify-content: space-between; margin: 8px 0;">
                             <span>合计：<span id="purchaseTotalJin" style="font-size: 20px; color: #dc2626; font-weight: bold;">0</span> 斤</span>
-                            <span>单价：<input type="number" id="purchasePrice" value="22.50" step="0.01" style="border: none; border-bottom: 1px solid #333; width: 60px; text-align: center; color: #dc2626;" onchange="calculatePurchaseTotal()"> 元/斤</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; border-top: 1px dashed #999; padding-top: 10px; margin-top: 10px;">
                             <span style="font-size: 16px; font-weight: bold;">合计金额</span>
@@ -1682,6 +1665,18 @@
                                 <td id="receiptCol2Total" style="color: #1e3a5f; font-weight: 700;">0斤</td>
                                 <td id="receiptCol3Total" style="color: #1e3a5f; font-weight: 700;">0斤</td>
                             </tr>
+                            <tr style="background: #fef3c7;">
+                                <td style="font-weight: bold; color: #92400e;">单价</td>
+                                <td id="receiptCol1Price" style="color: #92400e; font-weight: 600;">-</td>
+                                <td id="receiptCol2Price" style="color: #92400e; font-weight: 600;">-</td>
+                                <td id="receiptCol3Price" style="color: #92400e; font-weight: 600;">-</td>
+                            </tr>
+                            <tr style="background: #f0fdf4;">
+                                <td style="font-weight: bold; color: #166534;">金额</td>
+                                <td id="receiptCol1Amount" style="color: #166534; font-weight: 700;">-</td>
+                                <td id="receiptCol2Amount" style="color: #166534; font-weight: 700;">-</td>
+                                <td id="receiptCol3Amount" style="color: #166534; font-weight: 700;">-</td>
+                            </tr>
                         </tfoot>
                     </table>
                     <div class="purchase-receipt-summary">
@@ -1833,40 +1828,54 @@
         </div>
     </div>
 
-    <!-- 费用付款模态框 -->
-    <div id="expensePaymentModal" class="modal">
+    <!-- 费用简化付款模态框 -->
+    <div id="expensePaymentSimpleModal" class="modal">
         <div class="modal-content" style="max-width: 400px;">
             <div class="p-6 border-b border-gray-200 flex justify-between items-center">
-                <h3 class="text-xl font-bold text-green-600">费用付款</h3>
-                <button onclick="closeExpensePaymentModal()" class="text-gray-400 hover:text-gray-600">✕</button>
+                <h3 class="text-xl font-bold text-green-600">费用付款登记</h3>
+                <button onclick="closeExpensePaymentSimpleModal()" class="text-gray-400 hover:text-gray-600">✕</button>
             </div>
             <div class="p-6 space-y-4">
-                <input type="hidden" id="expensePaymentId">
-                <div class="bg-gray-50 p-4 rounded-lg">
-                    <p class="text-sm text-gray-600">费用类型: <span id="expensePaymentType" class="font-medium"></span></p>
-                    <p class="text-sm text-gray-600">总费用: <span id="expensePaymentTotal" class="font-medium text-red-600"></span></p>
-                    <p class="text-sm text-gray-600">已付: <span id="expensePaymentPaid" class="font-medium text-green-600"></span></p>
-                    <p class="text-sm text-gray-600">未付: <span id="expensePaymentRemaining" class="font-medium text-red-600"></span></p>
-                </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">付款金额 *</label>
-                    <input type="number" id="expensePaymentAmount" class="w-full px-3 py-2 border rounded-lg" placeholder="0.00" step="0.01">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">费用类型 *</label>
+                    <select id="expensePaymentSimpleType" class="w-full px-3 py-2 border rounded-lg">
+                        <option value="processing">加工费用</option>
+                        <option value="packaging">包装费用</option>
+                        <option value="carton">纸箱</option>
+                        <option value="office">办公杂费</option>
+                        <option value="other">其他费用</option>
+                    </select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">付款日期 *</label>
-                    <input type="date" id="expensePaymentDate" class="w-full px-3 py-2 border rounded-lg">
+                    <input type="date" id="expensePaymentSimpleDate" class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">付款金额 *</label>
+                    <input type="number" id="expensePaymentSimpleAmount" class="w-full px-3 py-2 border rounded-lg" placeholder="0.00" step="0.01">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">支付方式</label>
+                    <input type="text" id="expensePaymentSimpleMethod" class="w-full px-3 py-2 border rounded-lg" placeholder="例如：微信转账、银行转账、现金">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">备注</label>
-                    <input type="text" id="expensePaymentRemark" class="w-full px-3 py-2 border rounded-lg" placeholder="可选">
+                    <input type="text" id="expensePaymentSimpleRemark" class="w-full px-3 py-2 border rounded-lg" placeholder="可选">
                 </div>
                 <div class="flex justify-end space-x-3 pt-4">
-                    <button onclick="closeExpensePaymentModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-50">取消</button>
-                    <button onclick="saveExpensePayment()" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">确认付款</button>
+                    <button onclick="closeExpensePaymentSimpleModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-50">取消</button>
+                    <button onclick="saveExpensePaymentSimple()" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">确认付款</button>
                 </div>
             </div>
         </div>
     </div>
+
+    
+        
+    
+    
+    </div>
+
     <!-- 加载动画 -->
     <div class="loading-overlay" id="loading">
         <div class="loading-spinner"></div>
@@ -2125,6 +2134,8 @@
                 data.transactions = cloudData.transactions || [];
                 data.lastPurchaseDocNumber = cloudData.lastPurchaseDocNumber || 0;
                 data.expenses = cloudData.expenses || [];  // 加载费用数据
+            data.expensePayments = cloudData.expensePayments || [];  // 加载费用付款记录（独立存储）
+            data.expenseTypes = cloudData.expenseTypes || {};  // 加载自定义费用类别
                 data.shareholders = cloudData.shareholders || [];  // 加载股东投资数据
 
                 isOnline = true;
@@ -2157,6 +2168,12 @@
             }
 
             initPurchaseTable();
+            // 初始化费用类别（加载自定义类别）
+            initExpenseTypes();
+            // 更新费用类别下拉框
+            updateExpenseTypeFilter();
+            updateExpenseTypeSelectors();
+
             updateAllViews();
         }
 
@@ -2730,9 +2747,18 @@
         }
 
         function calculatePurchaseTotal() {
-            const totalJin = parseInt(document.getElementById('purchaseTotalJin').textContent) || 0;
-            const price = parseFloat(document.getElementById('purchasePrice').value) || 0;
-            const amount = totalJin * price;
+            const col1Jin = parseInt(document.getElementById('col1Total').textContent) || 0;
+            const col2Jin = parseInt(document.getElementById('col2Total').textContent) || 0;
+            const col3Jin = parseInt(document.getElementById('col3Total').textContent) || 0;
+
+            const col1Price = parseFloat(document.getElementById('col1Price').value) || 0;
+            const col2Price = parseFloat(document.getElementById('col2Price').value) || 0;
+            const col3Price = parseFloat(document.getElementById('col3Price').value) || 0;
+
+            const totalJin = col1Jin + col2Jin + col3Jin;
+            document.getElementById('purchaseTotalJin').textContent = totalJin;
+
+            const amount = (col1Jin * col1Price) + (col2Jin * col2Price) + (col3Jin * col3Price);
             document.getElementById('purchaseTotalAmount').textContent = '¥' + amount.toFixed(2);
         }
 
@@ -2777,7 +2803,9 @@
 
             document.getElementById('purchaseDate').value = new Date().toISOString().split('T')[0];
             document.getElementById('purchaseProduct').value = '黑虎虾';
-            document.getElementById('purchasePrice').value = '22.50';
+            document.getElementById('col1Price').value = '';
+            document.getElementById('col2Price').value = '';
+            document.getElementById('col3Price').value = '';
             document.getElementById('purchasePaymentStatus').value = 'unpaid';
             updatePurchasePayment();
             document.getElementById('purchasePaidAmount').value = '';
@@ -2820,7 +2848,9 @@
             document.getElementById('purchaseDate').value = order.date;
             document.getElementById('purchaseDocNo').value = order.docNumber || '';
             document.getElementById('purchaseProduct').value = order.product || '黑虎虾';
-            document.getElementById('purchasePrice').value = order.price || 22.50;
+            document.getElementById('col1Price').value = order.col1Price || '';
+            document.getElementById('col2Price').value = order.col2Price || '';
+            document.getElementById('col3Price').value = order.col3Price || '';
 
             const tbody = document.getElementById('purchaseTableBody');
             tbody.innerHTML = '';
@@ -2904,8 +2934,15 @@
             if (items.length === 0) { showToast('⚠️ 请至少填写一个产品', 'warning'); return; }
 
             const totalWeight = items.reduce((sum, i) => sum + i.total, 0);
-            const price = parseFloat(document.getElementById('purchasePrice').value) || 0;
-            const totalAmount = totalWeight * price;
+            const col1Price = parseFloat(document.getElementById('col1Price').value) || 0;
+            const col2Price = parseFloat(document.getElementById('col2Price').value) || 0;
+            const col3Price = parseFloat(document.getElementById('col3Price').value) || 0;
+
+            const col1Jin = parseInt(document.getElementById('col1Total').textContent) || 0;
+            const col2Jin = parseInt(document.getElementById('col2Total').textContent) || 0;
+            const col3Jin = parseInt(document.getElementById('col3Total').textContent) || 0;
+
+            const totalAmount = (col1Jin * col1Price) + (col2Jin * col2Price) + (col3Jin * col3Price);
             const paymentStatus = document.getElementById('purchasePaymentStatus').value;
             const paidAmount = paymentStatus === 'paid' ? totalAmount : (paymentStatus === 'partial' ? parseFloat(document.getElementById('purchasePaidAmount').value) || 0 : 0);
             const remainingAmount = totalAmount - paidAmount;
@@ -2934,7 +2971,9 @@
             order.product = document.getElementById('purchaseProduct').value;
             order.items = items;
             order.totalWeight = totalWeight;
-            order.price = price;
+            order.col1Price = col1Price;
+            order.col2Price = col2Price;
+            order.col3Price = col3Price;
             order.totalAmount = totalAmount;
             order.paymentStatus = paymentStatus;
             order.paidAmount = paidAmount;
@@ -2995,8 +3034,15 @@
             if (items.length === 0) { showToast('⚠️ 请至少填写一个产品', 'warning'); return; }
 
             const totalWeight = items.reduce((sum, i) => sum + i.total, 0);
-            const price = parseFloat(document.getElementById('purchasePrice').value) || 0;
-            const totalAmount = totalWeight * price;
+            const col1Price = parseFloat(document.getElementById('col1Price').value) || 0;
+            const col2Price = parseFloat(document.getElementById('col2Price').value) || 0;
+            const col3Price = parseFloat(document.getElementById('col3Price').value) || 0;
+
+            const col1Jin = parseInt(document.getElementById('col1Total').textContent) || 0;
+            const col2Jin = parseInt(document.getElementById('col2Total').textContent) || 0;
+            const col3Jin = parseInt(document.getElementById('col3Total').textContent) || 0;
+
+            const totalAmount = (col1Jin * col1Price) + (col2Jin * col2Price) + (col3Jin * col3Price);
             const paymentStatus = document.getElementById('purchasePaymentStatus').value;
             const paidAmount = paymentStatus === 'paid' ? totalAmount : (paymentStatus === 'partial' ? parseFloat(document.getElementById('purchasePaidAmount').value) || 0 : 0);
 
@@ -3021,7 +3067,9 @@
                 supplierId,
                 supplierName: supplier.name,
                 product: document.getElementById('purchaseProduct').value,
-                items, totalWeight, price, totalAmount,
+                items, totalWeight, 
+                col1Price, col2Price, col3Price,
+                totalAmount,
                 paymentStatus, paidAmount,
                 remainingAmount: totalAmount - paidAmount,
                 images: images
@@ -3052,8 +3100,25 @@
             document.getElementById('receiptProduct').textContent = order.product;
             document.getElementById('receiptSupplier').textContent = order.supplierName;
             document.getElementById('receiptTotalWeight').textContent = order.totalWeight;
-            document.getElementById('receiptPrice').textContent = order.price.toFixed(2);
             document.getElementById('receiptTotalAmount').textContent = '¥' + order.totalAmount.toFixed(2);
+
+            // 显示各列单价
+            document.getElementById('receiptCol1Price').textContent = order.col1Price ? order.col1Price.toFixed(2) + '元' : '-';
+            document.getElementById('receiptCol2Price').textContent = order.col2Price ? order.col2Price.toFixed(2) + '元' : '-';
+            document.getElementById('receiptCol3Price').textContent = order.col3Price ? order.col3Price.toFixed(2) + '元' : '-';
+
+            // 计算并显示各列金额
+            const col1Jin = order.items.filter(i => i.col === 1).reduce((sum, i) => sum + i.total, 0);
+            const col2Jin = order.items.filter(i => i.col === 2).reduce((sum, i) => sum + i.total, 0);
+            const col3Jin = order.items.filter(i => i.col === 3).reduce((sum, i) => sum + i.total, 0);
+
+            const col1Amount = col1Jin * (order.col1Price || 0);
+            const col2Amount = col2Jin * (order.col2Price || 0);
+            const col3Amount = col3Jin * (order.col3Price || 0);
+
+            document.getElementById('receiptCol1Amount').textContent = col1Amount > 0 ? '¥' + col1Amount.toFixed(0) : '-';
+            document.getElementById('receiptCol2Amount').textContent = col2Amount > 0 ? '¥' + col2Amount.toFixed(0) : '-';
+            document.getElementById('receiptCol3Amount').textContent = col3Amount > 0 ? '¥' + col3Amount.toFixed(0) : '-';
 
             const imagesContainer = document.getElementById('purchaseReceiptImages');
             const imagesList = document.getElementById('purchaseReceiptImagesList');
@@ -4233,61 +4298,16 @@
         // ==================== 收付款 ====================
         
 
-        // ==================== 同步历史费用到收付款 ====================
-        function syncExpensesToTransactions() {
-            if (!checkEditPermission()) return;
-
-            // 获取所有已付金额大于0的费用记录
-            const paidExpenses = (data.expenses || []).filter(e => (e.paidAmount || 0) > 0);
-            let syncedCount = 0;
-
-            paidExpenses.forEach(expense => {
-                // 检查是否已经在transactions中存在对应的付款记录
-                const typeInfo = EXPENSE_TYPES[expense.type] || { name: expense.type };
-                const existingPayment = data.transactions.find(t => 
-                    t.isExpensePayment && 
-                    t.partyId === expense.id &&
-                    t.amount === expense.paidAmount
-                );
-
-                // 如果不存在，则创建记录
-                if (!existingPayment) {
-                    data.transactions.push({
-                        id: 'TRX' + Date.now() + Math.random().toString(36).substr(2, 5),
-                        date: expense.date,
-                        type: 'expense',
-                        partyId: expense.id,
-                        partyName: typeInfo.name,
-                        amount: expense.paidAmount,
-                        paymentMethod: '',
-                        remark: `费用付款 - ${typeInfo.name}${expense.remark ? ' - ' + expense.remark : ''}`,
-                        isExpensePayment: true,
-                        expenseType: expense.type,
-                        isHistoricalSync: true  // 标记为历史同步
-                    });
-                    syncedCount++;
-                }
-            });
-
-            if (syncedCount > 0) {
-                console.log(`已同步 ${syncedCount} 条历史费用付款到收付款`);
-                saveData();
-                renderTransactionList();
-                showToast(`✅ 已同步 ${syncedCount} 条历史费用记录`);
-            } else {
-                showToast('ℹ️ 所有历史费用已同步，无新记录');
-            }
-        }
+        
 
 function renderTransactionList() {
             const typeFilter = document.getElementById('transactionTypeFilter').value;
             const partyFilter = document.getElementById('transactionPartyFilter').value;
             const dateFilter = document.getElementById('transactionDateFilter').value;
 
-            // 修复：获取多选的费用类型checkboxes
-            const selectedExpenseTypes = Array.from(document.querySelectorAll('.expense-type-checkbox:checked')).map(cb => cb.value);
-
-            let filteredTransactions = [...data.transactions];
+            // 只读取非费用相关的收付款记录
+            // 费用付款现在独立存储在 data.expensePayments 中，不再显示在收付款板块
+            let filteredTransactions = (data.transactions || []).filter(t => !t.isExpensePayment);
 
             // 类型筛选
             if (typeFilter) {
@@ -4304,30 +4324,14 @@ function renderTransactionList() {
                 filteredTransactions = filteredTransactions.filter(t => t.date === dateFilter);
             }
 
-            // 费用类型筛选（多选）- 修复：使用已获取的selectedExpenseTypes
-            if (selectedExpenseTypes.length > 0) {
-                const includeNonExpense = selectedExpenseTypes.includes('not_expense');
-                const expenseTypesOnly = selectedExpenseTypes.filter(t => t !== 'not_expense');
-
-                filteredTransactions = filteredTransactions.filter(t => {
-                    if (includeNonExpense && !t.isExpensePayment) {
-                        return true;
-                    }
-                    if (t.isExpensePayment && expenseTypesOnly.includes(t.expenseType)) {
-                        return true;
-                    }
-                    return false;
-                });
-            }
-
             // 计算筛选后的汇总
             const totalIncome = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
             const totalExpense = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
 
             const tbody = document.getElementById('transactionList');
 
-            let html = filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date)).map(t => `
-                <tr>
+            let html = filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date)).map(t => {
+                return `<tr>
                     <td class="px-6 py-4 text-sm text-gray-500">${t.date}</td>
                     <td class="px-6 py-4 text-sm"><span class="status-badge ${t.type === 'income' ? 'status-paid' : 'status-pending'}">${t.type === 'income' ? '收款' : '付款'}</span></td>
                     <td class="px-6 py-4 text-sm">${t.partyName}</td>
@@ -4338,45 +4342,15 @@ function renderTransactionList() {
                         <button onclick="editPayment('${t.id}')" class="text-blue-600 hover:text-blue-800">编辑</button>
                         <button onclick="deletePayment('${t.id}')" class="text-red-600 hover:text-red-800">删除</button>
                     </td>
-                </tr>
-            `).join('');
+                </tr>`;
+            }).join('');
 
             // 添加汇总行
             if (filteredTransactions.length > 0) {
-                // 计算选中费用类型的汇总
-                const selectedExpenseTypes = Array.from(document.querySelectorAll('.expense-type-checkbox:checked')).map(cb => cb.value);
-                let expenseTypeSummary = '';
-
-                if (selectedExpenseTypes.length > 0 && selectedExpenseTypes.some(t => t !== 'not_expense')) {
-                    const expenseTypesOnly = selectedExpenseTypes.filter(t => t !== 'not_expense');
-                    const typeNames = {
-                        'processing': '加工费',
-                        'packaging': '包装费',
-                        'carton': '纸箱',
-                        'office': '办公杂费',
-                        'other': '其他费用'
-                    };
-
-                    let typeDetails = [];
-                    expenseTypesOnly.forEach(type => {
-                        const typeTotal = filteredTransactions
-                            .filter(t => t.isExpensePayment && t.expenseType === type && t.type === 'expense')
-                            .reduce((sum, t) => sum + t.amount, 0);
-                        if (typeTotal > 0) {
-                            typeDetails.push(`${typeNames[type]}: ¥${typeTotal.toFixed(0)}`);
-                        }
-                    });
-
-                    if (typeDetails.length > 0) {
-                        expenseTypeSummary = `<div class="mt-2 text-xs text-orange-700 bg-orange-50 inline-block px-2 py-1 rounded">📊 选中费用合计: ${typeDetails.join(' + ')} = ¥${expenseTypesOnly.reduce((sum, type) => sum + filteredTransactions.filter(t => t.isExpensePayment && t.expenseType === type && t.type === 'expense').reduce((s, t) => s + t.amount, 0), 0).toFixed(2)}</div>`;
-                    }
-                }
-
                 html += `
                     <tr style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-top: 2px solid #0ea5e9;">
                         <td class="px-6 py-4 text-sm font-bold text-blue-900" colspan="3">
                             合计（${filteredTransactions.length}笔）
-                            ${expenseTypeSummary}
                         </td>
                         <td class="px-6 py-4 text-sm" colspan="4">
                             <span class="text-green-700 font-medium">收款: +¥${totalIncome.toFixed(2)}</span>
@@ -4393,6 +4367,7 @@ function renderTransactionList() {
                         <td colspan="7" class="px-6 py-8 text-center text-gray-500">
                             <div class="text-4xl mb-2">📭</div>
                             <p>暂无符合条件的记录</p>
+                            <p class="text-xs text-gray-400 mt-2">费用付款请在"费用管理"板块查看</p>
                         </td>
                     </tr>
                 `;
@@ -4404,7 +4379,7 @@ function renderTransactionList() {
         function initTransactionFilters() {
     const partySelect = document.getElementById('transactionPartyFilter');
 
-    // 合并客户、供应商和费用类型
+    // 合并客户、供应商
     const allParties = [];
     const seenKeys = new Set();
 
@@ -4428,15 +4403,6 @@ function renderTransactionList() {
         }
     });
 
-    // 添加费用类型作为选项
-    const expenseTypes = [
-        { id: 'EXP_processing', name: '加工费（强盛加工）', type: '费用' },
-        { id: 'EXP_packaging', name: '包装费', type: '费用' },
-        { id: 'EXP_carton', name: '纸箱费', type: '费用' },
-        { id: 'EXP_office', name: '办公杂费', type: '费用' },
-        { id: 'EXP_other', name: '其他费用', type: '费用' }
-    ];
-
     // 合并并去重
     uniqueCustomers.forEach(c => {
         const key = c.name + '_客户';
@@ -4454,29 +4420,11 @@ function renderTransactionList() {
         }
     });
 
-    // 添加费用类型
-    expenseTypes.forEach(e => {
-        allParties.push({ id: e.id, name: e.name, type: e.type, isExpenseCategory: true, expenseType: e.id.replace('EXP_', '') });
-    });
-
     // 按名称排序
     allParties.sort((a, b) => a.name.localeCompare(b.name));
 
-    partySelect.innerHTML = '<option value="">全部客户/供应商/费用</option>' + 
-        allParties.map(p => `<option value="${p.id}" ${p.isExpenseCategory ? 'data-is-expense="true" data-expense-type="' + p.expenseType + '"' : ''}>${p.name} (${p.type})</option>`).join('');
-
-    // 添加change事件监听费用类型筛选
-    partySelect.addEventListener('change', function() {
-        const selectedOption = this.options[this.selectedIndex];
-        if (selectedOption.dataset.isExpense === 'true') {
-            // 自动选择对应的费用类型checkbox
-            const expenseType = selectedOption.dataset.expenseType;
-            document.querySelectorAll('.expense-type-checkbox').forEach(cb => {
-                cb.checked = (cb.value === expenseType);
-            });
-            renderTransactionList();
-        }
-    });
+    partySelect.innerHTML = '<option value="">全部客户/供应商</option>' + 
+        allParties.map(p => `<option value="${p.id}">${p.name} (${p.type})</option>`).join('');
 }
 
         function resetTransactionFilters() {
@@ -4498,7 +4446,7 @@ function renderTransactionList() {
     const select = document.getElementById('paymentParty');
 
     if (type === 'expense') {
-        // 付款模式下，合并供应商和费用类型
+        // 付款模式，只显示供应商（费用付款请在费用管理板块操作）
         const uniqueSuppliers = [];
         const seenNames = new Set();
         data.suppliers.forEach(s => {
@@ -4508,25 +4456,8 @@ function renderTransactionList() {
             }
         });
 
-        let html = '<option value="">请选择供应商或费用类型</option>';
-
-        // 添加供应商组
-        if (uniqueSuppliers.length > 0) {
-            html += '<optgroup label="供应商">';
-            html += uniqueSuppliers.map(s => `<option value="${s.id}" data-type="supplier">${s.name}</option>`).join('');
-            html += '</optgroup>';
-        }
-
-        // 添加费用类型组
-        html += '<optgroup label="费用类型">';
-        html += `<option value="EXP_processing" data-type="expense" data-expense-type="processing">加工费（强盛加工）</option>`;
-        html += `<option value="EXP_packaging" data-type="expense" data-expense-type="packaging">包装费</option>`;
-        html += `<option value="EXP_carton" data-type="expense" data-expense-type="carton">纸箱费</option>`;
-        html += `<option value="EXP_office" data-type="expense" data-expense-type="office">办公杂费</option>`;
-        html += `<option value="EXP_other" data-type="expense" data-expense-type="other">其他费用</option>`;
-        html += '</optgroup>';
-
-        select.innerHTML = html;
+        select.innerHTML = '<option value="">请选择供应商</option>' + 
+            uniqueSuppliers.map(s => `<option value="${s.id}" data-type="supplier">${s.name}</option>`).join('');
     } else {
         // 收款模式，只显示客户
         const uniqueCustomers = [];
@@ -4679,6 +4610,7 @@ function renderTransactionList() {
                 renderPurchaseList();
                 updateDashboard();
                 showToast('✅ 删除成功，已自动更新订单状态');
+                updateExpenseStats();
             } catch (err) {
                 console.error('删除失败:', err);
                 showToast('❌ 删除失败', 'error');
@@ -4709,7 +4641,6 @@ function renderTransactionList() {
     const selectedOption = partySelect.options[partySelect.selectedIndex];
     const partyName = selectedOption.text;
     const partyType = selectedOption.dataset.type;
-    const expenseType = selectedOption.dataset.expenseType;
 
     // 创建交易记录
     const payment = {
@@ -4723,66 +4654,10 @@ function renderTransactionList() {
         remark: remark
     };
 
-    // 如果是费用付款，添加额外标识
-    if (partyType === 'expense') {
-        payment.isExpensePayment = true;
-        payment.expenseType = expenseType;
-    }
-
     data.transactions.push(payment);
 
-    // 处理费用同步逻辑
-    if (partyType === 'expense' && type === 'expense') {
-        // 查找是否已有同类型未完成的费用记录
-        let existingExpense = data.expenses.find(e => 
-            e.type === expenseType && 
-            e.remainingAmount > 0
-        );
-
-        if (existingExpense) {
-            // 更新现有费用记录
-            existingExpense.paidAmount = (existingExpense.paidAmount || 0) + amount;
-            existingExpense.remainingAmount = existingExpense.totalAmount - existingExpense.paidAmount;
-
-            // 追加备注
-            if (remark) {
-                existingExpense.remark = existingExpense.remark 
-                    ? existingExpense.remark + ', ' + remark + '付款' + amount + '元'
-                    : remark + '付款' + amount + '元';
-            }
-
-            showToast(`✅ 已同步到费用管理：${partyName} 累计已付 ¥${existingExpense.paidAmount.toFixed(2)}，剩余 ¥${existingExpense.remainingAmount.toFixed(2)}`);
-        } else {
-            // 创建新的费用记录
-            const typeNames = {
-                'processing': '加工费用',
-                'packaging': '包装费用', 
-                'carton': '纸箱',
-                'office': '办公杂费',
-                'other': '其他费用'
-            };
-
-            const newExpense = {
-                id: 'EXP' + Date.now(),
-                type: expenseType,
-                date: date,
-                totalAmount: amount,  // 初始总费用设为已付金额
-                paidAmount: amount,
-                remainingAmount: 0,
-                remark: remark || typeNames[expenseType] + '付款'
-            };
-
-            data.expenses.push(newExpense);
-            showToast(`✅ 已同步到费用管理：新建 ${partyName} 记录，已付 ¥${amount.toFixed(2)}`);
-        }
-
-        // 更新费用统计和视图
-        updateExpenseStats();
-        if (document.getElementById('view-expenses') && !document.getElementById('view-expenses').classList.contains('hidden')) {
-            renderExpenseList();
-        }
-    } else if (partyType === 'supplier') {
-        // 原有供应商付款逻辑
+    // 处理供应商付款
+    if (partyType === 'supplier') {
         const supplier = data.suppliers.find(s => s.id === partyId);
         if (supplier) {
             let remainingToAllocate = amount;
@@ -4808,7 +4683,7 @@ function renderTransactionList() {
             }
         }
     } else if (partyType === 'customer' && type === 'income') {
-        // 原有客户收款逻辑
+        // 客户收款逻辑
         const customer = data.customers.find(c => c.id === partyId);
         if (customer) {
             let remainingToAllocate = amount;
@@ -5793,56 +5668,164 @@ function syncPaymentDataToOrders() {
     });
 }
 
-// ==================== 费用管理 ====================
-        const EXPENSE_TYPES = {
-            processing: { name: '加工费用', color: 'blue' },
-            packaging: { name: '包装费用', color: 'green' },
-            carton: { name: '纸箱', color: 'yellow' },
-            office: { name: '办公杂费', color: 'purple' },
-            other: { name: '其他费用', color: 'gray' }
-        };
 
-        function updateExpenseStats() {
-            const expenses = data.expenses || [];
-            const stats = {
-                processing: { total: 0, paid: 0, unpaid: 0 },
-                packaging: { total: 0, paid: 0, unpaid: 0 },
-                carton: { total: 0, paid: 0, unpaid: 0 },
-                office: { total: 0, paid: 0, unpaid: 0 },
-                other: { total: 0, paid: 0, unpaid: 0 }
+        // ==================== 费用简化付款功能 ====================
+        function openExpensePaymentSimpleModal() {
+            document.getElementById('expensePaymentSimpleType').value = 'processing';
+            document.getElementById('expensePaymentSimpleDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('expensePaymentSimpleAmount').value = '';
+            document.getElementById('expensePaymentSimpleMethod').value = '';
+            document.getElementById('expensePaymentSimpleRemark').value = '';
+            document.getElementById('expensePaymentSimpleModal').classList.add('active');
+        }
+
+        function closeExpensePaymentSimpleModal() {
+            document.getElementById('expensePaymentSimpleModal').classList.remove('active');
+        }
+
+        async function saveExpensePaymentSimple() {
+            if (!checkEditPermission()) return;
+
+            const type = document.getElementById('expensePaymentSimpleType').value;
+            const date = document.getElementById('expensePaymentSimpleDate').value;
+            const amount = parseFloat(document.getElementById('expensePaymentSimpleAmount').value) || 0;
+            const paymentMethod = document.getElementById('expensePaymentSimpleMethod').value.trim();
+            const remark = document.getElementById('expensePaymentSimpleRemark').value.trim();
+
+            if (!date || amount <= 0) {
+                showToast('⚠️ 请填写完整信息（日期和金额必填）', 'warning');
+                return;
+            }
+
+            // 费用板块独立管理 - 不同步到收付款板块
+            // 创建费用付款记录，直接存储在费用数据中
+            const paymentRecord = {
+                id: 'EXPPAY' + Date.now(),
+                expenseType: type,
+                date: date,
+                amount: amount,
+                paymentMethod: paymentMethod,
+                remark: remark,
+                createTime: Date.now()
             };
 
+            // 初始化费用付款记录数组（如果不存在）
+            if (!data.expensePayments) {
+                data.expensePayments = [];
+            }
+            data.expensePayments.push(paymentRecord);
+
+            try {
+                await saveData();
+                closeExpensePaymentSimpleModal();
+                renderExpenseList();
+                updateExpenseStats();
+                // 不再同步到收付款板块
+                updateDashboard();
+                updateCapitalOverview();
+                showToast('✅ 费用付款已登记');
+            } catch (err) {
+                console.error('保存失败:', err);
+                showToast('❌ 保存失败', 'error');
+            }
+        }
+
+        // ==================== 费用管理 ====================
+        // 费用类别管理 - 支持自定义添加
+        let EXPENSE_TYPES = {};
+
+        // 初始化默认费用类别
+        function initExpenseTypes() {
+            const defaultTypes = {
+                processing: { name: '加工费用', color: 'blue', deletable: false },
+                packaging: { name: '包装费用', color: 'green', deletable: false },
+                carton: { name: '纸箱', color: 'yellow', deletable: false },
+                office: { name: '办公杂费', color: 'purple', deletable: false },
+                freight: { name: '货物运费', color: 'orange', deletable: true },
+                other: { name: '其他费用', color: 'gray', deletable: true }
+            };
+
+            // 从数据中加载自定义类别
+            const savedTypes = data.expenseTypes || {};
+            EXPENSE_TYPES = { ...defaultTypes, ...savedTypes };
+        }
+
+        // 获取费用类别选项HTML
+        function getExpenseTypeOptions() {
+            return Object.entries(EXPENSE_TYPES).map(([key, value]) => 
+                `<option value="${key}">${value.name}</option>`
+            ).join('');
+        }
+
+        function updateExpenseStats() {
+            // 从独立存储的数据计算费用统计
+            const expenses = data.expenses || [];
+            const expensePayments = data.expensePayments || [];
+
+            // 初始化统计对象
+            const stats = {};
+            Object.keys(EXPENSE_TYPES).forEach(key => {
+                stats[key] = { total: 0, paid: 0, unpaid: 0 };
+            });
+
+            // 统计登记的总费用
             expenses.forEach(expense => {
                 if (stats[expense.type]) {
                     stats[expense.type].total += expense.totalAmount || 0;
-                    stats[expense.type].paid += expense.paidAmount || 0;
-                    stats[expense.type].unpaid += expense.remainingAmount || 0;
                 }
             });
 
-            document.getElementById('expenseProcessingTotal').textContent = '¥' + stats.processing.total.toFixed(0);
-            document.getElementById('expenseProcessingPaid').textContent = '¥' + stats.processing.paid.toFixed(0);
-            document.getElementById('expenseProcessingUnpaid').textContent = '¥' + stats.processing.unpaid.toFixed(0);
-            document.getElementById('expensePackagingTotal').textContent = '¥' + stats.packaging.total.toFixed(0);
-            document.getElementById('expensePackagingPaid').textContent = '¥' + stats.packaging.paid.toFixed(0);
-            document.getElementById('expensePackagingUnpaid').textContent = '¥' + stats.packaging.unpaid.toFixed(0);
-            document.getElementById('expenseCartonTotal').textContent = '¥' + stats.carton.total.toFixed(0);
-            document.getElementById('expenseCartonPaid').textContent = '¥' + stats.carton.paid.toFixed(0);
-            document.getElementById('expenseCartonUnpaid').textContent = '¥' + stats.carton.unpaid.toFixed(0);
-            document.getElementById('expenseOfficeTotal').textContent = '¥' + stats.office.total.toFixed(0);
-            document.getElementById('expenseOfficePaid').textContent = '¥' + stats.office.paid.toFixed(0);
-            document.getElementById('expenseOfficeUnpaid').textContent = '¥' + stats.office.unpaid.toFixed(0);
-            document.getElementById('expenseOtherTotal').textContent = '¥' + stats.other.total.toFixed(0);
-            document.getElementById('expenseOtherPaid').textContent = '¥' + stats.other.paid.toFixed(0);
-            document.getElementById('expenseOtherUnpaid').textContent = '¥' + stats.other.unpaid.toFixed(0);
+            // 统计付款金额（从 expensePayments 读取，不从 transactions 读取）
+            expensePayments.forEach(payment => {
+                if (stats[payment.expenseType]) {
+                    stats[payment.expenseType].paid += payment.amount || 0;
+                }
+            });
+
+            // 计算未付金额
+            Object.keys(stats).forEach(key => {
+                stats[key].unpaid = Math.max(0, stats[key].total - stats[key].paid);
+            });
+
+            // 更新DOM
+            const typeKeys = ['processing', 'packaging', 'carton', 'office', 'other', 'freight'];
+            typeKeys.forEach(key => {
+                const stat = stats[key] || { total: 0, paid: 0, unpaid: 0 };
+                const totalEl = document.getElementById(`expense${key.charAt(0).toUpperCase() + key.slice(1)}Total`);
+                const paidEl = document.getElementById(`expense${key.charAt(0).toUpperCase() + key.slice(1)}Paid`);
+                const unpaidEl = document.getElementById(`expense${key.charAt(0).toUpperCase() + key.slice(1)}Unpaid`);
+
+                if (totalEl) totalEl.textContent = '¥' + stat.total.toFixed(0);
+                if (paidEl) paidEl.textContent = '¥' + stat.paid.toFixed(0);
+                if (unpaidEl) unpaidEl.textContent = '¥' + stat.unpaid.toFixed(0);
+            });
+        }
+
+        // 从数据对象更新统计（供 renderExpenseList 调用）
+        function updateExpenseStatsFromData(stats) {
+            const typeKeys = ['processing', 'packaging', 'carton', 'office', 'other', 'freight'];
+            typeKeys.forEach(key => {
+                const stat = stats[key] || { total: 0, paid: 0, unpaid: 0 };
+                const totalEl = document.getElementById(`expense${key.charAt(0).toUpperCase() + key.slice(1)}Total`);
+                const paidEl = document.getElementById(`expense${key.charAt(0).toUpperCase() + key.slice(1)}Paid`);
+                const unpaidEl = document.getElementById(`expense${key.charAt(0).toUpperCase() + key.slice(1)}Unpaid`);
+
+                if (totalEl) totalEl.textContent = '¥' + stat.total.toFixed(0);
+                if (paidEl) paidEl.textContent = '¥' + stat.paid.toFixed(0);
+                if (unpaidEl) unpaidEl.textContent = '¥' + stat.unpaid.toFixed(0);
+            });
         }
 
         function renderExpenseList() {
             const typeFilter = document.getElementById('expenseTypeFilter').value;
             const dateFilter = document.getElementById('expenseDateFilter').value;
 
+            // 获取费用登记记录
             let expenses = data.expenses || [];
+            // 获取费用付款记录（独立存储，不同步到收付款）
+            let expensePayments = data.expensePayments || [];
 
+            // 筛选费用登记记录
             if (typeFilter) {
                 expenses = expenses.filter(e => e.type === typeFilter);
             }
@@ -5850,45 +5833,131 @@ function syncPaymentDataToOrders() {
                 expenses = expenses.filter(e => e.date === dateFilter);
             }
 
-            expenses = expenses.sort((a, b) => new Date(b.date) - new Date(a.date));
+            // 筛选费用付款记录
+            let filteredPayments = expensePayments;
+            if (typeFilter) {
+                filteredPayments = filteredPayments.filter(p => p.expenseType === typeFilter);
+            }
+            if (dateFilter) {
+                filteredPayments = filteredPayments.filter(p => p.date === dateFilter);
+            }
 
-            let totalAmount = 0, totalPaid = 0, totalUnpaid = 0;
-            expenses.forEach(e => {
-                totalAmount += e.totalAmount || 0;
-                totalPaid += e.paidAmount || 0;
-                totalUnpaid += e.remainingAmount || 0;
+            // 计算各类费用的统计（费用板块独立统计）
+            let stats = {};
+            Object.keys(EXPENSE_TYPES).forEach(key => {
+                stats[key] = { total: 0, paid: 0, unpaid: 0 };
             });
 
+            // 统计登记的总费用
+            expenses.forEach(e => {
+                if (stats[e.type]) {
+                    stats[e.type].total += e.totalAmount || 0;
+                }
+            });
+
+            // 统计付款金额（从独立存储的 expensePayments 读取）
+            expensePayments.forEach(p => {
+                if (stats[p.expenseType]) {
+                    stats[p.expenseType].paid += p.amount || 0;
+                }
+            });
+
+            // 计算未付金额
+            Object.keys(stats).forEach(key => {
+                stats[key].unpaid = Math.max(0, stats[key].total - stats[key].paid);
+            });
+
+            // 更新顶部统计卡片
+            updateExpenseStatsFromData(stats);
+
+            // 合并费用记录和付款记录用于显示
+            const allRecords = [
+                ...expenses.map(e => ({ ...e, recordType: 'expense' })),
+                ...filteredPayments.map(p => ({ ...p, recordType: 'payment' }))
+            ].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            // 计算筛选后的合计
+            let totalAmount = 0, totalPaid = 0;
+            expenses.forEach(e => totalAmount += e.totalAmount || 0);
+            filteredPayments.forEach(p => totalPaid += p.amount || 0);
+            const totalUnpaid = Math.max(0, totalAmount - totalPaid);
+
             const tbody = document.getElementById('expenseList');
-            let html = expenses.map(expense => {
-                const typeInfo = EXPENSE_TYPES[expense.type] || { name: expense.type, color: 'gray' };
-                return `<tr class="hover:bg-gray-50">
-                    <td class="px-4 py-3 text-sm text-gray-600">${expense.date}</td>
-                    <td class="px-4 py-3 text-sm">
-                        <span class="status-badge status-${typeInfo.color}">${typeInfo.name}</span>
-                    </td>
-                    <td class="px-4 py-3 text-sm font-medium">¥${(expense.totalAmount || 0).toFixed(2)}</td>
-                    <td class="px-4 py-3 text-sm text-green-600">¥${(expense.paidAmount || 0).toFixed(2)}</td>
-                    <td class="px-4 py-3 text-sm ${expense.remainingAmount > 0 ? 'text-red-600 font-medium' : 'text-gray-400'}">¥${(expense.remainingAmount || 0).toFixed(2)}</td>
-                    <td class="px-4 py-3 text-sm text-gray-500">${expense.remark || '-'}</td>
-                    <td class="px-4 py-3 text-sm space-x-2">
-                        <button onclick="editExpense('${expense.id}')" class="text-blue-600 hover:underline">编辑</button>
-                        ${expense.remainingAmount > 0 ? `<button onclick="openExpensePaymentModal('${expense.id}')" class="text-green-600 hover:underline">付款</button>` : ''}
-                        <button onclick="deleteExpense('${expense.id}')" class="text-red-600 hover:underline">删除</button>
-                    </td>
-                </tr>`;
+
+            if (allRecords.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500"><div class="text-4xl mb-2">📋</div><p>暂无费用记录</p></td></tr>`;
+                return;
+            }
+
+            let html = allRecords.map(record => {
+                if (record.recordType === 'expense') {
+                    // 费用登记记录 - 从expensePayments计算实际已付金额
+                    const expense = record;
+                    const typeInfo = EXPENSE_TYPES[expense.type] || { name: expense.type, color: 'gray' };
+
+                    // 计算该费用类型的实际已付金额（从付款记录中汇总）
+                    const actualPaid = expensePayments
+                        .filter(p => p.expenseType === expense.type)
+                        .reduce((sum, p) => sum + (p.amount || 0), 0);
+
+                    // 更新费用记录的paidAmount为实际值
+                    const paidAmount = actualPaid > 0 ? actualPaid : (expense.paidAmount || 0);
+                    const unpaid = Math.max(0, (expense.totalAmount || 0) - paidAmount);
+
+                    // 已付金额显示（如果有付款则显示绿色）
+                    const paidDisplay = paidAmount > 0 
+                        ? `<span class="text-green-600 font-medium">¥${paidAmount.toFixed(2)}</span>`
+                        : `<span class="text-gray-400">-</span>`;
+
+                    // 未付金额显示（如果有未付则显示红色）
+                    const unpaidDisplay = unpaid > 0
+                        ? `<span class="text-red-600 font-medium">¥${unpaid.toFixed(2)}</span>`
+                        : `<span class="text-gray-400">¥0.00</span>`;
+
+                    return `<tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm text-gray-600">${expense.date}</td>
+                        <td class="px-4 py-3 text-sm">
+                            <span class="status-badge status-${typeInfo.color}">${typeInfo.name}</span>
+                        </td>
+                        <td class="px-4 py-3 text-sm font-medium">¥${(expense.totalAmount || 0).toFixed(2)}</td>
+                        <td class="px-4 py-3 text-sm">${paidDisplay}</td>
+                        <td class="px-4 py-3 text-sm">${unpaidDisplay}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500">${expense.remark || '费用登记'}</td>
+                        <td class="px-4 py-3 text-sm space-x-2">
+                            <button onclick="editExpense('${expense.id}')" class="text-blue-600 hover:underline">编辑</button>
+                            <button onclick="deleteExpense('${expense.id}')" class="text-red-600 hover:underline">删除</button>
+                        </td>
+                    </tr>`;
+                } else {
+                    // 付款记录（绿色显示）
+                    const payment = record;
+                    const typeInfo = EXPENSE_TYPES[payment.expenseType] || { name: payment.expenseType, color: 'gray' };
+                    return `<tr class="hover:bg-green-50 bg-green-50/30">
+                        <td class="px-4 py-3 text-sm text-gray-600">${payment.date}</td>
+                        <td class="px-4 py-3 text-sm">
+                            <span class="status-badge status-paid">${typeInfo.name}·付款</span>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-400">-</td>
+                        <td class="px-4 py-3 text-sm text-green-600 font-medium">¥${(payment.amount || 0).toFixed(2)}</td>
+                        <td class="px-4 py-3 text-sm text-gray-400">-</td>
+                        <td class="px-4 py-3 text-sm text-gray-500">${payment.paymentMethod || ''} ${payment.remark ? '- ' + payment.remark : ''}</td>
+                        <td class="px-4 py-3 text-sm space-x-2">
+                            <span class="text-gray-400 text-xs">付款流水</span>
+                            <button onclick="deleteExpensePayment('${payment.id}')" class="text-red-600 hover:underline">删除</button>
+                        </td>
+                    </tr>`;
+                }
             }).join('');
 
-            if (expenses.length > 0) {
+            // 添加合计行
+            if (expenses.length > 0 || filteredPayments.length > 0) {
                 html += `<tr style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-top: 2px solid #0ea5e9;">
-                    <td class="px-4 py-3 text-sm font-bold text-blue-900" colspan="2">合计 (${expenses.length}笔)</td>
+                    <td class="px-4 py-3 text-sm font-bold text-blue-900" colspan="2">合计 (${expenses.length}笔登记, ${filteredPayments.length}笔付款)</td>
                     <td class="px-4 py-3 text-sm font-bold text-blue-900">¥${totalAmount.toFixed(2)}</td>
                     <td class="px-4 py-3 text-sm font-bold text-green-700">¥${totalPaid.toFixed(2)}</td>
                     <td class="px-4 py-3 text-sm font-bold ${totalUnpaid > 0 ? 'text-red-700' : 'text-blue-600'}">¥${totalUnpaid.toFixed(2)}</td>
                     <td class="px-4 py-3" colspan="2"></td>
                 </tr>`;
-            } else {
-                html = `<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500"><div class="text-4xl mb-2">📋</div><p>暂无费用记录</p></td></tr>`;
             }
 
             tbody.innerHTML = html;
@@ -5945,13 +6014,26 @@ function syncPaymentDataToOrders() {
                 return;
             }
 
-            const expenseData = { type, date, totalAmount, paidAmount, remainingAmount: totalAmount - paidAmount, remark };
+            const now = Date.now();
+            const expenseData = { 
+                type, 
+                date, 
+                totalAmount, 
+                paidAmount, 
+                remainingAmount: totalAmount - paidAmount, 
+                remark,
+                lastUpdated: now  // 添加最后更新时间
+            };
 
             if (id) {
                 const index = data.expenses.findIndex(e => e.id === id);
-                if (index !== -1) data.expenses[index] = { ...data.expenses[index], ...expenseData };
+                if (index !== -1) {
+                    // 保留原有创建时间
+                    const existingExpense = data.expenses[index];
+                    data.expenses[index] = { ...existingExpense, ...expenseData };
+                }
             } else {
-                data.expenses.push({ id: 'EXP' + Date.now(), ...expenseData });
+                data.expenses.push({ id: 'EXP' + now, ...expenseData });
             }
 
             try {
@@ -5994,6 +6076,7 @@ function syncPaymentDataToOrders() {
             const expenseId = document.getElementById('expensePaymentId').value;
             const amount = parseFloat(document.getElementById('expensePaymentAmount').value) || 0;
             const date = document.getElementById('expensePaymentDate').value;
+            const paymentMethod = document.getElementById('expensePaymentMethod').value.trim();
             const remark = document.getElementById('expensePaymentRemark').value.trim();
 
             if (amount <= 0 || !date) {
@@ -6003,22 +6086,21 @@ function syncPaymentDataToOrders() {
 
             const expense = data.expenses.find(e => e.id === expenseId);
             if (!expense) return;
-            if (amount > expense.remainingAmount) {
-                showToast('⚠️ 付款金额不能大于未付金额', 'warning');
-                return;
-            }
-
-            expense.paidAmount = (expense.paidAmount || 0) + amount;
-            expense.remainingAmount = expense.totalAmount - expense.paidAmount;
 
             const typeInfo = EXPENSE_TYPES[expense.type] || { name: expense.type };
+
+            // 创建收付款流水记录，记录支付方式
             data.transactions.push({
-                id: 'TRX' + Date.now(), date: date, type: 'expense',
-                partyId: expenseId, partyName: typeInfo.name, amount: amount,
-                paymentMethod: '',
-                remark: `费用付款 - ${typeInfo.name}${remark ? ' - ' + remark : ''}`,
-                isExpensePayment: true,  // 标记为费用付款
-                expenseType: expense.type  // 记录费用类型
+                id: 'TRX' + Date.now(), 
+                date: date, 
+                type: 'expense',
+                partyId: expenseId, 
+                partyName: typeInfo.name, 
+                amount: amount,
+                paymentMethod: paymentMethod,
+                remark: remark || (`费用付款 - ${typeInfo.name}`),
+                isExpensePayment: true,
+                expenseType: expense.type
             });
 
             try {
@@ -6027,7 +6109,7 @@ function syncPaymentDataToOrders() {
                 renderExpenseList();
                 updateExpenseStats();
                 updateDashboard();
-                showToast('✅ 付款成功');
+                showToast('✅ 付款记录已保存');
             } catch (err) {
                 console.error('付款失败:', err);
             }
@@ -6035,16 +6117,15 @@ function syncPaymentDataToOrders() {
 
         async function deleteExpense(expenseId) {
             if (!checkEditPermission()) return;
-            if (!confirm('确定要删除这条费用记录吗？')) return;
+            if (!confirm('确定要删除这条费用记录吗？关联的付款记录也会被删除。')) return;
 
-            // 获取费用信息，用于删除关联的交易记录
+            // 获取费用信息
             const expense = data.expenses.find(e => e.id === expenseId);
             if (!expense) return;
 
-            // 删除关联的交易记录（费用付款记录）
+            // 删除关联的付款记录（通过expenseType和partyId匹配）
             data.transactions = data.transactions.filter(t => 
-                !(t.remark && t.remark.includes(`费用付款 - ${EXPENSE_TYPES[expense.type]?.name || expense.type}`) && 
-                  t.partyId === expenseId)
+                !(t.isExpensePayment && t.partyId === expenseId)
             );
 
             data.expenses = data.expenses.filter(e => e.id !== expenseId);
@@ -6060,12 +6141,200 @@ function syncPaymentDataToOrders() {
                 console.error('删除失败:', err);
             }
         }
+        // ==================== 费用类别管理 ====================
+        function openExpenseCategoryModal() {
+            renderExpenseCategoryList();
+            document.getElementById('expenseCategoryModal').classList.add('active');
+        }
+
+        function renderExpenseCategoryList() {
+            const list = document.getElementById('expenseCategoryList');
+            const colors = [
+                { name: '蓝色', value: 'blue' },
+                { name: '绿色', value: 'green' },
+                { name: '黄色', value: 'yellow' },
+                { name: '紫色', value: 'purple' },
+                { name: '橙色', value: 'orange' },
+                { name: '红色', value: 'red' },
+                { name: '灰色', value: 'gray' },
+                { name: '青色', value: 'cyan' }
+            ];
+
+            let html = Object.entries(EXPENSE_TYPES).map(([key, value]) => {
+                const colorOptions = colors.map(c => 
+                    `<option value="${c.value}" ${c.value === value.color ? 'selected' : ''}>${c.name}</option>`
+                ).join('');
+
+                return `
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="status-badge status-${value.color}">${value.name}</span>
+                            <span class="text-xs text-gray-500">(${key})</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <select onchange="changeExpenseTypeColor('${key}', this.value)" class="text-xs border rounded px-2 py-1">
+                                ${colorOptions}
+                            </select>
+                            ${value.deletable !== false ? `<button onclick="deleteExpenseType('${key}')" class="text-red-600 hover:text-red-800 text-xs">删除</button>` : '<span class="text-xs text-gray-400">系统默认</span>'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            list.innerHTML = html;
+        }
+
+        async function addExpenseType() {
+            const name = document.getElementById('newExpenseTypeName').value.trim();
+            const color = document.getElementById('newExpenseTypeColor').value;
+
+            if (!name) {
+                showToast('⚠️ 请输入类别名称', 'warning');
+                return;
+            }
+
+            // 生成key（拼音或英文字母）
+            const key = 'custom_' + Date.now();
+
+            EXPENSE_TYPES[key] = { name: name, color: color, deletable: true };
+
+            // 保存到数据
+            if (!data.expenseTypes) data.expenseTypes = {};
+            data.expenseTypes[key] = { name: name, color: color, deletable: true };
+
+            await saveData();
+
+            // 清空输入
+            document.getElementById('newExpenseTypeName').value = '';
+
+            // 刷新列表和筛选下拉框
+            renderExpenseCategoryList();
+            updateExpenseTypeFilter();
+            updateExpenseTypeSelectors();
+
+            showToast('✅ 类别添加成功');
+        }
+
+        async function deleteExpenseType(key) {
+            if (!confirm(`确定要删除类别 "${EXPENSE_TYPES[key].name}" 吗？该类别下的费用记录将保留但显示为灰色。`)) {
+                return;
+            }
+
+            delete EXPENSE_TYPES[key];
+            if (data.expenseTypes && data.expenseTypes[key]) {
+                delete data.expenseTypes[key];
+            }
+
+            await saveData();
+            renderExpenseCategoryList();
+            updateExpenseTypeFilter();
+            updateExpenseTypeSelectors();
+            showToast('✅ 类别已删除');
+        }
+
+        async function changeExpenseTypeColor(key, color) {
+            if (EXPENSE_TYPES[key]) {
+                EXPENSE_TYPES[key].color = color;
+                if (data.expenseTypes && data.expenseTypes[key]) {
+                    data.expenseTypes[key].color = color;
+                } else {
+                    if (!data.expenseTypes) data.expenseTypes = {};
+                    data.expenseTypes[key] = { ...EXPENSE_TYPES[key] };
+                }
+                await saveData();
+                renderExpenseCategoryList();
+                updateExpenseTypeFilter();
+                updateExpenseTypeSelectors();
+            }
+        }
+
+        function updateExpenseTypeFilter() {
+            const filter = document.getElementById('expenseTypeFilter');
+            const currentValue = filter.value;
+            filter.innerHTML = '<option value="">全部</option>' + 
+                Object.entries(EXPENSE_TYPES).map(([key, value]) => 
+                    `<option value="${key}">${value.name}</option>`
+                ).join('');
+            filter.value = currentValue;
+        }
+
+        function updateExpenseTypeSelectors() {
+            // 更新新增费用模态框的下拉框
+            const expenseTypeSelect = document.getElementById('expenseType');
+            if (expenseTypeSelect) {
+                const currentValue = expenseTypeSelect.value;
+                expenseTypeSelect.innerHTML = Object.entries(EXPENSE_TYPES).map(([key, value]) => 
+                    `<option value="${key}">${value.name}</option>`
+                ).join('');
+                if (EXPENSE_TYPES[currentValue]) {
+                    expenseTypeSelect.value = currentValue;
+                }
+            }
+
+            // 更新付款模态框的下拉框
+            const paymentTypeSelect = document.getElementById('expensePaymentSimpleType');
+            if (paymentTypeSelect) {
+                const currentValue = paymentTypeSelect.value;
+                paymentTypeSelect.innerHTML = Object.entries(EXPENSE_TYPES).map(([key, value]) => 
+                    `<option value="${key}">${value.name}</option>`
+                ).join('');
+                if (EXPENSE_TYPES[currentValue]) {
+                    paymentTypeSelect.value = currentValue;
+                }
+            }
+        }
+
+        // 删除费用付款记录
+        async function deleteExpensePayment(paymentId) {
+            if (!checkEditPermission()) return;
+
+            if (!confirm('确定要删除这条付款记录吗？')) {
+                return;
+            }
+
+            if (!data.expensePayments) {
+                showToast('❌ 没有付款记录', 'error');
+                return;
+            }
+
+            data.expensePayments = data.expensePayments.filter(p => p.id !== paymentId);
+
+            try {
+                await saveData();
+                renderExpenseList();
+                updateExpenseStats();
+                updateDashboard();
+                updateCapitalOverview();
+                showToast('✅ 付款记录已删除');
+            } catch (err) {
+                console.error('删除失败:', err);
+                showToast('❌ 删除失败', 'error');
+            }
+        }
+        
 
         function resetExpenseFilters() {
             document.getElementById('expenseTypeFilter').value = '';
             document.getElementById('expenseDateFilter').value = '';
             renderExpenseList();
         }
+
+        
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
+
+        
 
         function clearExpenseTypeFilter() {
             document.querySelectorAll('.expense-type-checkbox').forEach(cb => cb.checked = false);
@@ -6188,22 +6457,32 @@ function syncPaymentDataToOrders() {
 
         // ==================== 资金概况 ====================
         function updateCapitalOverview() {
+            // 股东投资
             const totalInvestment = (data.shareholders || []).reduce((sum, s) => sum + (s.amount || 0), 0);
-            const totalIncome = (data.transactions || []).filter(t => t.type === 'income').reduce((sum, t) => sum + (t.amount || 0), 0);
-            // 所有付款（供应商付款 + 费用付款）都算作资金流出
-            // 注意：只从transactions计算，避免与expenses重复
-            const totalPayment = (data.transactions || []).filter(t => t.type === 'expense').reduce((sum, t) => sum + (t.amount || 0), 0);
-            // 不再重复计算expenses中的paidAmount，因为已经在transactions中体现
-            const totalExpensePayment = 0;
+            // 客户收款（收付款板块）
+            const totalIncome = (data.transactions || []).filter(t => t.type === 'income' && !t.isExpensePayment).reduce((sum, t) => sum + (t.amount || 0), 0);
+            // 供应商付款（收付款板块）
+            const totalSupplierPayment = (data.transactions || []).filter(t => t.type === 'expense' && !t.isExpensePayment).reduce((sum, t) => sum + (t.amount || 0), 0);
+            // 费用支出（费用板块独立存储）
+            const totalExpensePayment = (data.expensePayments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+
+            // 供应商欠款
             const supplierDebt = (data.suppliers || []).reduce((sum, s) => sum + (s.balance || 0), 0);
-            const expenseUnpaid = (data.expenses || []).reduce((sum, e) => sum + (e.remainingAmount || 0), 0);
-            // 计算客户欠款（使用remainingAmount，与客户管理保持一致）
-            // 从销售订单实时计算客户欠款（与客户管理板块保持一致）
+            // 费用未付（从费用板块计算）
+            const expenseUnpaid = Object.values(EXPENSE_TYPES).map((type, index) => {
+                const key = Object.keys(EXPENSE_TYPES)[index];
+                const total = (data.expenses || []).filter(e => e.type === key).reduce((sum, e) => sum + (e.totalAmount || 0), 0);
+                const paid = (data.expensePayments || []).filter(p => p.expenseType === key).reduce((sum, p) => sum + (p.amount || 0), 0);
+                return Math.max(0, total - paid);
+            }).reduce((sum, val) => sum + val, 0);
+
+            // 客户欠款（从销售订单实时计算）
             const customerReceivable = (data.salesOrders || []).reduce((sum, order) => {
                 return sum + (order.remainingAmount || 0);
             }, 0);
 
-            const liquidity = totalInvestment + totalIncome - totalPayment - totalExpensePayment;
+            // 剩余流动资金 = 投资 + 客户收款 - 供应商付款 - 费用支出
+            const liquidity = totalInvestment + totalIncome - totalSupplierPayment - totalExpensePayment;
             const totalLiability = supplierDebt + expenseUnpaid;
             const netWorth = liquidity - totalLiability;
 
@@ -6214,9 +6493,9 @@ function syncPaymentDataToOrders() {
             document.getElementById('capitalSourceInvestment').textContent = '¥' + totalInvestment.toFixed(0);
             document.getElementById('capitalSourceIncome').textContent = '¥' + totalIncome.toFixed(0);
             document.getElementById('capitalSourceTotal').textContent = '¥' + (totalInvestment + totalIncome).toFixed(0);
-            document.getElementById('capitalUsePayment').textContent = '¥' + totalPayment.toFixed(0);
+            document.getElementById('capitalUsePayment').textContent = '¥' + totalSupplierPayment.toFixed(0);
             document.getElementById('capitalUseExpense').textContent = '¥' + totalExpensePayment.toFixed(0);
-            document.getElementById('capitalUseTotal').textContent = '¥' + (totalPayment + totalExpensePayment).toFixed(0);
+            document.getElementById('capitalUseTotal').textContent = '¥' + (totalSupplierPayment + totalExpensePayment).toFixed(0);
             document.getElementById('capitalLiabilitySupplier').textContent = '¥' + supplierDebt.toFixed(0);
             document.getElementById('capitalLiabilityExpense').textContent = '¥' + expenseUnpaid.toFixed(0);
             document.getElementById('capitalLiabilityTotal').textContent = '¥' + totalLiability.toFixed(0);
@@ -6577,7 +6856,13 @@ function syncPaymentDataToOrders() {
                         await saveData();
 
                         // 刷新所有视图
-                        updateAllViews();
+                        // 初始化费用类别（加载自定义类别）
+            initExpenseTypes();
+            // 更新费用类别下拉框
+            updateExpenseTypeFilter();
+            updateExpenseTypeSelectors();
+
+            updateAllViews();
                         updateDashboard();
                         updateCapitalOverview();
 
@@ -6682,6 +6967,46 @@ function syncPaymentDataToOrders() {
             </div>
         </div>
     </div>
+
+    <!-- 费用类别管理模态框 -->
+    <div id="expenseCategoryModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="text-xl font-bold">费用类别管理</h3>
+                <button onclick="closeModal('expenseCategoryModal')" class="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+            <div class="p-6">
+                <!-- 现有类别列表 -->
+                <div id="expenseCategoryList" class="max-h-60 overflow-y-auto mb-4">
+                    <!-- 动态生成 -->
+                </div>
+
+                <!-- 添加新类别 -->
+                <div class="border-t pt-4">
+                    <h4 class="font-medium mb-3">添加新类别</h4>
+                    <div class="flex gap-2">
+                        <input type="text" id="newExpenseTypeName" placeholder="类别名称（如：货物运费）" class="flex-1 px-3 py-2 border rounded-lg">
+                        <select id="newExpenseTypeColor" class="px-3 py-2 border rounded-lg">
+                            <option value="blue">蓝色</option>
+                            <option value="green">绿色</option>
+                            <option value="yellow">黄色</option>
+                            <option value="purple">紫色</option>
+                            <option value="orange">橙色</option>
+                            <option value="red">红色</option>
+                            <option value="gray">灰色</option>
+                            <option value="cyan">青色</option>
+                        </select>
+                    </div>
+                    <button onclick="addExpenseType()" class="mt-2 w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">添加类别</button>
+                </div>
+
+                <div class="mt-4 text-xs text-gray-500">
+                    <p>💡 系统默认类别（加工费用、包装费用、纸箱、办公杂费）不可删除</p>
+                    <p>💡 删除自定义类别后，该类别的费用记录仍会保留但显示为灰色</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
->
