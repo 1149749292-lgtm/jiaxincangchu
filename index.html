@@ -1430,23 +1430,75 @@ async function init() {
     }
 
     async function fetchData() {
-      const response = await fetch(API_URL, { method: 'GET', headers: { 'X-Master-Key': MASTER_KEY } });
+      const response = await fetch(API_URL, { 
+        method: 'GET', 
+        headers: { 'X-Master-Key': MASTER_KEY },
+        cache: 'no-store'  // 防缓存
+      });
       if (!response.ok) throw new Error('获取数据失败');
       const result = await response.json();
+
+      // 如果云端有纸箱数据，加载它
+      if (result.record && result.record.cartons) {
+        loadCartonDataFromCloud(result.record.cartons);
+      }
+
       return result.record;
     }
 
+    // 新增：从云端加载纸箱数据
+    function loadCartonDataFromCloud(cartonData) {
+      if (!cartonData) return;
+      // 加载纸箱类型（合并默认和云端自定义）
+      if (cartonData.types && Array.isArray(cartonData.types)) {
+        const customTypes = cartonData.types.filter(c => !c.isDefault);
+        CARTON_TYPES = [...DEFAULT_CARTON_TYPES, ...customTypes];
+      }
+      // 加载库存数据
+      if (cartonData.stock) cartonStockData = { ...cartonStockData, ...cartonData.stock };
+      // 加载阈值
+      if (cartonData.threshold) cartonAlertThreshold = cartonData.threshold;
+      // 加载产品关联配置
+      if (cartonData.productMap) PRODUCT_CARTON_MAP = { ...DEFAULT_PRODUCT_CARTON_MAP, ...cartonData.productMap };
+      // 确保所有纸箱都有库存条目
+      CARTON_TYPES.forEach(carton => {
+        if (cartonStockData[carton.id] === undefined) cartonStockData[carton.id] = 0;
+      });
+    }
+
     async function saveData() {
-      if (!isOnline) { showToast('⚠️ 离线模式，数据仅保存在本地', 'warning'); return; }
+      if (!isOnline) { 
+        showToast('⚠️ 离线模式，数据仅保存在本地', 'warning'); 
+        saveCartonDataLocal();  // 离线时保存纸箱备份
+        return; 
+      }
       try {
         updateSyncStatus('syncing', '正在同步...');
+
+        // 准备纸箱数据（只保存自定义部分）
+        const cartonDataToSave = {
+          types: CARTON_TYPES.filter(c => !c.isDefault),
+          stock: cartonStockData,
+          threshold: cartonAlertThreshold,
+          productMap: Object.keys(PRODUCT_CARTON_MAP).reduce((acc, key) => {
+            if (!DEFAULT_PRODUCT_CARTON_MAP[key]) acc[key] = PRODUCT_CARTON_MAP[key];
+            return acc;
+          }, {})
+        };
+
         const response = await fetch(API_URL, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'X-Master-Key': MASTER_KEY },
-          body: JSON.stringify({ products, stock, batches })
+          body: JSON.stringify({ 
+            products, 
+            stock, 
+            batches,
+            cartons: cartonDataToSave  // 新增：纸箱数据云端同步
+          })
         });
         if (!response.ok) throw new Error('保存失败');
         updateSyncStatus('synced', '已同步到云端');
+        saveCartonDataLocal(); // 云端成功后本地备份
       } catch (err) {
         updateSyncStatus('error', '同步失败');
         throw err;
@@ -4614,17 +4666,15 @@ function showLoading(text) {
     let cartonStockData = {};
     let cartonAlertThreshold = 50;
 
-    // 初始化纸箱模块
+    // 初始化纸箱模块（云端数据已在 fetchData 中加载，这里加载本地备份）
     function initCartonModule() {
-        // 加载纸箱类型（支持自定义）
+        // 加载本地备份（当云端无数据时使用）
         loadCartonTypesLocal();
-        // 加载产品-纸箱关联配置
         loadProductCartonConfigLocal();
         loadCartonDataLocal();
         renderCartonTable();
         updateCartonStats();
         checkCartonAlerts();
-        // 初始化产品关联设置区域
         initProductCartonConfig();
     }
 
