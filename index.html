@@ -897,7 +897,7 @@
     <div class="stats-grid" style="margin-bottom: 20px;">
       <div class="stat-card">
         <div class="stat-label">📦 纸箱种类</div>
-        <div class="stat-value" id="cartonTypeCount">8</div>
+        <div class="stat-value" id="cartonTypeCount">0</div>
         <div class="stat-unit">种</div>
       </div>
       <div class="stat-card">
@@ -929,6 +929,87 @@
           <button onclick="closeCartonAlertBanner()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #92400e;">×</button>
         </div>
         <div id="cartonAlertList" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+      </div>
+    </div>
+
+    <!-- 快捷操作按钮 -->
+    <div style="margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
+      <button class="btn btn-primary" onclick="showAddNewCartonTypeModal()" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; font-size: 14px;">
+        <span>➕</span> 新增纸箱规格
+      </button>
+      <button class="btn btn-secondary" onclick="showProductCartonConfigModal()" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; font-size: 14px; border: 1.5px solid var(--border); background: white; color: var(--text-primary);">
+        <span>🔗</span> 产品关联设置
+      </button>
+      <button class="btn btn-success" onclick="showCartonAddModal()" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; font-size: 14px;">
+        <span>📦</span> 入库补货
+      </button>
+    </div>
+
+    <!-- 产品关联设置区域（默认折叠） -->
+    <div id="productCartonConfigSection" style="display: none; margin-bottom: 20px;">
+      <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 2px solid #0ea5e9; border-radius: 12px; padding: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div>
+            <div style="font-weight: 700; color: #0369a1; font-size: 16px;">🔗 产品-纸箱关联配置（支持批量）</div>
+            <div style="font-size: 13px; color: #64748b; margin-top: 4px;">批量选择产品，统一设置纸箱关联</div>
+          </div>
+          <button onclick="toggleProductCartonConfig()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #64748b;">▲</button>
+        </div>
+
+        <div id="productCartonConfigContent" style="max-height: 500px; overflow-y: auto;">
+          <!-- 步骤1: 多选产品 -->
+          <div style="margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary);">步骤1: 选择产品（可多选）</label>
+              <div style="display: flex; gap: 8px;">
+                <button onclick="selectAllProductsForConfig(true)" style="padding: 4px 12px; font-size: 12px; background: #e0f2fe; border: 1px solid #0ea5e9; border-radius: 4px; cursor: pointer; color: #0369a1;">全选</button>
+                <button onclick="selectAllProductsForConfig(false)" style="padding: 4px 12px; font-size: 12px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; cursor: pointer; color: #64748b;">取消全选</button>
+              </div>
+            </div>
+            <div id="productCheckboxList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; max-height: 200px; overflow-y: auto; padding: 12px; background: white; border-radius: 8px; border: 1.5px solid #e2e8f0;">
+              <!-- 动态生成产品复选框 -->
+            </div>
+            <div id="selectedProductCount" style="margin-top: 8px; font-size: 13px; color: #64748b; text-align: right;">
+              已选择 0 个产品
+            </div>
+          </div>
+
+          <!-- 步骤2: 纸箱配置 -->
+          <div id="cartonConfigForBatch" style="display: none; background: white; border-radius: 8px; padding: 16px; margin-bottom: 16px; border: 1.5px solid #e2e8f0;">
+            <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 12px;">
+              步骤2: 设置纸箱关联
+            </div>
+
+            <div style="margin-bottom: 16px;">
+              <label style="display: block; font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px;">关联纸箱（可多选）</label>
+              <div id="cartonCheckboxList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; max-height: 200px; overflow-y: auto; padding: 10px; background: #f8fafc; border-radius: 8px;">
+                <!-- 动态生成复选框 -->
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">纸箱1扣减比例</label>
+                <input type="number" id="carton1Ratio" value="1" min="0" step="1" style="width: 100%; padding: 8px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 14px;">
+                <div style="font-size: 11px; color: var(--text-tertiary); margin-top: 4px;">每出库1件产品扣减多少个纸箱</div>
+              </div>
+              <div>
+                <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">纸箱2扣减比例（可选）</label>
+                <input type="number" id="carton2Ratio" value="0" min="0" step="1" style="width: 100%; padding: 8px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 14px;">
+                <div style="font-size: 11px; color: var(--text-tertiary); margin-top: 4px;">如不需要请填0</div>
+              </div>
+            </div>
+
+            <div id="batchConfigPreview" style="background: #f0f9ff; border-radius: 6px; padding: 12px; margin-bottom: 16px; font-size: 13px; color: #0369a1;">
+              <!-- 动态显示即将配置的产品列表 -->
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+              <button onclick="saveBatchProductCartonConfig()" class="btn btn-primary" style="flex: 1; padding: 12px;">💾 批量保存配置</button>
+              <button onclick="clearBatchProductSelection()" class="btn btn-secondary" style="padding: 12px 20px;">清空选择</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -4471,20 +4552,26 @@ function showLoading(text) {
 
 // ==================== 纸箱管理模块 ====================
 
-    // 8种标准纸箱
-    const CARTON_TYPES = [
-        {id: "carton1", name: "佳信精品熟虾(黑)合", spec: "39×29×10.1cm", unit: "套", brand: "佳信"},
-        {id: "carton2", name: "佳信精品熟虾(黑)彩箱", spec: "47×31×16.5cm", unit: "个", brand: "佳信"},
-        {id: "carton3", name: "佳信精选香虾合", spec: "24.5×15.5×3.3cm", unit: "套", brand: "佳信"},
-        {id: "carton4", name: "佳信精选香虾彩箱", spec: "33.5×26×18.5cm", unit: "个", brand: "佳信"},
-        {id: "carton5", name: "大富翁熟冻黑虎虾合(黑)", spec: "24.5×15.5×3.3cm", unit: "套", brand: "大富肴"},
-        {id: "carton6", name: "大富翁熟冻黑虎虾彩箱(黑)", spec: "33.5×26×18.5cm", unit: "个", brand: "大富肴"},
-        {id: "carton7", name: "大富翁香虾合(白)", spec: "24.5×15.5×3.3cm", unit: "套", brand: "大富肴"},
-        {id: "carton8", name: "大富翁香虾彩箱(白)", spec: "33.5×26×18.5cm", unit: "个", brand: "大富肴"}
+    // 纸箱类型数组（支持从本地存储加载自定义纸箱）
+    let CARTON_TYPES = [];
+
+    // 默认8种标准纸箱
+    const DEFAULT_CARTON_TYPES = [
+        {id: "carton1", name: "佳信精品熟虾(黑)合", spec: "39×29×10.1cm", unit: "套", brand: "佳信", isDefault: true},
+        {id: "carton2", name: "佳信精品熟虾(黑)彩箱", spec: "47×31×16.5cm", unit: "个", brand: "佳信", isDefault: true},
+        {id: "carton3", name: "佳信精选香虾合", spec: "24.5×15.5×3.3cm", unit: "套", brand: "佳信", isDefault: true},
+        {id: "carton4", name: "佳信精选香虾彩箱", spec: "33.5×26×18.5cm", unit: "个", brand: "佳信", isDefault: true},
+        {id: "carton5", name: "大富翁熟冻黑虎虾合(黑)", spec: "24.5×15.5×3.3cm", unit: "套", brand: "大富肴", isDefault: true},
+        {id: "carton6", name: "大富翁熟冻黑虎虾彩箱(黑)", spec: "33.5×26×18.5cm", unit: "个", brand: "大富肴", isDefault: true},
+        {id: "carton7", name: "大富翁香虾合(白)", spec: "24.5×15.5×3.3cm", unit: "套", brand: "大富肴", isDefault: true},
+        {id: "carton8", name: "大富翁香虾彩箱(白)", spec: "33.5×26×18.5cm", unit: "个", brand: "大富肴", isDefault: true}
     ];
 
-    // 产品-纸箱关联配置（包含16-20）
-    const PRODUCT_CARTON_MAP = {
+    // 产品-纸箱关联配置（可从 localStorage 加载自定义配置）
+    let PRODUCT_CARTON_MAP = {};
+
+    // 默认产品纸箱关联配置
+    const DEFAULT_PRODUCT_CARTON_MAP = {
         "干冰熟虾|特大A|佳信": {carton1: "carton1", ratio1: 1},
         "干冰熟虾|特大|佳信": {carton1: "carton1", ratio1: 1},
         "干冰熟虾|1-2|佳信": {carton1: "carton1", ratio1: 1},
@@ -4529,10 +4616,59 @@ function showLoading(text) {
 
     // 初始化纸箱模块
     function initCartonModule() {
+        // 加载纸箱类型（支持自定义）
+        loadCartonTypesLocal();
+        // 加载产品-纸箱关联配置
+        loadProductCartonConfigLocal();
         loadCartonDataLocal();
         renderCartonTable();
         updateCartonStats();
         checkCartonAlerts();
+        // 初始化产品关联设置区域
+        initProductCartonConfig();
+    }
+
+    // 从本地存储加载纸箱类型
+    function loadCartonTypesLocal() {
+        const saved = localStorage.getItem('warehouse_carton_types_v1');
+        if (saved) {
+            const customTypes = JSON.parse(saved);
+            // 合并默认纸箱和自定义纸箱
+            CARTON_TYPES = [...DEFAULT_CARTON_TYPES, ...customTypes];
+        } else {
+            CARTON_TYPES = [...DEFAULT_CARTON_TYPES];
+        }
+    }
+
+    // 保存纸箱类型到本地存储
+    function saveCartonTypesLocal() {
+        // 只保存非默认的自定义纸箱
+        const customTypes = CARTON_TYPES.filter(c => !c.isDefault);
+        localStorage.setItem('warehouse_carton_types_v1', JSON.stringify(customTypes));
+    }
+
+    // 从本地存储加载产品-纸箱关联配置
+    function loadProductCartonConfigLocal() {
+        const saved = localStorage.getItem('warehouse_product_carton_map_v1');
+        if (saved) {
+            const customMap = JSON.parse(saved);
+            // 合并默认配置和自定义配置
+            PRODUCT_CARTON_MAP = {...DEFAULT_PRODUCT_CARTON_MAP, ...customMap};
+        } else {
+            PRODUCT_CARTON_MAP = {...DEFAULT_PRODUCT_CARTON_MAP};
+        }
+    }
+
+    // 保存产品-纸箱关联配置到本地存储
+    function saveProductCartonConfigLocal() {
+        // 只保存非默认的自定义配置
+        const customMap = {};
+        Object.keys(PRODUCT_CARTON_MAP).forEach(key => {
+            if (!DEFAULT_PRODUCT_CARTON_MAP[key]) {
+                customMap[key] = PRODUCT_CARTON_MAP[key];
+            }
+        });
+        localStorage.setItem('warehouse_product_carton_map_v1', JSON.stringify(customMap));
     }
 
     // 从本地加载
@@ -4614,11 +4750,13 @@ function showLoading(text) {
                 stockStyle = 'color: #d97706;';
                 rowStyle = 'background: #fffbeb;';
             }
+            // 自定义纸箱可删除
+            const deleteBtn = !carton.isDefault ? `<button class="btn btn-danger btn-sm btn-icon" onclick="deleteCustomCarton('${carton.id}')" title="删除" style="margin-left: 6px; padding: 4px 8px; font-size: 12px;">🗑️</button>` : '';
             html += `<tr style="${rowStyle}">
                 <td style="font-weight: 600; color: var(--text-secondary);">${index + 1}</td>
                 <td>
                     <div style="font-weight: 600; color: var(--text-primary);">${carton.name}</div>
-                    <div style="font-size: 12px; color: var(--text-tertiary);">单位：${carton.unit}</div>
+                    <div style="font-size: 12px; color: var(--text-tertiary);">单位：${carton.unit} ${!carton.isDefault ? '<span style="color: #3b82f6;">[自定义]</span>' : ''}</div>
                 </td>
                 <td style="color: var(--text-secondary); font-size: 13px;">${carton.spec}</td>
                 <td><span class="product-tag" style="font-size: 11px;">${carton.brand}</span></td>
@@ -4628,13 +4766,71 @@ function showLoading(text) {
                 </td>
                 <td>${statusBadge}</td>
                 <td>
-                    <button class="btn btn-primary btn-sm btn-icon" onclick="showCartonAddModal('${carton.id}')" title="补货">
+                    <button class="btn btn-primary btn-sm btn-icon" onclick="showCartonAddModal('${carton.id}')" title="补货" style="padding: 4px 8px; font-size: 12px;">
                         <span>➕</span>
                     </button>
+                    ${deleteBtn}
                 </td>
             </tr>`;
         });
         tbody.innerHTML = html;
+        // 更新纸箱种类统计
+        document.getElementById('cartonTypeCount').textContent = CARTON_TYPES.length;
+    }
+
+    // 删除自定义纸箱
+    function deleteCustomCarton(cartonId) {
+        const carton = CARTON_TYPES.find(c => c.id === cartonId);
+        if (!carton) return;
+
+        if (!confirm(`确定要删除纸箱规格「${carton.name}」吗？
+
+注意：删除后，已配置的关联将失效。`)) return;
+
+        // 从数组中删除
+        CARTON_TYPES = CARTON_TYPES.filter(c => c.id !== cartonId);
+
+        // 从库存数据中删除
+        delete cartonStockData[cartonId];
+
+        // 更新配置，移除对此纸箱的引用
+        let configChanged = false;
+        Object.keys(PRODUCT_CARTON_MAP).forEach(key => {
+            const config = PRODUCT_CARTON_MAP[key];
+            if (config.carton1 === cartonId || config.carton2 === cartonId) {
+                if (config.carton1 === cartonId) {
+                    // 如果纸箱1被删除，尝试用纸箱2替代
+                    if (config.carton2) {
+                        config.carton1 = config.carton2;
+                        config.ratio1 = config.ratio2;
+                        delete config.carton2;
+                        delete config.ratio2;
+                    } else {
+                        // 只有一个纸箱被删除，删除整个配置
+                        delete PRODUCT_CARTON_MAP[key];
+                    }
+                } else if (config.carton2 === cartonId) {
+                    // 纸箱2被删除，直接移除
+                    delete config.carton2;
+                    delete config.ratio2;
+                }
+                configChanged = true;
+            }
+        });
+
+        // 保存更改
+        saveCartonTypesLocal();
+        saveCartonDataLocal();
+        if (configChanged) {
+            saveProductCartonConfigLocal();
+        }
+
+        // 更新界面
+        renderCartonTable();
+        updateCartonStats();
+        checkCartonAlerts();
+
+        showToast(`✅ 已删除纸箱规格「${carton.name}」`);
     }
 
     // 更新统计
@@ -4686,7 +4882,396 @@ function showLoading(text) {
         checkCartonAlerts();
     }
 
-    // 显示纸箱入库弹窗 - 使用自己的实现，不依赖原系统
+    // ==================== 新增纸箱规格功能 ====================
+
+    // 显示新增纸箱规格弹窗
+    function showAddNewCartonTypeModal() {
+        const modalHtml = `
+            <div id="addNewCartonModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 16px;">
+                <div style="background: white; border-radius: 16px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); animation: fadeIn 0.3s ease-out;">
+                    <div style="padding: 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px;">📦</div>
+                            <div>
+                                <div style="font-size: 20px; font-weight: 700; color: #0f172a;">新增纸箱规格</div>
+                                <div style="font-size: 13px; color: #64748b;">添加自定义纸箱类型</div>
+                            </div>
+                        </div>
+                        <button onclick="closeAddNewCartonModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #94a3b8; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px; transition: all 0.2s;">×</button>
+                    </div>
+                    <div style="padding: 24px;">
+                        <div style="display: grid; gap: 20px;">
+                            <div>
+                                <label style="display: block; font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 8px;">纸箱名称 <span style="color: #dc2626;">*</span></label>
+                                <input type="text" id="newCartonName" placeholder="例如：大号包装箱、保温箱等" style="width: 100%; padding: 12px 16px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 15px; transition: all 0.2s; box-sizing: border-box;" onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.1)';" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 8px;">规格尺寸</label>
+                                <input type="text" id="newCartonSpec" placeholder="例如：50×40×30cm" style="width: 100%; padding: 12px 16px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 15px; transition: all 0.2s; box-sizing: border-box;" onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.1)';" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                <div>
+                                    <label style="display: block; font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 8px;">单位 <span style="color: #dc2626;">*</span></label>
+                                    <select id="newCartonUnit" style="width: 100%; padding: 12px 16px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 15px; background: white; cursor: pointer;">
+                                        <option value="个">个</option>
+                                        <option value="套">套</option>
+                                        <option value="件">件</option>
+                                        <option value="箱">箱</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 8px;">适用品牌</label>
+                                    <select id="newCartonBrand" style="width: 100%; padding: 12px 16px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 15px; background: white; cursor: pointer;">
+                                        <option value="通用">通用</option>
+                                        <option value="佳信">佳信</option>
+                                        <option value="大富肴">大富肴</option>
+                                        <option value="蓝琼">蓝琼</option>
+                                        <option value="汉朝">汉朝</option>
+                                        <option value="豪杰">豪杰</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 8px;">初始库存</label>
+                                <input type="number" id="newCartonStock" value="0" min="0" style="width: 100%; padding: 12px 16px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 15px; transition: all 0.2s; box-sizing: border-box;" onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.1)';" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
+                            </div>
+                        </div>
+                    </div>
+                    <div style="padding: 20px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 12px; background: #f8fafc; border-radius: 0 0 16px 16px;">
+                        <button onclick="closeAddNewCartonModal()" style="padding: 12px 24px; border: 1.5px solid #e2e8f0; background: white; border-radius: 10px; font-weight: 600; color: #64748b; cursor: pointer; font-size: 15px; transition: all 0.2s;">取消</button>
+                        <button onclick="confirmAddNewCarton()" style="padding: 12px 24px; border: none; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border-radius: 10px; font-weight: 600; color: white; cursor: pointer; font-size: 15px; box-shadow: 0 4px 12px rgba(37,99,235,0.3); transition: all 0.2s;">✅ 确认添加</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        document.getElementById('newCartonName').focus();
+    }
+
+    // 关闭新增纸箱弹窗
+    function closeAddNewCartonModal() {
+        const modal = document.getElementById('addNewCartonModal');
+        if (modal) modal.remove();
+    }
+
+    // 确认添加新纸箱
+    function confirmAddNewCarton() {
+        const name = document.getElementById('newCartonName').value.trim();
+        const spec = document.getElementById('newCartonSpec').value.trim();
+        const unit = document.getElementById('newCartonUnit').value;
+        const brand = document.getElementById('newCartonBrand').value;
+        const stock = parseInt(document.getElementById('newCartonStock').value) || 0;
+
+        if (!name) {
+            showToast('⚠️ 请输入纸箱名称', 'warning');
+            return;
+        }
+
+        // 生成唯一ID
+        const newId = 'carton_custom_' + Date.now();
+
+        // 添加到纸箱类型数组
+        const newCarton = {
+            id: newId,
+            name: name,
+            spec: spec || '未设置规格',
+            unit: unit,
+            brand: brand,
+            isDefault: false
+        };
+
+        CARTON_TYPES.push(newCarton);
+        cartonStockData[newId] = stock;
+
+        // 保存到本地存储
+        saveCartonTypesLocal();
+        saveCartonDataLocal();
+
+        // 更新界面
+        renderCartonTable();
+        updateCartonStats();
+        checkCartonAlerts();
+
+        closeAddNewCartonModal();
+        showToast(`✅ 已添加新纸箱规格「${name}」`);
+    }
+
+    // ==================== 产品关联纸箱配置功能 ====================
+
+    // 切换产品关联配置区域显示
+    function toggleProductCartonConfig() {
+        const section = document.getElementById('productCartonConfigSection');
+        if (section.style.display === 'none') {
+            section.style.display = 'block';
+            initProductCartonConfig();
+        } else {
+            section.style.display = 'none';
+        }
+    }
+
+    // 显示产品关联设置弹窗
+    function showProductCartonConfigModal() {
+        const section = document.getElementById('productCartonConfigSection');
+        section.style.display = 'block';
+        initProductCartonConfig();
+        // 滚动到配置区域
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // 初始化产品关联配置 - 批量多选版本
+    function initProductCartonConfig() {
+        const container = document.getElementById('productCheckboxList');
+        if (!container) return;
+
+        // 加载产品列表（复选框形式）
+        const validProducts = products.filter(p => p.name && p.name !== 'undefined' && p.brand && p.brand !== 'undefined');
+
+        container.innerHTML = validProducts.map(p => `
+            <label style="display: flex; align-items: center; gap: 8px; padding: 10px; background: white; border-radius: 6px; cursor: pointer; border: 1px solid #e2e8f0; transition: all 0.2s;" 
+                   onmouseover="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 2px rgba(59,130,246,0.1)';" 
+                   onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
+                <input type="checkbox" name="batchProductConfig" value="${p.id}" style="width: 18px; height: 18px; cursor: pointer; accent-color: #3b82f6;" onchange="updateBatchConfigUI()">
+                <div style="flex: 1; overflow: hidden;">
+                    <div style="font-weight: 600; font-size: 13px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.name}</div>
+                    <div style="font-size: 11px; color: #64748b;">${p.brand} · ${p.sku}</div>
+                </div>
+            </label>
+        `).join('');
+
+        // 初始化纸箱列表（第二个步骤）
+        const cartonContainer = document.getElementById('cartonCheckboxList');
+        if (cartonContainer) {
+            cartonContainer.innerHTML = CARTON_TYPES.map(carton => `
+                <label style="display: flex; align-items: center; gap: 8px; padding: 10px; background: white; border-radius: 6px; cursor: pointer; border: 1px solid #e2e8f0; transition: all 0.2s;"
+                       onmouseover="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 2px rgba(59,130,246,0.1)';" 
+                       onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
+                    <input type="checkbox" name="batchCartonConfig" value="${carton.id}" style="width: 18px; height: 18px; cursor: pointer; accent-color: #3b82f6;">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 13px; color: #0f172a;">${carton.name}</div>
+                        <div style="font-size: 11px; color: #64748b;">${carton.spec}</div>
+                    </div>
+                </label>
+            `).join('');
+        }
+
+        updateBatchConfigUI();
+    }
+
+    // 更新批量配置界面状态
+    function updateBatchConfigUI() {
+        const selectedProducts = document.querySelectorAll('input[name="batchProductConfig"]:checked');
+        const configDiv = document.getElementById('cartonConfigForBatch');
+        const countDiv = document.getElementById('selectedProductCount');
+        const previewDiv = document.getElementById('batchConfigPreview');
+
+        const count = selectedProducts.length;
+        countDiv.textContent = `已选择 ${count} 个产品`;
+
+        if (count > 0) {
+            configDiv.style.display = 'block';
+            // 显示已选产品预览
+            const selectedIds = Array.from(selectedProducts).map(cb => cb.value);
+            const selectedItems = products.filter(p => selectedIds.includes(p.id));
+            previewDiv.innerHTML = `
+                <div style="font-weight: 600; margin-bottom: 6px;">即将为以下 ${count} 个产品配置纸箱关联：</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; max-height: 80px; overflow-y: auto;">
+                    ${selectedItems.map(p => `<span style="padding: 4px 10px; background: white; border-radius: 12px; font-size: 12px; border: 1px solid #e0f2fe;">${p.name}</span>`).join('')}
+                </div>
+            `;
+        } else {
+            configDiv.style.display = 'none';
+            previewDiv.innerHTML = '';
+        }
+    }
+
+    // 全选/取消全选产品
+    function selectAllProductsForConfig(selectAll) {
+        const checkboxes = document.querySelectorAll('input[name="batchProductConfig"]');
+        checkboxes.forEach(cb => cb.checked = selectAll);
+        updateBatchConfigUI();
+    }
+
+    // 清空批量选择
+    function clearBatchProductSelection() {
+        selectAllProductsForConfig(false);
+        // 清空纸箱选择
+        document.querySelectorAll('input[name="batchCartonConfig"]').forEach(cb => cb.checked = false);
+        document.getElementById('carton1Ratio').value = '1';
+        document.getElementById('carton2Ratio').value = '0';
+    }
+
+    // 保存批量产品纸箱配置
+    function saveBatchProductCartonConfig() {
+        const selectedProducts = document.querySelectorAll('input[name="batchProductConfig"]:checked');
+        const selectedCartons = document.querySelectorAll('input[name="batchCartonConfig"]:checked');
+
+        if (selectedProducts.length === 0) {
+            showToast('⚠️ 请先选择产品', 'warning');
+            return;
+        }
+
+        if (selectedCartons.length === 0) {
+            showToast('⚠️ 请至少选择一个纸箱', 'warning');
+            return;
+        }
+
+        const ratio1 = parseInt(document.getElementById('carton1Ratio').value) || 1;
+        const ratio2 = parseInt(document.getElementById('carton2Ratio').value) || 0;
+
+        const cartonIds = Array.from(selectedCartons).map(cb => cb.value);
+        let configCount = 0;
+
+        selectedProducts.forEach(productCb => {
+            const product = products.find(p => p.id === productCb.value);
+            if (product) {
+                const configKey = `${product.name}|${product.sku}|${product.brand}`;
+                const newConfig = {
+                    carton1: cartonIds[0],
+                    ratio1: ratio1
+                };
+                if (cartonIds.length > 1) {
+                    newConfig.carton2 = cartonIds[1];
+                    newConfig.ratio2 = ratio2 > 0 ? ratio2 : 1;
+                }
+                PRODUCT_CARTON_MAP[configKey] = newConfig;
+                configCount++;
+            }
+        });
+
+        saveProductCartonConfigLocal();
+        showToast(`✅ 已成功为 ${configCount} 个产品配置纸箱关联`);
+        clearBatchProductSelection();
+    }
+
+    // 加载产品的纸箱配置
+    function loadProductCartonConfig() {
+        const productId = document.getElementById('configProductSelect').value;
+        const configDiv = document.getElementById('cartonConfigForProduct');
+        const nameSpan = document.getElementById('selectedProductName');
+        const checkboxDiv = document.getElementById('cartonCheckboxList');
+        const ratio1Input = document.getElementById('carton1Ratio');
+        const ratio2Input = document.getElementById('carton2Ratio');
+
+        if (!productId) {
+            configDiv.style.display = 'none';
+            return;
+        }
+
+        const product = products.find(p => p.id === productId);
+        if (!product) return;
+
+        nameSpan.textContent = `${product.brand} ${product.name} ${product.sku}`;
+
+        // 生成纸箱复选框列表
+        checkboxDiv.innerHTML = CARTON_TYPES.map(carton => `
+            <label style="display: flex; align-items: center; gap: 8px; padding: 10px; background: white; border-radius: 8px; cursor: pointer; border: 1px solid #e2e8f0; transition: all 0.2s;" onmouseover="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 2px rgba(59,130,246,0.1)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
+                <input type="checkbox" name="cartonConfig" value="${carton.id}" style="width: 18px; height: 18px; cursor: pointer; accent-color: #3b82f6;">
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; font-size: 13px; color: #0f172a;">${carton.name}</div>
+                    <div style="font-size: 11px; color: #64748b;">${carton.spec} · ${carton.brand}</div>
+                </div>
+            </label>
+        `).join('');
+
+        // 加载现有配置
+        const configKey = `${product.name}|${product.sku}|${product.brand}`;
+        const existingConfig = PRODUCT_CARTON_MAP[configKey];
+
+        if (existingConfig) {
+            // 设置复选框选中状态
+            document.querySelectorAll('input[name="cartonConfig"]').forEach(cb => {
+                if (existingConfig.carton1 === cb.value || existingConfig.carton2 === cb.value) {
+                    cb.checked = true;
+                }
+            });
+            // 设置比例
+            ratio1Input.value = existingConfig.ratio1 || 1;
+            ratio2Input.value = existingConfig.ratio2 || 0;
+        } else {
+            // 清空选择
+            document.querySelectorAll('input[name="cartonConfig"]').forEach(cb => cb.checked = false);
+            ratio1Input.value = 1;
+            ratio2Input.value = 0;
+        }
+
+        configDiv.style.display = 'block';
+    }
+
+    // 保存产品纸箱配置
+    function saveProductCartonConfig() {
+        const productId = document.getElementById('configProductSelect').value;
+        if (!productId) {
+            showToast('⚠️ 请先选择产品', 'warning');
+            return;
+        }
+
+        const product = products.find(p => p.id === productId);
+        if (!product) return;
+
+        // 获取选中的纸箱
+        const selectedCartons = Array.from(document.querySelectorAll('input[name="cartonConfig"]:checked')).map(cb => cb.value);
+
+        if (selectedCartons.length === 0) {
+            showToast('⚠️ 请至少选择一个纸箱', 'warning');
+            return;
+        }
+
+        const ratio1 = parseInt(document.getElementById('carton1Ratio').value) || 1;
+        const ratio2 = parseInt(document.getElementById('carton2Ratio').value) || 0;
+
+        // 构建配置
+        const configKey = `${product.name}|${product.sku}|${product.brand}`;
+        const newConfig = {
+            carton1: selectedCartons[0],
+            ratio1: ratio1
+        };
+
+        if (selectedCartons.length > 1) {
+            newConfig.carton2 = selectedCartons[1];
+            newConfig.ratio2 = ratio2 > 0 ? ratio2 : 1;
+        }
+
+        // 保存配置
+        PRODUCT_CARTON_MAP[configKey] = newConfig;
+        saveProductCartonConfigLocal();
+
+        showToast(`✅ 已保存 ${product.name} 的纸箱配置`);
+
+        // 清空选择，方便配置下一个产品
+        document.getElementById('configProductSelect').value = '';
+        document.getElementById('cartonConfigForProduct').style.display = 'none';
+    }
+
+    // 删除产品纸箱配置
+    function deleteProductCartonConfig() {
+        const productId = document.getElementById('configProductSelect').value;
+        if (!productId) return;
+
+        const product = products.find(p => p.id === productId);
+        if (!product) return;
+
+        if (!confirm(`确定要删除 ${product.name} 的纸箱关联配置吗？`)) return;
+
+        const configKey = `${product.name}|${product.sku}|${product.brand}`;
+
+        if (DEFAULT_PRODUCT_CARTON_MAP[configKey]) {
+            // 如果是默认配置，重置为默认
+            PRODUCT_CARTON_MAP[configKey] = {...DEFAULT_PRODUCT_CARTON_MAP[configKey]};
+        } else {
+            // 如果是自定义配置，删除
+            delete PRODUCT_CARTON_MAP[configKey];
+        }
+
+        saveProductCartonConfigLocal();
+        showToast(`✅ 已删除 ${product.name} 的纸箱配置`);
+
+        document.getElementById('configProductSelect').value = '';
+        document.getElementById('cartonConfigForProduct').style.display = 'none';
+    }
+
+    // ==================== 纸箱入库功能 ====================
+
+    // 显示纸箱库存调整弹窗 - 支持入库和出库（损耗）
     function showCartonAddModal(cartonId = null) {
         // 创建弹窗HTML
         let itemsHtml = '';
@@ -4702,8 +5287,18 @@ function showLoading(text) {
                         </div>
                         <div style="font-size: 13px; color: #64748b;">当前: <strong>${currentStock}</strong>${carton.unit}</div>
                     </div>
-                    <input type="number" id="carton_add_${carton.id}" placeholder="入库数量" min="0" 
-                        style="width: 100%; padding: 10px; border: 1.5px solid #e2e8f0; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <div>
+                            <label style="font-size: 11px; color: #059669; font-weight: 600;">➕ 入库数量</label>
+                            <input type="number" id="carton_add_${carton.id}" placeholder="入库" min="0" value="${isSelected ? '' : '0'}"
+                                style="width: 100%; padding: 8px; border: 1.5px solid #10b981; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
+                        </div>
+                        <div>
+                            <label style="font-size: 11px; color: #dc2626; font-weight: 600;">➖ 出库/损耗</label>
+                            <input type="number" id="carton_out_${carton.id}" placeholder="出库" min="0" value="0"
+                                style="width: 100%; padding: 8px; border: 1.5px solid #ef4444; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
+                        </div>
+                    </div>
                 </div>
             `;
         });
@@ -4711,17 +5306,21 @@ function showLoading(text) {
         const modalHtml = `
             <div id="cartonAddModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 16px;">
                 <div style="background: white; border-radius: 16px; width: 100%; max-width: 500px; max-height: 80vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
-                    <div style="padding: 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-                        <div style="font-size: 18px; font-weight: 700;">📦 纸箱入库补货</div>
+                    <div style="padding: 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);">
+                        <div style="font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                            <span>📦</span> 纸箱库存调整
+                        </div>
                         <button onclick="closeCartonAddModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">×</button>
                     </div>
                     <div style="padding: 20px;">
-                        <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">请输入各类型纸箱的入库数量：</p>
+                        <div style="background: #f0f9ff; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 13px; color: #0369a1;">
+                            💡 提示：<strong style="color: #10b981;">入库</strong>填正数增加库存，<strong style="color: #ef4444;">出库/损耗</strong>填正数扣减库存
+                        </div>
                         ${itemsHtml}
                     </div>
                     <div style="padding: 16px 20px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px;">
                         <button onclick="closeCartonAddModal()" style="padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; background: #e2e8f0; color: #475569;">取消</button>
-                        <button onclick="confirmCartonAdd()" style="padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; background: #2563eb; color: white;">确认入库</button>
+                        <button onclick="confirmCartonAdjust()" style="padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%); color: white;">确认调整</button>
                     </div>
                 </div>
             </div>
@@ -4739,29 +5338,59 @@ function showLoading(text) {
         if (modal) modal.remove();
     }
 
-    // 确认入库
-    function confirmCartonAdd() {
-        let hasAdded = false;
-        let addedList = [];
+    // 确认库存调整（入库+出库）
+    function confirmCartonAdjust() {
+        let hasChanged = false;
+        let changeList = [];
+
         CARTON_TYPES.forEach(carton => {
-            const input = document.getElementById(`carton_add_${carton.id}`);
-            const qty = parseInt(input?.value) || 0;
-            if (qty > 0) {
-                cartonStockData[carton.id] = (cartonStockData[carton.id] || 0) + qty;
-                hasAdded = true;
-                addedList.push(`${carton.name}: +${qty}${carton.unit}`);
+            const addInput = document.getElementById(`carton_add_${carton.id}`);
+            const outInput = document.getElementById(`carton_out_${carton.id}`);
+            const addQty = parseInt(addInput?.value) || 0;
+            const outQty = parseInt(outInput?.value) || 0;
+
+            let currentStock = cartonStockData[carton.id] || 0;
+            let newStock = currentStock;
+            let changes = [];
+
+            // 入库
+            if (addQty > 0) {
+                newStock += addQty;
+                changes.push(`+${addQty}`);
+            }
+
+            // 出库/损耗（检查库存是否足够）
+            if (outQty > 0) {
+                if (currentStock < outQty) {
+                    showToast(`❌ 「${carton.name}」库存不足！当前${currentStock}${carton.unit}，尝试出库${outQty}${carton.unit}`, 'error');
+                    return;
+                }
+                newStock -= outQty;
+                changes.push(`-${outQty}`);
+            }
+
+            if (changes.length > 0) {
+                cartonStockData[carton.id] = newStock;
+                hasChanged = true;
+                changeList.push(`${carton.name}: ${changes.join(', ')} → 剩余${newStock}${carton.unit}`);
             }
         });
-        if (hasAdded) {
+
+        if (hasChanged) {
             saveCartonDataLocal();
             renderCartonTable();
             updateCartonStats();
             checkCartonAlerts();
             closeCartonAddModal();
-            showToast('✅ 纸箱入库成功！<br>' + addedList.join('<br>'));
+            showToast(`✅ 纸箱库存调整成功！<br>${changeList.join('<br>')}`);
         } else {
-            showToast('⚠️ 请输入入库数量', 'warning');
+            showToast('⚠️ 请输入入库或出库数量', 'warning');
         }
+    }
+
+    // 保留旧函数名兼容
+    function confirmCartonAdd() {
+        confirmCartonAdjust();
     }
 
     // 点击弹窗外部关闭
