@@ -3669,8 +3669,28 @@
 
             if (items.length === 0) { showToast('⚠️ 请至少填写一个完整的产品信息', 'warning'); return; }
 
+            // 生成销售单号：年份后两位 + 月日 + 两位序号 (如26041601)
+            const today = new Date();
+            const year = String(today.getFullYear()).slice(-2);
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const datePrefix = year + month + day;
+
+            // 获取今天的序号
+            if (!data.lastSalesDocNumbers) {
+                data.lastSalesDocNumbers = {};
+            }
+            const todayKey = datePrefix;
+            const lastSeq = data.lastSalesDocNumbers[todayKey] || 0;
+            const newSeq = lastSeq + 1;
+            data.lastSalesDocNumbers[todayKey] = newSeq;
+
+            // 生成单号：26041601
+            const docNumber = datePrefix + String(newSeq).padStart(2, '0');
+
             const order = {
                 id: 'SO' + Date.now(),
+                docNumber: docNumber,
                 date, customerId: customerSelect.value, customerName, customerPhone: phone, customerAddress: address,
                 items, totalQty, totalAmount, chineseAmount: numberToChinese(totalAmount),
                 paymentStatus: 'unpaid', paidAmount: 0, remainingAmount: totalAmount
@@ -3713,7 +3733,7 @@
                     <div style="position: relative; display: flex; justify-content: space-between; align-items: center; margin: 0 30px; padding: 25px 0 20px 0; border-bottom: 2px solid #000;">
                         <div style="flex: 1; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 12px;">佳信水产销售清单</div>
                         <div style="position: absolute; right: 0; top: 50%; transform: translateY(-50%); font-size: 14px; font-weight: bold; color: #1e40af; border: 1px solid #1e40af; padding: 4px 8px; border-radius: 4px; background: #dbeafe;">
-                            单号: ${order.id.slice(-6)}
+                            单号: ${order.docNumber || order.id.slice(-6)}
                         </div>
                     </div>
                     <div class="sales-list-info-section">
@@ -3827,7 +3847,7 @@
                 const statusText = { unpaid: '未收款', paid: '已收款', partial: '部分收款' }[order.paymentStatus];
                 const statusClass = { unpaid: 'status-pending', paid: 'status-paid', partial: 'status-partial' }[order.paymentStatus];
                 return `<tr>
-                    <td class="px-6 py-4 text-sm font-medium cursor-pointer text-blue-600 hover:text-blue-800 hover:underline" onclick="openEditSalesModal('${order.id}')" title="点击编辑">${order.id.slice(-6)}</td>
+                    <td class="px-6 py-4 text-sm font-medium cursor-pointer text-blue-600 hover:text-blue-800 hover:underline" onclick="openEditSalesModal('${order.id}')" title="点击编辑">${(order.docNumber || order.id.slice(-6))}</td>
                     <td class="px-6 py-4 text-sm text-gray-500">${order.date}</td>
                     <td class="px-6 py-4 text-sm">${order.customerName}</td>
                     <td class="px-6 py-4 text-sm font-medium">¥${order.totalAmount.toFixed(2)}</td>
@@ -5103,7 +5123,7 @@ function renderTransactionList() {
                     <tr style="border-bottom: 1px solid #e5e7eb;">
                         <td style="padding: 12px 8px; text-align: center; color: #6b7280; font-size: 13px;">${index + 1}</td>
                         <td style="padding: 12px 8px; text-align: center; color: #111827; font-size: 13px; font-weight: 500;">${order.date}</td>
-                        <td style="padding: 12px 8px; text-align: center; color: #6b7280; font-size: 13px;">NO.${order.id.slice(-6)}</td>
+                        <td style="padding: 12px 8px; text-align: center; color: #6b7280; font-size: 13px;">NO.${order.docNumber || order.id.slice(-6)}</td>
                         <td style="padding: 12px 8px; text-align: center; color: #111827; font-size: 13px; font-weight: 600;">${order.totalQty || 0}件</td>
                         <td style="padding: 12px 8px; text-align: right; color: #dc2626; font-size: 13px; font-weight: 600;">¥${order.totalAmount.toFixed(2)}</td>
                     </tr>
