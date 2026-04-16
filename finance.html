@@ -6466,6 +6466,47 @@ function syncPaymentDataToOrders() {
 
         // 显示流动资金计算明细
         function renderCapitalCalculationDetail(data) {
+            // 生成费用明细表格HTML
+            let expenseDetailsHtml = '';
+            if (data.expenseDetails && data.expenseDetails.length > 0) {
+                const detailRows = data.expenseDetails.map(d => `
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 8px; text-align: center; font-size: 12px; color: #6b7280;">${d.date}</td>
+                        <td style="padding: 8px; text-align: center; font-size: 12px; color: #111827;">${d.type}</td>
+                        <td style="padding: 8px; text-align: right; font-size: 12px; color: #ef4444; font-weight: 600;">¥${d.amount.toFixed(2)}</td>
+                        <td style="padding: 8px; text-align: center; font-size: 11px;">
+                            <span style="padding: 2px 6px; border-radius: 4px; ${d.source === '付款流水' ? 'background: #dbeafe; color: #1e40af;' : 'background: #dcfce7; color: #166534;'}">${d.source}</span>
+                        </td>
+                        <td style="padding: 8px; text-align: left; font-size: 11px; color: #6b7280;">${d.remark}</td>
+                    </tr>
+                `).join('');
+
+                expenseDetailsHtml = `
+                    <div style="margin-top: 16px; background: white; border-radius: 8px; border: 1px solid #fecaca; overflow: hidden;">
+                        <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); padding: 12px; border-bottom: 1px solid #fecaca;">
+                            <div style="font-size: 14px; font-weight: 600; color: #991b1b; display: flex; justify-content: space-between; align-items: center;">
+                                <span>📋 费用支出明细清单（共 ${data.expenseDetails.length} 笔）</span>
+                                <span style="font-size: 16px;">合计: ¥${data.totalExpensePayment.toFixed(2)}</span>
+                            </div>
+                        </div>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f9fafb;">
+                                    <th style="padding: 8px; text-align: center; font-size: 11px; color: #6b7280; font-weight: 600;">日期</th>
+                                    <th style="padding: 8px; text-align: center; font-size: 11px; color: #6b7280; font-weight: 600;">费用类型</th>
+                                    <th style="padding: 8px; text-align: right; font-size: 11px; color: #6b7280; font-weight: 600;">金额</th>
+                                    <th style="padding: 8px; text-align: center; font-size: 11px; color: #6b7280; font-weight: 600;">来源</th>
+                                    <th style="padding: 8px; text-align: left; font-size: 11px; color: #6b7280; font-weight: 600;">备注</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${detailRows}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
             const detailHtml = `
                 <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 2px solid #0ea5e9; border-radius: 12px; padding: 20px; margin-top: 20px;">
                     <h4 style="font-size: 16px; font-weight: bold; color: #0369a1; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
@@ -6512,8 +6553,10 @@ function syncPaymentDataToOrders() {
                         </div>
                     </div>
 
+                    ${expenseDetailsHtml}
+
                     <!-- 计算公式 -->
-                    <div style="background: white; border-radius: 8px; padding: 16px; border: 2px solid #f59e0b; text-align: center;">
+                    <div style="background: white; border-radius: 8px; padding: 16px; border: 2px solid #f59e0b; text-align: center; margin-top: 16px;">
                         <div style="font-size: 13px; color: #6b7280; margin-bottom: 8px;">计算公式</div>
                         <div style="font-size: 14px; color: #1f2937; font-weight: 600; font-family: monospace; background: #fef3c7; padding: 12px; border-radius: 6px; line-height: 1.8;">
                             流动资金 = ${data.totalInvestment.toFixed(2)} + ${data.totalIncome.toFixed(2)} - ${data.totalSupplierPayment.toFixed(2)} - (${data.expensePaidFromRegistration.toFixed(2)} + ${data.expensePaidFromPayments.toFixed(2)})
@@ -6572,6 +6615,30 @@ function syncPaymentDataToOrders() {
             const expensePaidFromPayments = (data.expensePayments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
             const totalExpensePayment = expensePaidFromRegistration + expensePaidFromPayments;
 
+            // 收集费用支出明细用于展示
+            const expenseDetails = [];
+            (data.expenses || []).forEach(e => {
+                if (e.paidAmount > 0) {
+                    expenseDetails.push({
+                        date: e.date,
+                        type: (EXPENSE_TYPES[e.type] || { name: e.type }).name,
+                        amount: e.paidAmount,
+                        source: '费用登记-已付',
+                        remark: e.remark || ''
+                    });
+                }
+            });
+            (data.expensePayments || []).forEach(p => {
+                expenseDetails.push({
+                    date: p.date,
+                    type: (EXPENSE_TYPES[p.expenseType] || { name: p.expenseType }).name,
+                    amount: p.amount,
+                    source: '付款流水',
+                    remark: p.remark || (p.paymentMethod ? `支付方式: ${p.paymentMethod}` : '')
+                });
+            });
+            expenseDetails.sort((a, b) => new Date(b.date) - new Date(a.date));
+
             // 供应商欠款
             const supplierDebt = (data.suppliers || []).reduce((sum, s) => sum + (s.balance || 0), 0);
             // 费用未付（从费用板块计算）
@@ -6612,6 +6679,9 @@ function syncPaymentDataToOrders() {
                 totalIncome,
                 totalSupplierPayment,
                 totalExpensePayment,
+                expensePaidFromRegistration,
+                expensePaidFromPayments,
+                expenseDetails,
                 liquidity,
                 totalLiability,
                 supplierDebt,
