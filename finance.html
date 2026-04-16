@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>佳信水产进销存财务系统 v3.13（采购单三列单价版）</title>
+    <title>佳信水产进销存财务系统 v5.0（完整）</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -732,7 +732,7 @@
                         </div>
                         <div>
                             <h1 class="text-xl font-bold text-gray-800">佳信水产财务系统</h1>
-                            <p class="text-xs text-gray-500">v3.13 | 采购单三列单价版</p>
+                            <p class="text-xs text-gray-500">v5.0 | 完整</p>
                         </div>
                     </div>
                     <div class="flex items-center space-x-3">
@@ -787,7 +787,7 @@
                             </div>
                             <div>
                                 <h1 class="text-lg font-bold text-gray-800">佳信水产财务</h1>
-                                <p class="text-xs text-gray-500">v3.13 | 采购单三列单价版</p>
+                                <p class="text-xs text-gray-500">v5.0 | 完整版</p>
                             </div>
                         </div>
                         <div class="sync-status" id="syncStatusMobile">
@@ -5769,14 +5769,15 @@ function syncPaymentDataToOrders() {
                 stats[key] = { total: 0, paid: 0, unpaid: 0 };
             });
 
-            // 统计登记的总费用
+            // 统计登记的总费用和已付金额（从expenses读取）
             expenses.forEach(expense => {
                 if (stats[expense.type]) {
                     stats[expense.type].total += expense.totalAmount || 0;
+                    stats[expense.type].paid += expense.paidAmount || 0;  // 加上费用登记时填写的已付金额
                 }
             });
 
-            // 统计付款金额（从 expensePayments 读取，不从 transactions 读取）
+            // 再加上付款流水中的金额（付款登记）
             expensePayments.forEach(payment => {
                 if (stats[payment.expenseType]) {
                     stats[payment.expenseType].paid += payment.amount || 0;
@@ -5868,8 +5869,9 @@ function syncPaymentDataToOrders() {
                 stats[key].unpaid = Math.max(0, stats[key].total - stats[key].paid);
             });
 
-            // 更新顶部统计卡片
-            updateExpenseStatsFromData(stats);
+            // 顶部统计卡片始终显示全部总计，不受筛选影响
+            // 列表下方的合计行显示筛选后的合计
+            updateExpenseStats();
 
             // 合并费用记录和付款记录用于显示
             const allRecords = [
@@ -5877,10 +5879,17 @@ function syncPaymentDataToOrders() {
                 ...filteredPayments.map(p => ({ ...p, recordType: 'payment' }))
             ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-            // 计算筛选后的合计
+            // 计算筛选后的合计（兼容新旧数据）
             let totalAmount = 0, totalPaid = 0;
-            expenses.forEach(e => totalAmount += e.totalAmount || 0);
-            filteredPayments.forEach(p => totalPaid += p.amount || 0);
+            expenses.forEach(e => {
+                totalAmount += e.totalAmount || 0;
+                // 计算该费用类型的实际已付金额（优先从付款流水计算）
+                const expensePaid = expensePayments
+                    .filter(p => p.expenseType === e.type)
+                    .reduce((sum, p) => sum + (p.amount || 0), 0);
+                // 如果流水有记录就用流水，否则用费用记录的已付字段
+                totalPaid += expensePaid > 0 ? expensePaid : (e.paidAmount || 0);
+            });
             const totalUnpaid = Math.max(0, totalAmount - totalPaid);
 
             const tbody = document.getElementById('expenseList');
