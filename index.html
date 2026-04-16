@@ -4852,7 +4852,7 @@ function showLoading(text) {
     }
 
     // 入库时扣减纸箱
-    function deductCartonStockOnImport(batchItems, batchDate) {
+    async function deductCartonStockOnImport(batchItems, batchDate) {
         let deducted = false;
         batchItems.forEach(item => {
             const product = products.find(p => p.id === item.productId);
@@ -4871,6 +4871,12 @@ function showLoading(text) {
         });
         if (deducted) {
             saveCartonDataLocal();
+
+            // 同步到云端
+            if (isOnline) {
+                await saveData();
+            }
+
             if (document.getElementById('carton').classList.contains('show')) {
                 renderCartonTable();
                 updateCartonStats();
@@ -4930,7 +4936,7 @@ function showLoading(text) {
     }
 
     // 删除自定义纸箱
-    function deleteCustomCarton(cartonId) {
+    async function deleteCustomCarton(cartonId) {
         const carton = CARTON_TYPES.find(c => c.id === cartonId);
         if (!carton) return;
 
@@ -4974,6 +4980,11 @@ function showLoading(text) {
         saveCartonDataLocal();
         if (configChanged) {
             saveProductCartonConfigLocal();
+        }
+
+        // 同步到云端
+        if (isOnline) {
+            await saveData();
         }
 
         // 更新界面
@@ -5106,7 +5117,7 @@ function showLoading(text) {
     }
 
     // 确认添加新纸箱
-    function confirmAddNewCarton() {
+    async function confirmAddNewCarton() {
         const name = document.getElementById('newCartonName').value.trim();
         const spec = document.getElementById('newCartonSpec').value.trim();
         const unit = document.getElementById('newCartonUnit').value;
@@ -5137,6 +5148,11 @@ function showLoading(text) {
         // 保存到本地存储
         saveCartonTypesLocal();
         saveCartonDataLocal();
+
+        // 同步到云端
+        if (isOnline) {
+            await saveData();
+        }
 
         // 更新界面
         renderCartonTable();
@@ -5252,7 +5268,7 @@ function showLoading(text) {
     }
 
     // 保存批量产品纸箱配置
-    function saveBatchProductCartonConfig() {
+    async function saveBatchProductCartonConfig() {
         const selectedProducts = document.querySelectorAll('input[name="batchProductConfig"]:checked');
         const selectedCartons = document.querySelectorAll('input[name="batchCartonConfig"]:checked');
 
@@ -5290,6 +5306,12 @@ function showLoading(text) {
         });
 
         saveProductCartonConfigLocal();
+
+        // 同步到云端
+        if (isOnline) {
+            await saveData();
+        }
+
         showToast(`✅ 已成功为 ${configCount} 个产品配置纸箱关联`);
         clearBatchProductSelection();
     }
@@ -5349,7 +5371,7 @@ function showLoading(text) {
     }
 
     // 保存产品纸箱配置
-    function saveProductCartonConfig() {
+    async function saveProductCartonConfig() {
         const productId = document.getElementById('configProductSelect').value;
         if (!productId) {
             showToast('⚠️ 请先选择产品', 'warning');
@@ -5385,6 +5407,11 @@ function showLoading(text) {
         // 保存配置
         PRODUCT_CARTON_MAP[configKey] = newConfig;
         saveProductCartonConfigLocal();
+
+        // 同步到云端
+        if (isOnline) {
+            await saveData();
+        }
 
         showToast(`✅ 已保存 ${product.name} 的纸箱配置`);
 
@@ -5490,7 +5517,7 @@ function showLoading(text) {
     }
 
     // 确认库存调整（入库+出库）
-    function confirmCartonAdjust() {
+    async function confirmCartonAdjust() {
         let hasChanged = false;
         let changeList = [];
 
@@ -5529,6 +5556,12 @@ function showLoading(text) {
 
         if (hasChanged) {
             saveCartonDataLocal();
+
+            // 同步到云端
+            if (isOnline) {
+                await saveData();
+            }
+
             renderCartonTable();
             updateCartonStats();
             checkCartonAlerts();
