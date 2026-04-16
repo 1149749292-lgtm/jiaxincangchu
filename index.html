@@ -1449,6 +1449,7 @@ async function init() {
     // 新增：从云端加载纸箱数据
     function loadCartonDataFromCloud(cartonData) {
       if (!cartonData) return;
+      cartonsLoadedFromCloud = true;  // 标记已从云端加载
       // 加载纸箱类型（合并默认和云端自定义）
       if (cartonData.types && Array.isArray(cartonData.types)) {
         const customTypes = cartonData.types.filter(c => !c.isDefault);
@@ -4666,16 +4667,60 @@ function showLoading(text) {
     let cartonStockData = {};
     let cartonAlertThreshold = 50;
 
+    // 标记是否已从云端加载
+    let cartonsLoadedFromCloud = false;
+
     // 初始化纸箱模块（云端数据已在 fetchData 中加载，这里加载本地备份）
     function initCartonModule() {
-        // 加载本地备份（当云端无数据时使用）
-        loadCartonTypesLocal();
-        loadProductCartonConfigLocal();
-        loadCartonDataLocal();
+        // 如果云端已加载，则合并本地数据（本地作为补充）
+        // 如果云端未加载（离线模式），则完全从本地加载
+        if (!cartonsLoadedFromCloud) {
+            // 离线模式：从本地加载完整数据
+            loadCartonTypesLocal();
+            loadProductCartonConfigLocal();
+            loadCartonDataLocal();
+        } else {
+            // 在线模式：云端已加载，本地作为备份补充
+            // 只有当云端没有某些纸箱类型时才从本地补充
+            mergeCartonDataFromLocal();
+        }
         renderCartonTable();
         updateCartonStats();
         checkCartonAlerts();
         initProductCartonConfig();
+    }
+
+    // 合并本地数据（不覆盖云端已有数据）
+    function mergeCartonDataFromLocal() {
+        // 尝试从本地加载额外的自定义纸箱类型
+        const saved = localStorage.getItem('warehouse_carton_types_v1');
+        if (saved) {
+            try {
+                const customTypes = JSON.parse(saved);
+                customTypes.forEach(localType => {
+                    // 只添加云端没有的纸箱类型
+                    if (!CARTON_TYPES.find(c => c.id === localType.id)) {
+                        CARTON_TYPES.push(localType);
+                    }
+                });
+            } catch(e) {}
+        }
+
+        // 合并本地库存数据（取最大值，防止云端数据被清零）
+        const savedStock = localStorage.getItem('warehouse_carton_stock_v1');
+        if (savedStock) {
+            try {
+                const localStock = JSON.parse(savedStock);
+                Object.keys(localStock).forEach(id => {
+                    const cloudStock = cartonStockData[id] || 0;
+                    const localStockVal = localStock[id] || 0;
+                    // 如果本地有数据而云端为0，可能是新添加的，使用本地数据
+                    if (cloudStock === 0 && localStockVal > 0) {
+                        cartonStockData[id] = localStockVal;
+                    }
+                });
+            } catch(e) {}
+        }
     }
 
     // 从本地存储加载纸箱类型
