@@ -4908,12 +4908,13 @@ function showLoading(text) {
                 rowStyle = 'background: #fffbeb;';
             }
             // 自定义纸箱可删除
-            const deleteBtn = !carton.isDefault ? `<button class="btn btn-danger btn-sm btn-icon" onclick="deleteCustomCarton('${carton.id}')" title="删除" style="margin-left: 6px; padding: 4px 8px; font-size: 12px;">🗑️</button>` : '';
+            // 所有纸箱都显示删除按钮
+            const deleteBtn = `<button class="btn btn-danger btn-sm btn-icon" onclick="deleteCustomCarton('${carton.id}')" title="删除" style="margin-left: 6px; padding: 4px 8px; font-size: 12px;">🗑️</button>`;
             html += `<tr style="${rowStyle}">
                 <td style="font-weight: 600; color: var(--text-secondary);">${index + 1}</td>
                 <td>
                     <div style="font-weight: 600; color: var(--text-primary);">${carton.name}</div>
-                    <div style="font-size: 12px; color: var(--text-tertiary);">单位：${carton.unit} ${!carton.isDefault ? '<span style="color: #3b82f6;">[自定义]</span>' : ''}</div>
+                    <div style="font-size: 12px; color: var(--text-tertiary);">单位：${carton.unit} ${carton.id && carton.id.includes('custom') ? '<span style="color: #3b82f6;">[自定义]</span>' : ''}</div>
                 </td>
                 <td style="color: var(--text-secondary); font-size: 13px;">${carton.spec}</td>
                 <td><span class="product-tag" style="font-size: 11px;">${carton.brand}</span></td>
@@ -4943,6 +4944,9 @@ function showLoading(text) {
         if (!confirm(`确定要删除纸箱规格「${carton.name}」吗？
 
 注意：删除后，已配置的关联将失效。`)) return;
+
+        // 显示同步中状态
+        showLoading('正在删除并同步到云端...');
 
         // 从数组中删除
         CARTON_TYPES = CARTON_TYPES.filter(c => c.id !== cartonId);
@@ -4975,7 +4979,7 @@ function showLoading(text) {
             }
         });
 
-        // 保存更改
+        // 先保存到本地（确保数据不丢失）
         saveCartonTypesLocal();
         saveCartonDataLocal();
         if (configChanged) {
@@ -4984,15 +4988,24 @@ function showLoading(text) {
 
         // 同步到云端
         if (isOnline) {
-            await saveData();
+            try {
+                await saveData();
+                hideLoading();
+                showToast(`✅ 已删除纸箱规格「${carton.name}」并同步到云端`);
+            } catch (err) {
+                hideLoading();
+                showToast(`⚠️ 本地已删除，但云端同步失败：${err.message}`, 'warning');
+                console.error('删除纸箱同步失败:', err);
+            }
+        } else {
+            hideLoading();
+            showToast(`✅ 已删除纸箱规格「${carton.name}」（仅本地，离线模式）`, 'warning');
         }
 
         // 更新界面
         renderCartonTable();
         updateCartonStats();
         checkCartonAlerts();
-
-        showToast(`✅ 已删除纸箱规格「${carton.name}」`);
     }
 
     // 更新统计
