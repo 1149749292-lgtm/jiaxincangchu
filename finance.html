@@ -702,7 +702,64 @@
                 padding: 6px 2px !important;
             }
         }
-</style>
+
+        /* 销售单产品网格响应式 */
+        .sales-item-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        .sales-item-grid input,
+        .sales-item-grid select {
+            min-width: 0;
+            font-size: 14px;
+        }
+        @media (max-width: 640px) {
+            .sales-item-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 6px;
+            }
+            .sales-item-grid input,
+            .sales-item-grid select {
+                padding: 6px 4px !important;
+                font-size: 13px !important;
+                min-height: 36px;
+            }
+            /* 产品选择弹窗手机端优化 */
+            #productSelectArea {
+                margin: 0 -10px !important;
+                border-radius: 8px !important;
+                padding: 12px !important;
+            }
+            #productSelectArea input {
+                padding: 8px !important;
+            }
+            /* 销售单行整体优化 */
+            .sales-item-row {
+                padding: 10px !important;
+            }
+            .sales-item-row > div:first-child {
+                font-size: 13px !important;
+            }
+            /* 产品信息提示条 */
+            .sales-item-row > div:nth-child(2) {
+                font-size: 11px !important;
+                padding: 6px !important;
+            }
+            /* 调整按钮大小 */
+            .sales-item-row button {
+                padding: 3px 8px !important;
+                font-size: 11px !important;
+            }
+        }
+        @media (max-width: 380px) {
+            .sales-item-grid {
+                grid-template-columns: 1fr;
+                gap: 5px;
+            }
+        }
+
+    </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
     <!-- 密码验证层 -->
@@ -1140,11 +1197,9 @@
                 <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
                     <div class="flex space-x-4">
                         <input type="text" id="productSearch" placeholder="搜索产品名称、规格、品牌..." class="px-4 py-2 border rounded-lg flex-1" onkeyup="renderProductList()">
-                        <select id="productCategoryFilter" class="px-4 py-2 border rounded-lg" onchange="renderProductList()">
-                            <option value="">全部类别</option>
-                            <option value="shrimp">虾类</option>
-                            <option value="fish">鱼类</option>
-                            <option value="other">其他</option>
+                        <select id="productBrandFilter" class="px-4 py-2 border rounded-lg" onchange="renderProductList()">
+                            <option value="">全部品牌</option>
+                            <!-- 品牌选项将动态生成 -->
                         </select>
                     </div>
                 </div>
@@ -1357,27 +1412,39 @@
 
                 <!-- 筛选栏 -->
                 <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
-                    <div class="flex flex-wrap gap-4 items-center">
-                        <div class="flex items-center gap-2">
-                            <label class="text-sm font-medium text-gray-600">费用类型：</label>
-                            <select id="expenseTypeFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none" onchange="renderExpenseList()">
-                                <option value="">全部</option>
-                                <option value="processing">加工费用</option>
-                                <option value="packaging">包装费用</option>
-                                <option value="carton">纸箱</option>
-                                <option value="office">办公杂费</option>
-                                <option value="other">其他费用</option>
-                            </select>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <label class="text-sm font-medium text-gray-600">日期：</label>
-                            <input type="date" id="expenseDateFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none" onchange="renderExpenseList()">
-                        </div>
-                        <button onclick="resetExpenseFilters()" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
-                            重置筛选
-                        </button>
+                <div class="flex flex-wrap gap-4 items-center">
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm font-medium text-gray-600">费用类型：</label>
+                        <select id="expenseTypeFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none" onchange="renderExpenseList()">
+                            <option value="">全部</option>
+                            <option value="processing">加工费用</option>
+                            <option value="packaging">包装费用</option>
+                            <option value="carton">纸箱</option>
+                            <option value="office">办公杂费</option>
+                            <option value="other">其他费用</option>
+                        </select>
                     </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm font-medium text-gray-600">支付状态：</label>
+                        <select id="expensePaymentFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none" onchange="renderExpenseList()">
+                            <option value="">全部</option>
+                            <option value="paid">已支付</option>
+                            <option value="unpaid">未支付</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2 flex-1 min-w-[200px]">
+                        <label class="text-sm font-medium text-gray-600">搜索备注：</label>
+                        <input type="text" id="expenseSearch" placeholder="搜索报销人、用途..." class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none w-full" onkeyup="renderExpenseList()">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm font-medium text-gray-600">日期：</label>
+                        <input type="date" id="expenseDateFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none" onchange="renderExpenseList()">
+                    </div>
+                    <button onclick="resetExpenseFilters()" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
+                        重置筛选
+                    </button>
                 </div>
+            </div>
 
                 <!-- 费用列表 -->
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -1544,8 +1611,20 @@
                             style="width: 100%; padding: 10px; border: 1px solid #0ea5e9; border-radius: 6px; font-size: 14px;"
                             onkeyup="filterProductOptions()">
                     </div>
-                    <div id="productOptionsList" style="max-height: 300px; overflow-y: auto; background: white; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <div style="margin-bottom: 12px; display: flex; gap: 8px;">
+                    <select id="productBrandFilterSelect" onchange="filterProductOptions()" 
+                        style="flex: 1; padding: 10px; border: 1px solid #0ea5e9; border-radius: 6px; font-size: 14px; background: white;">
+                        <option value="">全部品牌</option>
+                    </select>
+                </div>
+                    <div id="productOptionsList" style="max-height: 240px; overflow-y: auto; background: white; border-radius: 8px; border: 1px solid #e2e8f0;">
                         <!-- 产品选项将动态生成 -->
+                    </div>
+                    <div id="productSelectActions" style="margin-top: 12px; display: none;">
+                        <button onclick="batchAddSelectedProducts()" id="batchAddBtn"
+                                style="width: 100%; padding: 12px; background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer;">
+                            添加选中产品 (0)
+                        </button>
                     </div>
                 </div>
 
@@ -1960,6 +2039,7 @@
         let salesItemCount = 0;
         let purchaseImages = [];
         let currentEditingSalesItem = null;  // 当前正在编辑的销售行
+        let selectedProductIds = [];  // 多选产品临时存储
 
         // ==================== 默认产品数据 ====================
         const DEFAULT_PRODUCTS = [
@@ -2176,6 +2256,7 @@
             updateExpenseTypeSelectors();
 
             updateAllViews();
+            updateProductBrandFilter();
         }
 
         // ==================== Toast提示 ====================
@@ -2238,7 +2319,7 @@
         // ==================== 产品库管理 ====================
         function renderProductList() {
             const search = document.getElementById('productSearch').value.toLowerCase();
-            const categoryFilter = document.getElementById('productCategoryFilter').value;
+            const brandFilter = document.getElementById('productBrandFilter').value;
 
             let products = data.products || [];
 
@@ -2250,8 +2331,8 @@
                 );
             }
 
-            if (categoryFilter) {
-                products = products.filter(p => p.category === categoryFilter);
+            if (brandFilter) {
+                products = products.filter(p => p.brand === brandFilter);
             }
 
             const tbody = document.getElementById('productList');
@@ -2309,6 +2390,7 @@
             saveData();
             renderProductList();
             showToast(`✅ 已清空原产品库(${oldCount}个)，导入 ${addedCount} 个新产品`);
+            updateProductBrandFilter(); // 刷新品牌筛选列表
         }
 
         function openProductModal() {
@@ -2340,6 +2422,29 @@
             document.getElementById('productModal').classList.add('active');
         }
 
+        
+        // ==================== 产品品牌筛选管理 ====================
+        function updateProductBrandFilter() {
+            const select = document.getElementById('productBrandFilter');
+            if (!select) return;
+
+            // 从现有产品中提取所有品牌（去重）
+            const brands = [...new Set((data.products || []).map(p => p.brand).filter(b => b && b.trim() !== ''))].sort();
+
+            // 保存当前选中的值
+            const currentValue = select.value;
+
+            // 重建选项列表
+            select.innerHTML = '<option value="">全部品牌</option>' + 
+                brands.map(brand => `<option value="${brand}">${brand}</option>`).join('');
+
+            // 恢复选中值（如果仍然存在）
+            if (brands.includes(currentValue)) {
+                select.value = currentValue;
+            }
+        }
+
+        // 在保存产品后刷新品牌列表
         async function saveProduct() {
             if (!checkEditPermission()) return;
 
@@ -2385,6 +2490,7 @@
                 await saveData();
                 closeModal('productModal');
                 renderProductList();
+                updateProductBrandFilter(); // 刷新品牌筛选列表
                 showToast('✅ 保存成功');
             } catch (err) {
                 console.error('保存失败:', err);
@@ -2403,11 +2509,15 @@
             try {
                 await saveData();
                 renderProductList();
+                updateProductBrandFilter(); // 刷新品牌筛选列表
                 showToast('✅ 删除成功');
             } catch (err) {
                 console.error('删除失败:', err);
             }
         }
+
+
+        
 
         // 导出产品库到Excel
         function exportProducts() {
@@ -2464,18 +2574,52 @@
                 return;
             }
 
+            selectedProductIds = [];
             const container = document.getElementById('productSelectArea');
             container.style.display = 'block';
             document.getElementById('productQuickSearch').value = '';
-            renderProductOptions(data.products);
+
+            // 根据模式显示/隐藏多选按钮
+            const isEditMode = !!currentEditingSalesItem;
+            const actionsDiv = document.getElementById('productSelectActions');
+            if (actionsDiv) {
+                actionsDiv.style.display = isEditMode ? 'none' : 'block';
+            }
+
+            renderProductOptions(data.products, isEditMode);
             document.getElementById('productQuickSearch').focus();
+
+    // 初始化品牌筛选下拉框
+    initProductBrandFilterForSelect();
         }
 
         function closeProductSelect() {
             document.getElementById('productSelectArea').style.display = 'none';
+            currentEditingSalesItem = null;
         }
 
-        function renderProductOptions(products) {
+
+        // 初始化产品选择弹窗中的品牌筛选下拉框
+        function initProductBrandFilterForSelect() {
+            const select = document.getElementById('productBrandFilterSelect');
+            if (!select) return;
+
+            // 从现有产品中提取所有品牌（去重）
+            const brands = [...new Set((data.products || []).map(p => p.brand).filter(b => b && b.trim() !== ''))].sort();
+
+            // 保存当前选中的值
+            const currentValue = select.value;
+
+            // 重建选项列表
+            select.innerHTML = '<option value="">全部品牌</option>' + 
+                brands.map(brand => `<option value="${brand}">${brand}</option>`).join('');
+
+            // 恢复选中值（如果仍然存在）
+            if (brands.includes(currentValue)) {
+                select.value = currentValue;
+            }
+        }
+        function renderProductOptions(products, isEditMode = false) {
             const container = document.getElementById('productOptionsList');
 
             if (products.length === 0) {
@@ -2483,37 +2627,82 @@
                 return;
             }
 
-            container.innerHTML = products.map(p => `
-                <div onclick="selectProductForSales('${p.id}')" 
-                     style="padding: 12px; border-bottom: 1px solid #e5e7eb; cursor: pointer; hover: background-color: #f3f4f6;"
-                     onmouseover="this.style.backgroundColor='#f3f4f6'"
-                     onmouseout="this.style.backgroundColor='white'">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <span style="font-weight: 600; color: #111827;">${p.name}</span>
-                            <span style="color: #6b7280; margin-left: 8px;">${p.spec}</span>
-                            <span style="color: #9ca3af; margin-left: 8px; font-size: 12px;">${p.brand || '无品牌'}</span>
+            container.innerHTML = products.map(p => {
+                if (isEditMode) {
+                    // 编辑模式：点击直接替换当前行
+                    return `
+                        <div onclick="selectProductForSalesEdit('${p.id}')" 
+                             style="padding: 12px; border-bottom: 1px solid #e5e7eb; cursor: pointer;"
+                             onmouseover="this.style.backgroundColor='#f3f4f6'"
+                             onmouseout="this.style.backgroundColor='white'">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
+                                    <span style="font-weight: 600; color: #111827;">${p.name}</span>
+                                    <span style="color: #6b7280; margin-left: 8px;">${p.spec}</span>
+                                    <span style="color: #9ca3af; margin-left: 8px; font-size: 12px;">${p.brand || '无品牌'}</span>
+                                </div>
+                                <div style="text-align: right; flex-shrink: 0; margin-left: 8px;">
+                                    <div style="font-weight: 600; color: #dc2626;">¥${p.price}/${p.priceType === 'kg' ? 'kg' : '件'}</div>
+                                    <div style="font-size: 12px; color: #6b7280;">默认: ${p.defaultWeight}kg</div>
+                                </div>
+                            </div>
                         </div>
-                        <div style="text-align: right;">
-                            <div style="font-weight: 600; color: #dc2626;">¥${p.price}/${p.priceType === 'kg' ? 'kg' : '件'}</div>
-                            <div style="font-size: 12px; color: #6b7280;">默认: ${p.defaultWeight}kg</div>
+                    `;
+                } else {
+                    // 多选模式
+                    const isSelected = selectedProductIds.includes(p.id);
+                    return `
+                        <div style="padding: 12px; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; gap: 10px; cursor: pointer; background: ${isSelected ? '#eff6ff' : 'white'};"
+                             onclick="toggleProductSelection('${p.id}', event)"
+                             onmouseover="this.style.backgroundColor='${isSelected ? '#dbeafe' : '#f3f4f6'}'"
+                             onmouseout="this.style.backgroundColor='${isSelected ? '#eff6ff' : 'white'}'"
+                             data-product-id="${p.id}"
+                             id="product-option-${p.id}">
+                            <input type="checkbox" ${isSelected ? 'checked' : ''} 
+                                   onclick="event.stopPropagation(); toggleProductSelection('${p.id}', event)"
+                                   style="width: 18px; height: 18px; cursor: pointer; flex-shrink: 0;">
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                        <span style="font-weight: 600; color: #111827;">${p.name}</span>
+                                        <span style="color: #6b7280; margin-left: 8px;">${p.spec}</span>
+                                        <span style="color: #9ca3af; margin-left: 8px; font-size: 12px;">${p.brand || '无品牌'}</span>
+                                    </div>
+                                    <div style="text-align: right; flex-shrink: 0; margin-left: 8px;">
+                                        <div style="font-weight: 600; color: #dc2626;">¥${p.price}/${p.priceType === 'kg' ? 'kg' : '件'}</div>
+                                        <div style="font-size: 12px; color: #6b7280;">默认: ${p.defaultWeight}kg</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            `).join('');
+                    `;
+                }
+            }).join('');
         }
 
         function filterProductOptions() {
             const search = document.getElementById('productQuickSearch').value.toLowerCase();
-            const filtered = data.products.filter(p => 
-                (p.name && p.name.toLowerCase().includes(search)) ||
-                (p.spec && p.spec.toLowerCase().includes(search)) ||
-                (p.brand && p.brand.toLowerCase().includes(search))
-            );
-            renderProductOptions(filtered);
-        }
+            const brandFilter = document.getElementById('productBrandFilterSelect').value;
 
-        function selectProductForSales(productId) {
+            let filtered = data.products;
+
+            // 品牌筛选
+            if (brandFilter) {
+                filtered = filtered.filter(p => p.brand === brandFilter);
+            }
+
+            // 关键词搜索
+            if (search) {
+                filtered = filtered.filter(p => 
+                    (p.name && p.name.toLowerCase().includes(search)) ||
+                    (p.spec && p.spec.toLowerCase().includes(search)) ||
+                    (p.brand && p.brand.toLowerCase().includes(search))
+                );
+            }
+
+            const isEditMode = !!currentEditingSalesItem;
+            renderProductOptions(filtered, isEditMode);
+        }function selectProductForSales(productId) {
             const product = data.products.find(p => p.id === productId);
             if (!product) return;
 
@@ -2549,7 +2738,7 @@
                 <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 8px; margin-bottom: 8px; font-size: 12px; color: #166534;">
                     <strong>${product.name}</strong> | ${product.spec} | ${product.brand || '无品牌'} | ¥${product.price}/${product.priceType === 'kg' ? 'kg' : '件'}
                 </div>
-                <div class="sales-item-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                <div class="sales-item-grid">
                     <input type="hidden" class="si-product-id" value="${product.id}">
                     <input type="text" class="si-name" placeholder="品名" value="${product.name}" readonly style="padding: 8px; border: 1px solid #86efac; border-radius: 6px; background: #f0fdf4; color: #166534;">
                     <input type="text" class="si-spec" placeholder="规格" value="${product.spec}" readonly style="padding: 8px; border: 1px solid #86efac; border-radius: 6px; background: #f0fdf4; color: #166534;">
@@ -2577,37 +2766,81 @@
             const row = btn.closest('.sales-item-row');
             currentEditingSalesItem = row;
             openProductSelect();
+        }
 
-            // 修改选择行为：替换当前行而不是添加新行
-            const originalSelectProduct = selectProductForSales;
-            selectProductForSales = function(productId) {
-                const product = data.products.find(p => p.id === productId);
-                if (!product || !currentEditingSalesItem) return;
+        // 编辑模式：选择产品替换当前行
+        function selectProductForSalesEdit(productId) {
+            const product = data.products.find(p => p.id === productId);
+            if (!product || !currentEditingSalesItem) return;
 
-                // 更新当前行的数据
-                currentEditingSalesItem.querySelector('.si-product-id').value = product.id;
-                currentEditingSalesItem.querySelector('.si-name').value = product.name;
-                currentEditingSalesItem.querySelector('.si-spec').value = product.spec;
-                currentEditingSalesItem.querySelector('.si-brand').value = product.brand || '';
-                currentEditingSalesItem.querySelector('.si-weight').value = product.defaultWeight;
-                currentEditingSalesItem.querySelector('.si-price').value = product.price;
-                currentEditingSalesItem.querySelector('.si-price-type').value = product.priceType;
+            // 更新当前行的数据
+            currentEditingSalesItem.querySelector('.si-product-id').value = product.id;
+            currentEditingSalesItem.querySelector('.si-name').value = product.name;
+            currentEditingSalesItem.querySelector('.si-spec').value = product.spec;
+            currentEditingSalesItem.querySelector('.si-brand').value = product.brand || '';
+            currentEditingSalesItem.querySelector('.si-weight').value = product.defaultWeight;
+            currentEditingSalesItem.querySelector('.si-price').value = product.price;
+            currentEditingSalesItem.querySelector('.si-price-type').value = product.priceType;
 
-                // 更新提示信息
-                const infoDiv = currentEditingSalesItem.querySelector('div[style*="f0fdf4"]');
-                if (infoDiv) {
-                    infoDiv.innerHTML = `<strong>${product.name}</strong> | ${product.spec} | ${product.brand || '无品牌'} | ¥${product.price}/${product.priceType === 'kg' ? 'kg' : '件'}`;
+            // 更新提示信息
+            const infoDiv = currentEditingSalesItem.querySelector('div[style*="f0fdf4"]');
+            if (infoDiv) {
+                infoDiv.innerHTML = `<strong>${product.name}</strong> | ${product.spec} | ${product.brand || '无品牌'} | ¥${product.price}/${product.priceType === 'kg' ? 'kg' : '件'}`;
+            }
+
+            // 重新计算
+            calcSalesItem(currentEditingSalesItem.querySelector('.si-qty'));
+
+            closeProductSelect();
+        }
+
+        // 多选：切换产品勾选状态
+        function toggleProductSelection(productId, event) {
+            if (event) event.stopPropagation();
+
+            const index = selectedProductIds.indexOf(productId);
+            const optionEl = document.getElementById('product-option-' + productId);
+            const checkbox = optionEl ? optionEl.querySelector('input[type="checkbox"]') : null;
+
+            if (index > -1) {
+                selectedProductIds.splice(index, 1);
+                if (optionEl) {
+                    optionEl.style.backgroundColor = 'white';
+                    if (checkbox) checkbox.checked = false;
                 }
+            } else {
+                selectedProductIds.push(productId);
+                if (optionEl) {
+                    optionEl.style.backgroundColor = '#eff6ff';
+                    if (checkbox) checkbox.checked = true;
+                }
+            }
 
-                // 重新计算
-                calcSalesItem(currentEditingSalesItem.querySelector('.si-qty'));
+            // 更新按钮文字
+            const btn = document.getElementById('batchAddBtn');
+            if (btn) {
+                btn.textContent = `添加选中产品 (${selectedProductIds.length})`;
+            }
+        }
 
-                closeProductSelect();
-                currentEditingSalesItem = null;
+        // 批量添加选中的产品
+        function batchAddSelectedProducts() {
+            const count = selectedProductIds.length;
+            if (count === 0) {
+                showToast('⚠️ 请先勾选要添加的产品', 'warning');
+                return;
+            }
 
-                // 恢复原始函数
-                selectProductForSales = originalSelectProduct;
-            };
+            selectedProductIds.forEach(productId => {
+                const product = data.products.find(p => p.id === productId);
+                if (product) {
+                    addSalesItemWithProduct(product);
+                }
+            });
+
+            selectedProductIds = [];
+            closeProductSelect();
+            showToast(`✅ 已添加 ${count} 个产品`);
         }
 
 
@@ -3369,7 +3602,7 @@
                 <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 8px; margin-bottom: 8px; font-size: 12px; color: #92400e;">
                     ⚠️ 请使用上方"从产品库添加"按钮选择产品，自动填充信息
                 </div>
-                <div class="sales-item-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                <div class="sales-item-grid">
                     <input type="text" class="si-name" placeholder="品名" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
                     <input type="text" class="si-spec" placeholder="规格" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
                     <input type="text" class="si-brand" placeholder="品牌" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
@@ -5841,6 +6074,8 @@ function syncPaymentDataToOrders() {
         function renderExpenseList() {
             const typeFilter = document.getElementById('expenseTypeFilter').value;
             const dateFilter = document.getElementById('expenseDateFilter').value;
+            const paymentFilter = document.getElementById('expensePaymentFilter').value;
+            const searchKeyword = document.getElementById('expenseSearch').value.toLowerCase().trim();
 
             // 获取费用登记记录
             let expenses = data.expenses || [];
@@ -5854,6 +6089,22 @@ function syncPaymentDataToOrders() {
             if (dateFilter) {
                 expenses = expenses.filter(e => e.date === dateFilter);
             }
+            // 支付状态筛选
+            if (paymentFilter) {
+                if (paymentFilter === 'paid') {
+                    expenses = expenses.filter(e => (e.paidAmount || 0) > 0 && (e.remainingAmount || 0) <= 0);
+                } else if (paymentFilter === 'unpaid') {
+                    expenses = expenses.filter(e => (e.remainingAmount || 0) > 0);
+                }
+            }
+            // 搜索备注关键词
+            if (searchKeyword) {
+                expenses = expenses.filter(e => {
+                    const remark = (e.remark || '').toLowerCase();
+                    const typeName = ((EXPENSE_TYPES[e.type] || {}).name || e.type || '').toLowerCase();
+                    return remark.includes(searchKeyword) || typeName.includes(searchKeyword);
+                });
+            }
 
             // 筛选费用付款记录
             let filteredPayments = expensePayments;
@@ -5862,6 +6113,20 @@ function syncPaymentDataToOrders() {
             }
             if (dateFilter) {
                 filteredPayments = filteredPayments.filter(p => p.date === dateFilter);
+            }
+            // 支付状态筛选：付款流水只在"全部"或"已支付"状态下显示
+            // 当筛选"未支付"时，隐藏所有付款流水（因为付款流水代表已支付）
+            if (paymentFilter === 'unpaid') {
+                filteredPayments = []; // 未支付状态下不显示付款流水
+            }
+            // 搜索关键词也应用于付款流水
+            if (searchKeyword) {
+                filteredPayments = filteredPayments.filter(p => {
+                    const remark = (p.remark || '').toLowerCase();
+                    const typeName = ((EXPENSE_TYPES[p.expenseType] || {}).name || p.expenseType || '').toLowerCase();
+                    const method = (p.paymentMethod || '').toLowerCase();
+                    return remark.includes(searchKeyword) || typeName.includes(searchKeyword) || method.includes(searchKeyword);
+                });
             }
 
             // 计算各类费用的统计（费用板块独立统计）
@@ -6345,6 +6610,8 @@ function syncPaymentDataToOrders() {
         function resetExpenseFilters() {
             document.getElementById('expenseTypeFilter').value = '';
             document.getElementById('expenseDateFilter').value = '';
+            document.getElementById('expensePaymentFilter').value = '';
+            document.getElementById('expenseSearch').value = '';
             renderExpenseList();
         }
 
@@ -7073,6 +7340,7 @@ function syncPaymentDataToOrders() {
             updateExpenseTypeSelectors();
 
             updateAllViews();
+            updateProductBrandFilter();
                         updateDashboard();
                         updateCapitalOverview();
 
