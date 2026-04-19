@@ -1318,6 +1318,10 @@
                             <label class="text-sm font-medium text-gray-600">日期：</label>
                             <input type="date" id="transactionDateFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none" onchange="renderTransactionList()">
                         </div>
+                        <div class="flex items-center gap-2 flex-1 min-w-[150px]">
+                            <label class="text-sm font-medium text-gray-600">搜索：</label>
+                            <input type="text" id="transactionSearch" placeholder="搜索备注、往来单位、金额..." class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none w-full" onkeyup="renderTransactionList()">
+                        </div>
                         <button onclick="resetTransactionFilters()" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
                             重置筛选
                         </button>
@@ -4558,6 +4562,7 @@ function renderTransactionList() {
             const typeFilter = document.getElementById('transactionTypeFilter').value;
             const partyFilter = document.getElementById('transactionPartyFilter').value;
             const dateFilter = document.getElementById('transactionDateFilter').value;
+            const searchKeyword = document.getElementById('transactionSearch').value.toLowerCase().trim();
 
             // 只读取非费用相关的收付款记录
             // 费用付款现在独立存储在 data.expensePayments 中，不再显示在收付款板块
@@ -4576,6 +4581,20 @@ function renderTransactionList() {
             // 日期筛选
             if (dateFilter) {
                 filteredTransactions = filteredTransactions.filter(t => t.date === dateFilter);
+            }
+
+            // 搜索筛选（按备注、往来单位、金额搜索）
+            if (searchKeyword) {
+                filteredTransactions = filteredTransactions.filter(t => {
+                    const remark = (t.remark || '').toLowerCase();
+                    const partyName = (t.partyName || '').toLowerCase();
+                    const amount = String(t.amount || '');
+                    const paymentMethod = (t.paymentMethod || '').toLowerCase();
+                    return remark.includes(searchKeyword) || 
+                           partyName.includes(searchKeyword) || 
+                           amount.includes(searchKeyword) ||
+                           paymentMethod.includes(searchKeyword);
+                });
             }
 
             // 计算筛选后的汇总
@@ -4685,6 +4704,7 @@ function renderTransactionList() {
             document.getElementById('transactionTypeFilter').value = '';
             document.getElementById('transactionPartyFilter').value = '';
             document.getElementById('transactionDateFilter').value = '';
+            document.getElementById('transactionSearch').value = '';
             clearExpenseTypeFilter();
             renderTransactionList();
         }
