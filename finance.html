@@ -3635,6 +3635,20 @@
             salesItemCount = rows.length;
         }
 
+        // 重量格式化：保留最多2位小数，去掉末尾无意义的0
+        function formatWeight(value) {
+            if (value === undefined || value === null || value === '') return '';
+            const num = parseFloat(value);
+            if (isNaN(num)) return value;
+
+            // 保留最多2位小数，去掉末尾的0
+            let str = num.toFixed(2);
+            if (str.indexOf('.') !== -1) {
+                str = str.replace(/0+$/, '').replace(/\.$/, '');
+            }
+            return str;
+        }
+
         function calcSalesItem(input) {
             const row = input.closest('.sales-item-row');
             const qty = parseFloat(row.querySelector('.si-qty').value) || 0;
@@ -3812,7 +3826,7 @@
                     const total = parseFloat(row.querySelector('.si-total').value) || 0;
                     const remark = row.querySelector('.si-remark').value || '';
 
-                    items.push({ seq: items.length + 1, name, spec, brand, qty, weight: weight.toFixed(1), priceType, price: price.toFixed(1), total: total.toFixed(2), remark });
+                    items.push({ seq: items.length + 1, name, spec, brand, qty, weight: formatWeight(weight), priceType, price: price.toFixed(1), total: total.toFixed(2), remark });
                     totalQty += qty;
                     totalAmount += total;
                 }
@@ -3898,7 +3912,7 @@
                     const total = parseFloat(row.querySelector('.si-total').value) || 0;
                     const remark = row.querySelector('.si-remark').value || '';
 
-                    items.push({ seq: items.length + 1, name, spec, brand, qty, weight: weight.toFixed(1), priceType, price: price.toFixed(1), total: total.toFixed(2), remark });
+                    items.push({ seq: items.length + 1, name, spec, brand, qty, weight: formatWeight(weight), priceType, price: price.toFixed(1), total: total.toFixed(2), remark });
                     totalQty += qty;
                     totalAmount += total;
                 }
@@ -3953,7 +3967,7 @@
             for (let i = 1; i <= 10; i++) {
                 const item = order.items.find(it => it.seq === i);
                 if (item) {
-                    tableRows += `<tr><td class="td-seq">${item.seq}</td><td class="td-product">${item.name}</td><td class="td-spec">${item.spec}</td><td class="td-brand">${item.brand}</td><td class="td-qty">${item.qty}</td><td class="td-weight">${item.weight}</td><td class="td-price">${item.price}</td><td class="td-amount" style="color: #c00; font-weight: bold;">${item.total}</td><td class="td-remark">${item.remark}</td></tr>`;
+                    tableRows += `<tr><td class="td-seq">${item.seq}</td><td class="td-product">${item.name}</td><td class="td-spec">${item.spec}</td><td class="td-brand">${item.brand}</td><td class="td-qty">${item.qty}</td><td class="td-weight">${formatWeight(item.weight)}</td><td class="td-price">${item.price}</td><td class="td-amount" style="color: #c00; font-weight: bold;">${item.total}</td><td class="td-remark">${item.remark}</td></tr>`;
                 } else {
                     tableRows += `<tr><td class="td-seq">${i}</td><td class="td-product"></td><td class="td-spec"></td><td class="td-brand"></td><td class="td-qty"></td><td class="td-weight"></td><td class="td-price"></td><td class="td-amount"></td><td class="td-remark"></td></tr>`;
                 }
