@@ -195,7 +195,7 @@
         .sales-list-notice-title { font-weight: bold; margin-bottom: 8px; font-size: 13px; }
         .sales-list-notice-content { line-height: 1.8; font-size: 12px; }
 
-        .preview-modal-content { max-width: 1000px; width: 95%; padding: 0; overflow: hidden; }
+        .preview-modal-content { max-width: 1200px; width: 95%; padding: 0; overflow: hidden; }
         .preview-modal-header { padding: 20px; background: #f8f9fa; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
         .preview-modal-body { 
             padding: 20px; 
@@ -4034,7 +4034,7 @@
         function downloadSalesReceipt() {
             document.getElementById('loading').classList.add('show');
             const element = document.querySelector('.sales-list-wrapper');
-            html2canvas(element, { scale: 2, backgroundColor: '#ffffff', width: 900, height: element.offsetHeight }).then(canvas => {
+            html2canvas(element, { scale: 2, backgroundColor: '#ffffff', width: 1100, height: element.offsetHeight }).then(canvas => {
                 const link = document.createElement('a');
                 link.download = '销售清单_' + new Date().toISOString().split('T')[0] + '.png';
                 link.href = canvas.toDataURL('image/png');
