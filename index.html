@@ -1006,6 +1006,61 @@
         </table>
       </div>
     </div>
+
+    <!-- 待扣减入库记录 -->
+    <div class="card" style="margin-top: 20px; border: 2px solid #f59e0b;">
+      <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; color: #d97706; cursor: pointer;" onclick="togglePendingDeduct()">
+        <span>⚠️ 待扣减入库记录</span>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span id="pendingDeductCount" style="font-size: 13px; color: var(--text-tertiary); font-weight: 500;">共 0 条</span>
+          <span id="pendingDeductToggle" style="font-size: 18px; transition: transform 0.3s;">▼</span>
+        </div>
+      </div>
+      <div id="pendingDeductContent" style="overflow: hidden; transition: max-height 0.4s ease-out;">
+        <div style="background: #fffbeb; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 13px; color: #92400e;">
+          💡 以下入库批次尚未扣减纸箱库存，点击「扣减纸箱」按钮可手动补扣
+        </div>
+        <!-- 日期筛选 -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr auto auto; gap: 10px; margin-bottom: 16px; align-items: end;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; display: block;">开始日期</label>
+            <input type="date" id="pendingStartDate" style="min-height: 38px; font-size: 13px;">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; display: block;">结束日期</label>
+            <input type="date" id="pendingEndDate" style="min-height: 38px; font-size: 13px;">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="filterPendingDeduct()" style="padding: 8px 16px; font-size: 13px; height: 42px;">🔍 筛选</button>
+          <button class="btn btn-secondary btn-sm" onclick="resetPendingDeductFilter()" style="padding: 8px 16px; font-size: 13px; height: 42px;">🔄 重置</button>
+        </div>
+        <div id="pendingDeductContainer" style="max-height: 400px; overflow-y: auto;">
+          <div style="text-align: center; padding: 40px; color: var(--text-tertiary);">
+            <div style="font-size: 48px; margin-bottom: 8px;">✅</div>
+            <div>所有入库批次已扣减纸箱</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 纸箱历史记录 -->
+    <div class="card" style="margin-top: 20px;">
+      <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleCartonHistory()">
+        <span>📋 纸箱变动记录</span>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span id="cartonHistoryCount" style="font-size: 13px; color: var(--text-tertiary); font-weight: 500;">共 0 条</span>
+          <span id="cartonHistoryToggle" style="font-size: 18px; transition: transform 0.3s;">▼</span>
+        </div>
+      </div>
+      <div id="cartonHistoryContent" style="overflow: hidden; transition: max-height 0.4s ease-out;">
+        <div id="cartonHistoryContainer" style="max-height: 400px; overflow-y: auto;">
+          <div style="text-align: center; padding: 40px; color: var(--text-tertiary);">
+            <div style="font-size: 48px; margin-bottom: 8px;">📋</div>
+            <div>暂无变动记录</div>
+            <div style="font-size: 13px; margin-top: 4px;">入库产品时会自动扣减对应纸箱库存</div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 <div class="nav-bar">
     <div class="nav-item active" data-page="stock" onclick="switchPage('stock')"><span class="icon">📊</span><span>库存</span></div>
@@ -1453,6 +1508,15 @@ async function init() {
         PRODUCT_CARTON_MAP = { ...DEFAULT_PRODUCT_CARTON_MAP };
       }
 
+      // 加载历史记录
+      if (cartonData.history && Array.isArray(cartonData.history)) {
+        cartonHistory = [...cartonData.history];
+      }
+      // 加载已扣减批次ID
+      if (cartonData.deductedBatchIds && Array.isArray(cartonData.deductedBatchIds)) {
+        cartonDeductedBatchIds = [...cartonData.deductedBatchIds];
+      }
+
       // 确保所有纸箱都有库存条目
       CARTON_TYPES.forEach(carton => {
         if (cartonStockData[carton.id] === undefined) {
@@ -1492,7 +1556,9 @@ async function init() {
           })),
           stock: { ...cartonStockData },
           threshold: cartonAlertThreshold || 50,
-          productMap: { ...PRODUCT_CARTON_MAP }
+          productMap: { ...PRODUCT_CARTON_MAP },
+          history: cartonHistory.slice(0, 200),
+          deductedBatchIds: cartonDeductedBatchIds
         };
 
         const savePayload = { 
@@ -2692,6 +2758,11 @@ async function doExecuteImport() {
           newProductsCount: type === 'in' ? items.filter(i => i.isNewProduct).length : 0
         };
         batches.unshift(batch);
+
+        // 入库时自动扣减纸箱库存
+        if (type === 'in') {
+          deductCartonStockOnImport(batch.items, date, batch.id);
+        }
       }
     });
   });
@@ -3947,18 +4018,20 @@ function showLoading(text) {
       // 计算合计
       let totalQty = 0;
       let totalValue = 0;
+      let totalWeight = 0;
       filtered.forEach(p => {
         const qty = stock[p.id] || 0;
         totalQty += qty;
+        totalWeight += qty * (p.net || 0);
         const price = getProductPrice(p);
         totalValue += price * qty;
       });
 
       // 生成图片
-      generateStockImage(filtered, totalQty, brand, name, sku);
+      generateStockImage(filtered, totalQty, totalWeight, brand, name, sku);
     }
 
-    function generateStockImage(data, totalQty, brand, name, sku) {
+    function generateStockImage(data, totalQty, totalWeight, brand, name, sku) {
       showLoading('正在生成图片...');
 
       // 创建canvas
@@ -3969,8 +4042,9 @@ function showLoading(text) {
       const canvasWidth = 800;
       const headerHeight = 120;
       const rowHeight = 60;
-      const footerHeight = 100;
-      const totalHeight = headerHeight + (data.length * rowHeight) + footerHeight;
+      const footerHeight = 120;
+      // 总高度 = 顶部标题 + 表头行 + 数据行 + 底部合计 + 间距
+      const totalHeight = headerHeight + rowHeight + (data.length * rowHeight) + footerHeight + 30;
 
       canvas.width = canvasWidth;
       canvas.height = totalHeight;
@@ -4100,23 +4174,38 @@ function showLoading(text) {
       ctx.fillStyle = '#f0f9ff';
       ctx.strokeStyle = '#0ea5e9';
       ctx.lineWidth = 2;
-      ctx.fillRect(margin, footerY, tableWidth, 70);
-      ctx.strokeRect(margin, footerY, tableWidth, 70);
+      ctx.fillRect(margin, footerY, tableWidth, 100);
+      ctx.strokeRect(margin, footerY, tableWidth, 100);
 
-      // 合计文字
+      // 合计标题
       ctx.fillStyle = '#0369a1';
       ctx.font = 'bold 18px "Noto Sans SC", sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText('📊 统计汇总', margin + 15, footerY + 30);
+      ctx.fillText('📊 统计汇总', margin + 15, footerY + 28);
 
-      ctx.font = 'bold 24px "Noto Sans SC", sans-serif';
+      // 分隔线
+      ctx.strokeStyle = '#bae6fd';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(margin + 15, footerY + 38);
+      ctx.lineTo(canvasWidth - margin - 15, footerY + 38);
+      ctx.stroke();
+
+      // 左侧：合计件数 + 合计重量
+      ctx.textAlign = 'left';
+      ctx.font = 'bold 20px "Noto Sans SC", sans-serif';
       ctx.fillStyle = '#0284c7';
-      ctx.textAlign = 'right';
-      ctx.fillText(`合计库存: ${totalQty.toLocaleString()} 件`, canvasWidth - margin - 15, footerY + 45);
+      ctx.fillText(`合计件数: ${totalQty.toLocaleString()} 件`, margin + 15, footerY + 65);
 
+      ctx.font = 'bold 20px "Noto Sans SC", sans-serif';
+      ctx.fillStyle = '#059669';
+      ctx.fillText(`合计重量: ${totalWeight.toLocaleString('zh-CN', {maximumFractionDigits: 2})} kg`, margin + 15, footerY + 90);
+
+      // 右侧：商品种数
+      ctx.textAlign = 'right';
       ctx.font = '14px "Noto Sans SC", sans-serif';
       ctx.fillStyle = '#0ea5e9';
-      ctx.fillText(`共 ${data.length} 种商品`, canvasWidth - margin - 15, footerY + 65);
+      ctx.fillText(`共 ${data.length} 种商品`, canvasWidth - margin - 15, footerY + 90);
 
       // 转换为图片并下载
       try {
@@ -4482,6 +4571,9 @@ function showLoading(text) {
         };
         batches.unshift(batch);
 
+        // 入库时自动扣减纸箱库存
+        await deductCartonStockOnImport(batch.items, batch.dateRange.min, batch.id);
+
         // 保存数据
         await saveData();
 
@@ -4687,6 +4779,8 @@ function showLoading(text) {
     // 纸箱数据（独立本地存储）
     let cartonStockData = {};
     let cartonAlertThreshold = 50;
+    let cartonHistory = [];
+    let cartonDeductedBatchIds = [];
 
     // 标记是否已从云端加载
     let cartonsLoadedFromCloud = false;
@@ -4700,15 +4794,21 @@ function showLoading(text) {
             loadCartonTypesLocal();
             loadProductCartonConfigLocal();
             loadCartonDataLocal();
+            loadCartonHistoryLocal();
+            loadCartonDeductedLocal();
         } else {
             // 在线模式：云端已加载，本地作为备份补充
             // 只有当云端没有某些纸箱类型时才从本地补充
             mergeCartonDataFromLocal();
+            loadCartonHistoryLocal();
+            loadCartonDeductedLocal();
         }
         renderCartonTable();
         updateCartonStats();
         checkCartonAlerts();
         initProductCartonConfig();
+        renderCartonHistory();
+        renderPendingDeductBatches();
     }
 
     // 合并本地数据（不覆盖云端已有数据）
@@ -4808,6 +4908,37 @@ function showLoading(text) {
     function saveCartonDataLocal() {
         localStorage.setItem('warehouse_carton_stock_v1', JSON.stringify(cartonStockData));
         localStorage.setItem('warehouse_carton_threshold_v1', cartonAlertThreshold);
+        localStorage.setItem('warehouse_carton_history_v1', JSON.stringify(cartonHistory));
+        localStorage.setItem('warehouse_carton_deducted_v1', JSON.stringify(cartonDeductedBatchIds));
+    }
+
+    // 从本地加载纸箱历史
+    function loadCartonHistoryLocal() {
+        const saved = localStorage.getItem('warehouse_carton_history_v1');
+        if (saved) {
+            try {
+                cartonHistory = JSON.parse(saved);
+            } catch(e) {
+                cartonHistory = [];
+            }
+        }
+    }
+
+    // 从本地加载已扣减批次
+    function loadCartonDeductedLocal() {
+        const saved = localStorage.getItem('warehouse_carton_deducted_v1');
+        if (saved) {
+            try {
+                cartonDeductedBatchIds = JSON.parse(saved);
+            } catch(e) {
+                cartonDeductedBatchIds = [];
+            }
+        }
+    }
+
+    // 保存已扣减批次到本地
+    function saveCartonDeductedLocal() {
+        localStorage.setItem('warehouse_carton_deducted_v1', JSON.stringify(cartonDeductedBatchIds));
     }
 
     // 获取产品纸箱配置
@@ -4817,8 +4948,9 @@ function showLoading(text) {
     }
 
     // 入库时扣减纸箱
-    async function deductCartonStockOnImport(batchItems, batchDate) {
+    async function deductCartonStockOnImport(batchItems, batchDate, batchId) {
         let deducted = false;
+        const deductedCartons = [];
         batchItems.forEach(item => {
             const product = products.find(p => p.id === item.productId);
             if (!product) return;
@@ -4827,14 +4959,53 @@ function showLoading(text) {
             deducted = true;
             if (config.carton1) {
                 const current = cartonStockData[config.carton1] || 0;
-                cartonStockData[config.carton1] = Math.max(0, current - (item.qty * config.ratio1));
+                const deductQty = item.qty * config.ratio1;
+                cartonStockData[config.carton1] = Math.max(0, current - deductQty);
+                deductedCartons.push({
+                    cartonId: config.carton1,
+                    qty: deductQty,
+                    productName: product.name,
+                    productSku: product.sku
+                });
             }
             if (config.carton2 && config.ratio2 > 0) {
                 const current = cartonStockData[config.carton2] || 0;
-                cartonStockData[config.carton2] = Math.max(0, current - (item.qty * config.ratio2));
+                const deductQty = item.qty * config.ratio2;
+                cartonStockData[config.carton2] = Math.max(0, current - deductQty);
+                deductedCartons.push({
+                    cartonId: config.carton2,
+                    qty: deductQty,
+                    productName: product.name,
+                    productSku: product.sku
+                });
             }
         });
         if (deducted) {
+            // 记录历史
+            const timestamp = new Date().toISOString();
+            deductedCartons.forEach(d => {
+                const carton = CARTON_TYPES.find(c => c.id === d.cartonId);
+                cartonHistory.unshift({
+                    id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+                    type: 'auto_deduct',
+                    cartonId: d.cartonId,
+                    cartonName: carton ? carton.name : d.cartonId,
+                    qty: d.qty,
+                    productName: d.productName,
+                    productSku: d.productSku,
+                    date: batchDate || timestamp.split('T')[0],
+                    timestamp: timestamp,
+                    remark: '入库自动扣减'
+                });
+            });
+            // 限制历史数量
+            if (cartonHistory.length > 200) cartonHistory = cartonHistory.slice(0, 200);
+
+            // 标记批次为已扣减
+            if (batchId && !cartonDeductedBatchIds.includes(batchId)) {
+                cartonDeductedBatchIds.push(batchId);
+            }
+
             saveCartonDataLocal();
 
             // 同步到云端
@@ -4846,6 +5017,8 @@ function showLoading(text) {
                 renderCartonTable();
                 updateCartonStats();
                 checkCartonAlerts();
+                renderCartonHistory();
+                renderPendingDeductBatches();
             }
             showToast('📦 纸箱库存已自动扣减');
         }
@@ -5640,42 +5813,46 @@ function showLoading(text) {
 
     // 显示纸箱库存调整弹窗 - 支持入库和出库（损耗）
     function showCartonAddModal(cartonId = null) {
+        // 如果传入了 cartonId，只显示单个纸箱
+        const isSingle = !!cartonId;
+        const targetCartons = isSingle ? CARTON_TYPES.filter(c => c.id === cartonId) : CARTON_TYPES;
+
         // 创建弹窗HTML
         let itemsHtml = '';
-        CARTON_TYPES.forEach(carton => {
+        targetCartons.forEach(carton => {
             const currentStock = cartonStockData[carton.id] || 0;
-            const isSelected = cartonId === carton.id;
             itemsHtml += `
-                <div style="padding: 12px; border: 2px solid ${isSelected ? '#3b82f6' : '#e2e8f0'}; border-radius: 8px; margin-bottom: 12px; background: ${isSelected ? '#eff6ff' : 'white'};">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div style="padding: 16px; border: 2px solid #e2e8f0; border-radius: 10px; margin-bottom: 16px; background: white;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                         <div>
-                            <div style="font-weight: 600; font-size: 14px;">${carton.name}</div>
-                            <div style="font-size: 12px; color: #64748b;">${carton.spec} · 单位：${carton.unit}</div>
+                            <div style="font-weight: 700; font-size: 16px;">${carton.name}</div>
+                            <div style="font-size: 13px; color: #64748b;">${carton.spec} · 单位：${carton.unit}</div>
                         </div>
-                        <div style="font-size: 13px; color: #64748b;">当前: <strong>${currentStock}</strong>${carton.unit}</div>
+                        <div style="font-size: 14px; color: #64748b;">当前: <strong style="font-size: 18px; color: #0f172a;">${currentStock}</strong> ${carton.unit}</div>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                         <div>
-                            <label style="font-size: 11px; color: #059669; font-weight: 600;">➕ 入库数量</label>
-                            <input type="number" id="carton_add_${carton.id}" placeholder="入库" min="0" value="${isSelected ? '' : '0'}"
-                                style="width: 100%; padding: 8px; border: 1.5px solid #10b981; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
+                            <label style="font-size: 12px; color: #059669; font-weight: 600; display: block; margin-bottom: 6px;">➕ 入库数量</label>
+                            <input type="number" id="carton_add_${carton.id}" placeholder="入库" min="0" value=""
+                                style="width: 100%; padding: 10px; border: 2px solid #10b981; border-radius: 8px; font-size: 16px; box-sizing: border-box; text-align: center; font-weight: 600;">
                         </div>
                         <div>
-                            <label style="font-size: 11px; color: #dc2626; font-weight: 600;">➖ 出库/损耗</label>
-                            <input type="number" id="carton_out_${carton.id}" placeholder="出库" min="0" value="0"
-                                style="width: 100%; padding: 8px; border: 1.5px solid #ef4444; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
+                            <label style="font-size: 12px; color: #dc2626; font-weight: 600; display: block; margin-bottom: 6px;">➖ 出库/损耗</label>
+                            <input type="number" id="carton_out_${carton.id}" placeholder="出库" min="0" value=""
+                                style="width: 100%; padding: 10px; border: 2px solid #ef4444; border-radius: 8px; font-size: 16px; box-sizing: border-box; text-align: center; font-weight: 600;">
                         </div>
                     </div>
                 </div>
             `;
         });
 
+        const modalTitle = isSingle ? `📦 ${targetCartons[0]?.name || '纸箱'} 库存调整` : '📦 纸箱库存调整';
         const modalHtml = `
             <div id="cartonAddModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 16px;">
-                <div style="background: white; border-radius: 16px; width: 100%; max-width: 500px; max-height: 80vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
+                <div style="background: white; border-radius: 16px; width: 100%; max-width: 480px; max-height: 80vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
                     <div style="padding: 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);">
                         <div style="font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-                            <span>📦</span> 纸箱库存调整
+                            ${modalTitle}
                         </div>
                         <button onclick="closeCartonAddModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">×</button>
                     </div>
@@ -5709,6 +5886,8 @@ function showLoading(text) {
     async function confirmCartonAdjust() {
         let hasChanged = false;
         let changeList = [];
+        const timestamp = new Date().toISOString();
+        const dateStr = timestamp.split('T')[0];
 
         CARTON_TYPES.forEach(carton => {
             const addInput = document.getElementById(`carton_add_${carton.id}`);
@@ -5724,6 +5903,18 @@ function showLoading(text) {
             if (addQty > 0) {
                 newStock += addQty;
                 changes.push(`+${addQty}`);
+                cartonHistory.unshift({
+                    id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+                    type: 'manual_in',
+                    cartonId: carton.id,
+                    cartonName: carton.name,
+                    qty: addQty,
+                    productName: '-',
+                    productSku: '-',
+                    date: dateStr,
+                    timestamp: timestamp,
+                    remark: '手动入库'
+                });
             }
 
             // 出库/损耗（检查库存是否足够）
@@ -5734,6 +5925,18 @@ function showLoading(text) {
                 }
                 newStock -= outQty;
                 changes.push(`-${outQty}`);
+                cartonHistory.unshift({
+                    id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+                    type: 'manual_out',
+                    cartonId: carton.id,
+                    cartonName: carton.name,
+                    qty: outQty,
+                    productName: '-',
+                    productSku: '-',
+                    date: dateStr,
+                    timestamp: timestamp,
+                    remark: '手动出库/损耗'
+                });
             }
 
             if (changes.length > 0) {
@@ -5742,6 +5945,9 @@ function showLoading(text) {
                 changeList.push(`${carton.name}: ${changes.join(', ')} → 剩余${newStock}${carton.unit}`);
             }
         });
+
+        // 限制历史数量
+        if (cartonHistory.length > 200) cartonHistory = cartonHistory.slice(0, 200);
 
         if (hasChanged) {
             saveCartonDataLocal();
@@ -5754,6 +5960,7 @@ function showLoading(text) {
             renderCartonTable();
             updateCartonStats();
             checkCartonAlerts();
+            renderCartonHistory();
             closeCartonAddModal();
             showToast(`✅ 纸箱库存调整成功！<br>${changeList.join('<br>')}`);
         } else {
@@ -5764,6 +5971,211 @@ function showLoading(text) {
     // 保留旧函数名兼容
     function confirmCartonAdd() {
         confirmCartonAdjust();
+    }
+
+    // 渲染待扣减入库批次
+    function renderPendingDeductBatches() {
+        const container = document.getElementById('pendingDeductContainer');
+        const countEl = document.getElementById('pendingDeductCount');
+        if (!container) return;
+
+        const start = document.getElementById('pendingStartDate').value;
+        const end = document.getElementById('pendingEndDate').value;
+
+        // 找出所有入库批次中尚未扣减的
+        let pendingBatches = batches.filter(b => {
+            if (b.type !== 'in') return false;
+            // 检查是否有产品配置了纸箱
+            const hasCartonProduct = b.items.some(item => {
+                const product = products.find(p => p.id === item.productId);
+                if (!product) return false;
+                return !!getProductCartonConfig(product);
+            });
+            if (!hasCartonProduct) return false;
+            // 检查是否已扣减
+            if (cartonDeductedBatchIds.includes(b.id)) return false;
+            // 日期筛选
+            const batchDate = b.dateRange ? b.dateRange.min : (b.date || '').split('T')[0];
+            if (start && batchDate < start) return false;
+            if (end && batchDate > end) return false;
+            return true;
+        });
+
+        if (countEl) countEl.textContent = `共 ${pendingBatches.length} 条`;
+
+        if (pendingBatches.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: var(--text-tertiary);">
+                    <div style="font-size: 48px; margin-bottom: 8px;">✅</div>
+                    <div>所有入库批次已扣减纸箱</div>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '<div style="display: flex; flex-direction: column; gap: 10px;">';
+        pendingBatches.forEach(batch => {
+            const dateStr = batch.dateRange ? batch.dateRange.min : (batch.date || '').split('T')[0];
+            // 计算该批次会扣减哪些纸箱
+            const cartonDeductions = {};
+            batch.items.forEach(item => {
+                const product = products.find(p => p.id === item.productId);
+                if (!product) return;
+                const config = getProductCartonConfig(product);
+                if (!config) return;
+                if (config.carton1) {
+                    cartonDeductions[config.carton1] = (cartonDeductions[config.carton1] || 0) + item.qty * config.ratio1;
+                }
+                if (config.carton2 && config.ratio2 > 0) {
+                    cartonDeductions[config.carton2] = (cartonDeductions[config.carton2] || 0) + item.qty * config.ratio2;
+                }
+            });
+
+            let cartonInfo = '';
+            Object.keys(cartonDeductions).forEach(cartonId => {
+                const carton = CARTON_TYPES.find(c => c.id === cartonId);
+                if (carton) {
+                    cartonInfo += `<span style="display: inline-flex; align-items: center; padding: 3px 8px; background: #fee2e2; color: #dc2626; border-radius: 10px; font-size: 11px; font-weight: 600; margin-right: 6px;">${carton.name} -${cartonDeductions[cartonId]}${carton.unit}</span>`;
+                }
+            });
+
+            html += `
+                <div style="padding: 14px 16px; background: white; border-radius: 10px; border: 1.5px solid #fde68a; display: flex; align-items: center; gap: 12px;">
+                    <div style="font-size: 24px; flex-shrink: 0;">📥</div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
+                            <span style="font-weight: 700; font-size: 14px; color: #0f172a;">批次 #${batch.id.substr(-6)}</span>
+                            <span style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #dcfce7; color: #059669; font-weight: 600;">入库</span>
+                            <span style="font-size: 12px; color: #64748b;">${dateStr}</span>
+                        </div>
+                        <div style="font-size: 13px; color: #0f172a; margin-bottom: 4px;">
+                            共 ${batch.totalQty} 件 · ${batch.items.length} 种商品
+                        </div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;">
+                            ${cartonInfo || '<span style="font-size: 12px; color: #94a3b8;">无纸箱配置</span>'}
+                        </div>
+                    </div>
+                    <button onclick="manualDeductCartonForBatch('${batch.id}')" 
+                        style="flex-shrink: 0; padding: 10px 18px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; box-shadow: 0 2px 8px rgba(245,158,11,0.3); white-space: nowrap;">
+                        📦 扣减纸箱
+                    </button>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    // 手动扣减指定批次的纸箱库存
+    async function manualDeductCartonForBatch(batchId) {
+        const batch = batches.find(b => b.id === batchId);
+        if (!batch) {
+            showToast('❌ 批次不存在', 'error');
+            return;
+        }
+
+        showLoading('正在扣减纸箱库存...');
+        await deductCartonStockOnImport(batch.items, batch.dateRange.min, batch.id);
+        hideLoading();
+    }
+
+    // 筛选待扣减记录
+    function filterPendingDeduct() {
+        renderPendingDeductBatches();
+    }
+
+    // 重置待扣减筛选
+    function resetPendingDeductFilter() {
+        document.getElementById('pendingStartDate').value = '';
+        document.getElementById('pendingEndDate').value = '';
+        renderPendingDeductBatches();
+    }
+
+    // 折叠/展开待扣减记录
+    let pendingDeductExpanded = true;
+    function togglePendingDeduct() {
+        const content = document.getElementById('pendingDeductContent');
+        const toggle = document.getElementById('pendingDeductToggle');
+        if (!content) return;
+        pendingDeductExpanded = !pendingDeductExpanded;
+        if (pendingDeductExpanded) {
+            content.style.maxHeight = '2000px';
+            toggle.style.transform = 'rotate(0deg)';
+        } else {
+            content.style.maxHeight = '0px';
+            toggle.style.transform = 'rotate(-90deg)';
+        }
+    }
+
+    // 折叠/展开纸箱变动记录
+    let cartonHistoryExpanded = true;
+    function toggleCartonHistory() {
+        const content = document.getElementById('cartonHistoryContent');
+        const toggle = document.getElementById('cartonHistoryToggle');
+        if (!content) return;
+        cartonHistoryExpanded = !cartonHistoryExpanded;
+        if (cartonHistoryExpanded) {
+            content.style.maxHeight = '2000px';
+            toggle.style.transform = 'rotate(0deg)';
+        } else {
+            content.style.maxHeight = '0px';
+            toggle.style.transform = 'rotate(-90deg)';
+        }
+    }
+
+    // 渲染纸箱历史记录
+    function renderCartonHistory() {
+        const container = document.getElementById('cartonHistoryContainer');
+        const countEl = document.getElementById('cartonHistoryCount');
+        if (!container) return;
+
+        if (countEl) countEl.textContent = `共 ${cartonHistory.length} 条`;
+
+        if (cartonHistory.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: var(--text-tertiary);">
+                    <div style="font-size: 48px; margin-bottom: 8px;">📋</div>
+                    <div>暂无变动记录</div>
+                    <div style="font-size: 13px; margin-top: 4px;">入库产品时会自动扣减对应纸箱库存</div>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '<div style="display: flex; flex-direction: column; gap: 8px;">';
+        cartonHistory.forEach(h => {
+            const isAuto = h.type === 'auto_deduct';
+            const isIn = h.type === 'manual_in';
+            const bgColor = isAuto ? '#fef2f2' : (isIn ? '#f0fdf4' : '#fffbeb');
+            const borderColor = isAuto ? '#fecaca' : (isIn ? '#bbf7d0' : '#fde68a');
+            const icon = isAuto ? '📦' : (isIn ? '➕' : '➖');
+            const typeText = isAuto ? '自动扣减' : (isIn ? '手动入库' : '手动出库');
+            const typeColor = isAuto ? '#dc2626' : (isIn ? '#059669' : '#d97706');
+            const qtyText = isAuto || !isIn ? `-${h.qty}` : `+${h.qty}`;
+            const qtyColor = isAuto || !isIn ? '#dc2626' : '#059669';
+
+            html += `
+                <div style="padding: 12px 16px; background: ${bgColor}; border-radius: 10px; border: 1px solid ${borderColor}; display: flex; align-items: center; gap: 12px;">
+                    <div style="font-size: 20px; flex-shrink: 0;">${icon}</div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
+                            <span style="font-weight: 700; font-size: 14px; color: #0f172a;">${escapeHtml(h.cartonName)}</span>
+                            <span style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: white; color: ${typeColor}; font-weight: 600; border: 1px solid ${borderColor};">${typeText}</span>
+                        </div>
+                        <div style="font-size: 12px; color: #64748b;">
+                            ${isAuto ? `关联产品: ${escapeHtml(h.productName)} ${escapeHtml(h.productSku)}` : escapeHtml(h.remark || '-')}
+                            <span style="margin: 0 6px; color: #cbd5e1;">|</span>
+                            ${h.date}
+                        </div>
+                    </div>
+                    <div style="font-size: 18px; font-weight: 700; color: ${qtyColor}; flex-shrink: 0; font-variant-numeric: tabular-nums;">
+                        ${qtyText}
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
     }
 
     // 点击弹窗外部关闭
