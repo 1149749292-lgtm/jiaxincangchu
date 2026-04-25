@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="timestamp" content="2026-04-12 10:41">
-  <title>佳信水产仓库管理系统 v4.5 - 纸箱同步修复版 - 批次编辑版</title>
+  <title>佳信水产仓库系统 v5.0</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
@@ -319,7 +319,7 @@
     }
 
     .product-tag { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--primary-light); color: var(--primary); border-radius: 20px; font-size: 12px; font-weight: 600; }
-    .stock-badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .stock-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
     .stock-badge.ok { background: var(--success-light); color: var(--success); }
     .stock-badge.low { background: var(--warning-light); color: var(--warning); }
     .stock-badge.empty { background: var(--danger-light); color: var(--danger); }
@@ -351,6 +351,11 @@
       border-color: var(--primary);
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
     }
+
+    /* 纸箱表格紧凑样式 */
+    #cartonTable th, #cartonTable td { padding: 4px 2px; font-size: 11px; line-height: 1.3; }
+    #cartonTable th { padding: 6px 4px; font-size: 11px; }
+    #cartonTable .stock-badge { padding: 1px 6px; font-size: 10px; }
 
     /* 响应式适配 */
     @media (max-width: 640px) {
@@ -390,7 +395,7 @@
         </div>
       <div style="position: relative; z-index: 1;">
         <h1>🦐 佳信水产</h1>
-        <p>智能仓库管理系统 v4.6 · 批次联动产品库版</p>
+        <p>佳信水产仓库系统 v5.0</p>
       </div>
     </div>
 
@@ -441,76 +446,6 @@
     </div>
 
     <!-- 导入页面 -->
-    <div class="page" id="import">
-      <div class="import-section-single">
-        <div class="import-card-single" onclick="document.getElementById('excelInput').click()">
-          <span class="import-icon-single">📊</span>
-          <div class="import-title-single">导入出入库数据</div>
-          <div class="import-desc-single">
-            支持图二格式Excel文件导入<br>
-            <strong>固定列：</strong>品名、规格、品牌、净重、毛重<br>
-            <strong>日期列：</strong>每个日期包含入库/出库两列<br>
-            <strong>数据规则：</strong>正数=入库，负数=出库
-          </div>
-          <button class="import-btn-single"><span>📁</span> 选择Excel文件</button>
-          <input type="file" id="excelInput" class="import-input" accept=".xlsx,.xls" onchange="handleImport(this)">
-        </div>
-
-        <!-- 下载模板按钮 -->
-        <div style="margin-top: 16px; text-align: center;">
-          <button class="btn btn-secondary" onclick="downloadTemplate();" style="font-size: 14px; padding: 10px 20px; background: white; border: 2px solid var(--border);">
-            <span>📋</span> 下载导入模板
-          </button>
-          <p style="font-size: 12px; color: var(--text-tertiary); margin-top: 8px;">下载空白模板，按格式填写后导入</p>
-        </div>
-      </div>
-
-      <div class="preview-section" id="previewSection">
-        <div class="preview-header">
-          <div class="preview-title"><span>📋</span><span>导入预览</span></div>
-          <div class="preview-stats">
-            <div class="preview-stat in"><span id="previewInCount">0</span> 笔入库</div>
-            <div class="preview-stat out"><span id="previewOutCount">0</span> 笔出库</div>
-            <div class="preview-stat"><span id="previewTotal">0</span> 件</div>
-          </div>
-        </div>
-        <div class="date-range" style="margin-bottom: 16px;">📅 涉及日期：<strong id="dateRangeValue">-</strong></div>
-        <div class="table-wrapper">
-          <table id="previewTable">
-            <thead><tr>
-              <th onclick="sortPreviewTable('date')">日期 ↕️</th>
-              <th onclick="sortPreviewTable('brand')">品牌 ↕️</th>
-              <th onclick="sortPreviewTable('name')">品名 ↕️</th>
-              <th onclick="sortPreviewTable('sku')">规格 ↕️</th>
-              <th onclick="sortPreviewTable('net')">净重 ↕️</th>
-              <th onclick="sortPreviewTable('type')">类型 ↕️</th>
-              <th onclick="sortPreviewTable('qty')">数量 ↕️</th>
-              <th>状态</th>
-            </tr></thead>
-            <tbody id="previewTableBody"></tbody>
-          </table>
-        </div>
-        <div class="btn-group">
-          <button class="btn btn-success" id="confirmBtn" onclick="showConfirmModal()">✅ 确认导入</button>
-          <button class="btn btn-secondary" onclick="cancelImport()">❌ 取消</button>
-          <button class="btn btn-primary" onclick="downloadTemplate()">📋 下载模板</button>
-        </div>
-      </div>
-
-      <div class="card" style="margin-top: 24px; border: 2px solid var(--danger);">
-        <div class="card-title" style="color: var(--danger);">⚠️ 数据管理（危险操作）</div>
-        <div style="background: var(--danger-light); padding: 16px; border-radius: var(--radius); margin-bottom: 16px;">
-          <p style="color: var(--danger); font-weight: 600; margin-bottom: 8px;">⚠️ 警告：以下操作会清空所有数据，不可恢复！</p>
-          <p style="color: var(--text-secondary); font-size: 14px;">请确保已备份重要数据后再执行</p>
-        </div>
-        <div class="btn-group">
-          <button class="btn btn-danger" onclick="clearAllData()">🗑️ 清空云端所有数据</button>
-          <button class="btn btn-secondary" onclick="exportAllData()">💾 导出当前数据备份</button>
-        </div>
-        <div id="clearDataResult" style="margin-top: 16px;"></div>
-      </div>
-    </div>
-
     <!-- 流水页面 -->
     <div class="page" id="flow">
       <div class="card">
@@ -556,6 +491,65 @@
 
         <div id="flowContainer">
           <div class="empty-state"><div class="icon">📭</div><h3>暂无流水记录</h3><p>请先进行入库或出库操作</p></div>
+        </div>
+      </div>
+
+      <!-- 导入Excel功能（右下角） -->
+      <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+        <div style="background: var(--card-bg); border-radius: var(--radius-xl); padding: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); max-width: 500px;">
+          <div style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+            <span>📁</span> Excel导入出入库数据
+          </div>
+          <div class="import-card-single" onclick="document.getElementById('excelInput').click()" style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-radius: var(--radius-xl); padding: 24px; box-shadow: var(--shadow); border: 2px dashed var(--primary); text-align: center; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;">
+            <span style="font-size: 40px; margin-bottom: 12px; display: block;">📊</span>
+            <div style="font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">点击导入Excel</div>
+            <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
+              支持图二格式Excel文件导入<br>
+              <strong style="color: var(--primary);">数据规则：</strong>正数=入库，负数=出库
+            </div>
+            <button class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px;">
+              <span>📁</span> 选择Excel文件
+            </button>
+            <input type="file" id="excelInput" class="import-input" accept=".xlsx,.xls" onchange="handleImport(this)" style="display: none;">
+          </div>
+          <div style="margin-top: 12px; text-align: center;">
+            <button class="btn btn-secondary" onclick="downloadTemplate()" style="font-size: 13px; padding: 8px 16px;">
+              <span>📋</span> 下载导入模板
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 导入预览区域 -->
+      <div class="preview-section" id="previewSection" style="margin-top: 20px;">
+        <div class="preview-header">
+          <div class="preview-title"><span>📋</span><span>导入预览</span></div>
+          <div class="preview-stats">
+            <div class="preview-stat in"><span id="previewInCount">0</span> 笔入库</div>
+            <div class="preview-stat out"><span id="previewOutCount">0</span> 笔出库</div>
+            <div class="preview-stat"><span id="previewTotal">0</span> 件</div>
+          </div>
+        </div>
+        <div class="date-range" style="margin-bottom: 16px;">📅 涉及日期：<strong id="dateRangeValue">-</strong></div>
+        <div class="table-wrapper">
+          <table id="previewTable">
+            <thead><tr>
+              <th onclick="sortPreviewTable('date')">日期 ↕️</th>
+              <th onclick="sortPreviewTable('brand')">品牌 ↕️</th>
+              <th onclick="sortPreviewTable('name')">品名 ↕️</th>
+              <th onclick="sortPreviewTable('sku')">规格 ↕️</th>
+              <th onclick="sortPreviewTable('net')">净重 ↕️</th>
+              <th onclick="sortPreviewTable('type')">类型 ↕️</th>
+              <th onclick="sortPreviewTable('qty')">数量 ↕️</th>
+              <th>状态</th>
+            </tr></thead>
+            <tbody id="previewTableBody"></tbody>
+          </table>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-success" id="confirmBtn" onclick="showConfirmModal()">✅ 确认导入</button>
+          <button class="btn btn-secondary" onclick="cancelImport()">❌ 取消</button>
+          <button class="btn btn-primary" onclick="downloadTemplate()">📋 下载模板</button>
         </div>
       </div>
     </div>
@@ -845,10 +839,22 @@
             <input type="text" id="productUnit" placeholder="默认：件" value="件"
                    style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px;">
           </div>
-          <div class="form-group" style="margin-bottom: 0;">
-            <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">备注</label>
-            <input type="text" id="productRemark" placeholder="可选：输入产品备注信息"
-                   style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">备注</label>
+              <input type="text" id="productRemark" placeholder="可选：输入产品备注信息"
+                     style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">产品类型</label>
+              <div style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: var(--radius); background: white; min-height: 42px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text-primary); margin: 0;">
+                  <input type="checkbox" id="productIsBLevel" style="width: 18px; height: 18px; accent-color: var(--warning); cursor: pointer;">
+                  <span>⚠️ B级产品</span>
+                </label>
+              </div>
+              <p style="font-size: 12px; color: var(--text-tertiary); margin-top: 4px; margin-bottom: 0;">勾选后批次利润将自动使用B级费用标准</p>
+            </div>
           </div>
         </div>
 
@@ -936,9 +942,7 @@
         <button class="btn btn-primary" onclick="showImportFromBatchModal()" style="display: flex; align-items: center; gap: 8px; white-space: nowrap; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
           <span>📥</span> 从入库导入
         </button>
-        <button class="btn btn-primary" onclick="syncAllBatchProducts()" style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
-          <span>🔄</span> 批量同步产品信息
-        </button>
+        
         <button class="btn btn-secondary" onclick="exportBatchProfitList()" style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
           <span>📊</span> 导出Excel
         </button>
@@ -1067,8 +1071,9 @@
       <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
         <span>📦 纸箱库存管理</span>
         <div style="display: flex; gap: 10px; align-items: center;">
-          <div style="font-size: 13px; color: var(--text-secondary);">
+          <div style="font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 8px;">
             预警阈值：<input type="number" id="cartonThresholdInput" value="50" min="0" style="width: 60px; padding: 4px 8px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px; text-align: center;" onchange="updateCartonThreshold(this.value)">
+            <button onclick="saveCartonThreshold()" style="padding: 4px 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">💾 保存</button>
           </div>
           <button class="btn btn-primary btn-sm" onclick="showCartonAddModal()" style="padding: 8px 16px;">➕ 入库补货</button>
         </div>
@@ -1078,13 +1083,13 @@
         <table id="cartonTable">
           <thead>
             <tr>
-              <th style="width: 8%;">编号</th>
-              <th style="width: 25%;">纸箱名称</th>
-              <th style="width: 20%;">规格尺寸</th>
-              <th style="width: 12%;">适用品牌</th>
-              <th style="width: 15%;">当前库存</th>
-              <th style="width: 10%;">状态</th>
-              <th style="width: 10%;">操作</th>
+              <th style="width: 40px; padding: 6px 4px; font-size: 11px;">编号</th>
+              <th style="width: auto; padding: 6px 4px; font-size: 11px;">纸箱名称</th>
+              <th style="width: 100px; padding: 6px 4px; font-size: 11px;">规格尺寸</th>
+              <th style="width: 60px; padding: 6px 4px; font-size: 11px;">适用品牌</th>
+              <th style="width: 80px; padding: 6px 4px; font-size: 11px;">当前库存</th>
+              <th style="width: 50px; padding: 6px 4px; font-size: 11px;">状态</th>
+              <th style="width: 70px; padding: 6px 4px; font-size: 11px;">操作</th>
             </tr>
           </thead>
           <tbody id="cartonTableBody"></tbody>
@@ -1149,7 +1154,7 @@
   </div>
 <div class="nav-bar">
     <div class="nav-item active" data-page="stock" onclick="switchPage('stock')"><span class="icon">📊</span><span>库存</span></div>
-    <div class="nav-item" data-page="import" onclick="switchPage('import')"><span class="icon">📁</span><span>导入</span></div>
+
     <div class="nav-item" data-page="flow" onclick="switchPage('flow')"><span class="icon">📋</span><span>流水</span></div>
     <div class="nav-item" data-page="batch" onclick="switchPage('batch')"><span class="icon">📦</span><span>批次</span></div>
     <div class="nav-item" data-page="manual" onclick="switchPage('manual')"><span class="icon">⚡</span><span>手动出入库</span></div>
@@ -1484,6 +1489,12 @@ async function init() {
         isOnline = true;
         updateSyncStatus('synced', '已同步到云端');
         showToast('✅ 数据加载成功');
+
+        // 更新纸箱阈值输入框（如果数据已从云端加载）
+        const thresholdInput = document.getElementById('cartonThresholdInput');
+        if (thresholdInput && cartonAlertThreshold) {
+            thresholdInput.value = cartonAlertThreshold;
+        }
       } catch (err) {
         console.error('初始化失败:', err);
         updateSyncStatus('error', '连接失败，使用本地模式');
@@ -1740,17 +1751,7 @@ async function init() {
     const verifiedPages = new Set(); // 已验证的页面
 
     function switchPage(page) {
-      // 需要密码验证的页面
-      const needPassword = ['import', 'flow', 'manual', 'products'];
-
-      // 检查是否需要密码且未验证
-      if (needPassword.includes(page) && !verifiedPages.has(page)) {
-        // 显示密码弹窗
-        showPasswordModal(page);
-        return;
-      }
-
-      // 切换到页面
+      // 页面切换不需要密码，自由浏览
       doSwitchPage(page);
     }
 
@@ -1826,16 +1827,20 @@ async function init() {
       if (modal) modal.remove();
     }
 
-    // 验证密码
-    function verifyPassword(targetPage) {
+    // 验证密码（通用权限检查）
+    let editPermissionVerified = false;
+
+    function verifyPassword(callback) {
       const input = document.getElementById('passwordInput');
       const error = document.getElementById('passwordError');
 
       if (input.value === pagePassword) {
         // 密码正确
-        verifiedPages.add(targetPage);
+        editPermissionVerified = true;
         closePasswordModal();
-        doSwitchPage(targetPage);
+        if (typeof callback === 'function') {
+          callback();
+        }
         showToast('✅ 验证通过');
       } else {
         // 密码错误
@@ -1844,6 +1849,15 @@ async function init() {
         input.value = '';
         input.focus();
       }
+    }
+
+    // 通用编辑权限检查
+    function checkEditPermission(callback) {
+      if (editPermissionVerified) {
+        callback();
+        return;
+      }
+      showPasswordModal(callback);
     }
 
     function updateStockCascade(changedField) {
@@ -1954,7 +1968,7 @@ async function init() {
 
       const tbody = document.getElementById('stockTable');
       if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="empty-state" style="padding: 40px;"><div class="icon">📭</div><p>暂无数据</p></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="empty-state" style="padding: 40px;"><div class="icon">📭</div><p>暂无数据</p></td></tr>';
         return;
       }
       tbody.innerHTML = filtered.map(p => {
@@ -2040,7 +2054,7 @@ async function init() {
 
       const tbody = document.getElementById('stockTable');
       if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="empty-state" style="padding: 40px;"><div class="icon">📭</div><p>暂无结余库存数据</p></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="empty-state" style="padding: 40px;"><div class="icon">📭</div><p>暂无结余库存数据</p></td></tr>';
         return;
       }
       tbody.innerHTML = filtered.map(p => {
@@ -2733,6 +2747,7 @@ async function init() {
     }
 
     async function executeImport() {
+      if (!editPermissionVerified) { checkEditPermission(() => executeImport()); return; }
   if (!currentPreview) return;
 
   // 过滤掉数量为0的项
@@ -3142,6 +3157,7 @@ async function doExecuteImport() {
 
     // 确认修改数量
     async function confirmEditQty() {
+      if (!editPermissionVerified) { checkEditPermission(() => confirmEditQty()); return; }
       if (!currentEditingBatchId || currentEditingItemIndex === null) return;
 
       const newQty = parseInt(document.getElementById('editQtyNewValue').value);
@@ -3223,6 +3239,7 @@ async function doExecuteImport() {
 
     // 确认删除单品
     async function confirmDeleteBatchItem() {
+      if (!editPermissionVerified) { checkEditPermission(() => confirmDeleteBatchItem()); return; }
       if (!currentEditingBatchId || currentEditingItemIndex === null) return;
 
       const batch = batches.find(b => b.id === currentEditingBatchId);
@@ -3370,6 +3387,7 @@ async function doExecuteImport() {
 
     // 确认添加产品到批次
     async function confirmAddBatchItem() {
+      if (!editPermissionVerified) { checkEditPermission(() => confirmAddBatchItem()); return; }
       if (!currentAddItemBatchId || !currentAddItemProduct) {
         showToast('⚠️ 请先选择完整的产品信息', 'warning');
         return;
@@ -3626,6 +3644,7 @@ async function doExecuteImport() {
     }
 
     async function executeRevoke() {
+      if (!editPermissionVerified) { checkEditPermission(() => executeRevoke()); return; }
       if (!pendingRevokeBatchId) return;
       const batch = batches.find(b => b.id === pendingRevokeBatchId);
       if (!batch) { closeRevokeModal(); return; }
@@ -3648,6 +3667,7 @@ async function doExecuteImport() {
     // ==================== 数据管理 ====================
 
     async function clearAllData() {
+      if (!editPermissionVerified) { checkEditPermission(() => clearAllData()); return; }
       if (!confirm('⚠️ 确定要清空所有数据吗？\n\n这将删除：\n- 所有产品信息\n- 所有库存数据\n- 所有出入库记录\n\n此操作不可恢复！')) return;
       if (!confirm('再次确认：您真的确定要清空所有数据吗？')) return;
       showLoading('正在清空数据...');
@@ -3811,6 +3831,7 @@ function exportAllData() {
             <td style="padding: 12px; text-align: center; font-size: 14px;">${escapeHtml(p.name)}</td>
             <td style="padding: 12px; text-align: center;">
               <span class="product-tag" style="font-size: 11px; padding: 2px 8px;">${escapeHtml(p.sku)}</span>
+              ${p.isBLevel ? '<span style="display: inline-block; margin-left: 4px; padding: 2px 6px; background: var(--warning-light); color: var(--warning); border-radius: 10px; font-size: 10px; font-weight: 600;">B级</span>' : ''}
             </td>
             <td style="padding: 12px; text-align: center; font-size: 13px; color: var(--text-secondary);">${p.net || 0} kg</td>
             <td style="padding: 12px; text-align: center; font-size: 13px; color: var(--text-secondary);">${p.gross || 0} kg</td>
@@ -3852,6 +3873,7 @@ function exportAllData() {
       document.getElementById('productNet').value = '';
       document.getElementById('productGross').value = '';
       document.getElementById('productUnit').value = '件';
+      document.getElementById('productIsBLevel').checked = false;
       document.getElementById('productEditWarning').style.display = 'none';
 
       document.getElementById('productModal').classList.add('show');
@@ -3873,6 +3895,7 @@ function exportAllData() {
       document.getElementById('productUnit').value = p.unit || '件';
       document.getElementById('productPrice').value = p.price || '';
       document.getElementById('productRemark').value = p.remark || '';
+      document.getElementById('productIsBLevel').checked = p.isBLevel || false;
       document.getElementById('productEditWarning').style.display = 'block';
 
       document.getElementById('productModal').classList.add('show');
@@ -3885,6 +3908,7 @@ function exportAllData() {
 
     // 保存产品
     async function saveProduct() {
+      if (!editPermissionVerified) { checkEditPermission(() => saveProduct()); return; }
       const id = document.getElementById('productEditId').value;
       const brand = document.getElementById('productBrand').value.trim();
       const name = document.getElementById('productName').value.trim();
@@ -3894,6 +3918,7 @@ function exportAllData() {
       const unit = document.getElementById('productUnit').value.trim() || '件';
       const price = parseFloat(document.getElementById('productPrice').value) || 0;
       const remark = document.getElementById('productRemark').value.trim();
+      const isBLevel = document.getElementById('productIsBLevel').checked;
 
       // 验证必填项
       if (!brand || !name || !sku) {
@@ -3917,6 +3942,7 @@ function exportAllData() {
           p.unit = unit;
           p.price = price;
           p.remark = remark;
+          p.isBLevel = isBLevel;
 
           // 同步更新所有批次中的产品信息
           batches.forEach(batch => {
@@ -3956,7 +3982,8 @@ function exportAllData() {
           gross: gross,
           unit: unit,
           price: price,
-          remark: remark
+          remark: remark,
+          isBLevel: isBLevel
         };
         products.push(newProduct);
 
@@ -4001,6 +4028,7 @@ function exportAllData() {
 
     // 确认删除产品
     async function confirmDeleteProduct() {
+      if (!editPermissionVerified) { checkEditPermission(() => confirmDeleteProduct()); return; }
       if (!pendingDeleteProductId) return;
 
       showLoading('正在删除产品...');
@@ -4458,6 +4486,7 @@ function showLoading(text) {
 
     // 添加到批次
     function addToBatch() {
+      if (!editPermissionVerified) { checkEditPermission(() => addToBatch()); return; }
       if (!manualSelectedProduct) {
         showToast('⚠️ 请先选择完整的产品信息', 'warning');
         return;
@@ -4537,6 +4566,7 @@ function showLoading(text) {
 
     // 从批次移除
     function removeFromBatch(index) {
+      if (!editPermissionVerified) { checkEditPermission(() => removeFromBatch(index)); return; }
       const item = currentBatch[index];
       currentBatch.splice(index, 1);
       renderBatchList();
@@ -4545,6 +4575,7 @@ function showLoading(text) {
 
     // 清空批次
     function clearBatch() {
+      if (!editPermissionVerified) { checkEditPermission(() => clearBatch()); return; }
       if (currentBatch.length === 0) return;
       if (!confirm(`确定要清空当前批次吗？共 ${currentBatch.length} 种商品`)) return;
       currentBatch = [];
@@ -4554,6 +4585,7 @@ function showLoading(text) {
 
     // 批量出库
     async function batchOut() {
+      if (!editPermissionVerified) { checkEditPermission(() => batchOut()); return; }
       if (currentBatch.length === 0) {
         showToast('⚠️ 批次为空，请先添加产品', 'warning');
         return;
@@ -4641,6 +4673,7 @@ function showLoading(text) {
 
     // 批量入库
     async function batchIn() {
+      if (!editPermissionVerified) { checkEditPermission(() => batchIn()); return; }
       if (currentBatch.length === 0) {
         showToast('⚠️ 批次为空，请先添加产品', 'warning');
         return;
@@ -4951,7 +4984,8 @@ function getProfitProduct(productId) {
   // 优先从仓库产品库查找（实时同步最新价格）
   const p = products.find(prod => prod.id === productId);
   if (p) {
-    const isBLevel = (p.sku && p.sku.includes('B级')) || (p.name && p.name.includes('B级'));
+    // 优先使用产品对象中手动设置的 isBLevel 字段，其次从名称/规格推断
+    const isBLevel = p.isBLevel === true || (p.sku && p.sku.includes('B级')) || (p.name && p.name.includes('B级'));
     const isBoxFrozen = p.name && p.name.includes('盒冻');
     const brand = p.brand || '';
 
@@ -5327,6 +5361,7 @@ function toggleProfitBatchDetail(batchId) {
 // ==================== 批次弹窗操作 ====================
 
 function openProfitBatchModal(batch = null) {
+      if (!editPermissionVerified) { checkEditPermission(() => openProfitBatchModal(batch)); return; }
   const modal = document.getElementById('profitBatchModal');
   modal.classList.add('show');
   document.getElementById('pbDate').value = new Date().toISOString().split('T')[0];
@@ -5455,7 +5490,7 @@ function renderProfitBatchItems() {
   if (!tbody) return;
 
   if (profitBatchItems.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 30px; color: #94a3b8;">暂无产品，请快速添加或手动添加</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 30px; color: #94a3b8;">暂无产品，请快速添加或手动添加</td></tr>';
     updateProfitBatchYieldLoss();
     updateProfitBatchPreview();
     return;
@@ -5497,6 +5532,19 @@ function renderProfitBatchItems() {
 
     return `
       <tr style="border-bottom: 2px solid #e5e7eb; background: ${isProfit ? '#f0fdf4' : '#fef2f2'};">
+        <td style="padding: 10px 4px; text-align: center; vertical-align: middle;">
+          <div style="display: flex; flex-direction: column; gap: 2px; align-items: center;">
+            <button onclick="moveBatchItemUp(${idx})" 
+                    style="width: 28px; height: 24px; border: none; background: #dbeafe; color: #2563eb; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center;"
+                    title="上移"
+                    ${idx === 0 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''}>▲</button>
+            <span style="font-size: 11px; color: #94a3b8; font-weight: 600;">${idx + 1}</span>
+            <button onclick="moveBatchItemDown(${idx})" 
+                    style="width: 28px; height: 24px; border: none; background: #dbeafe; color: #2563eb; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center;"
+                    title="下移"
+                    ${idx === profitBatchItems.length - 1 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''}>▼</button>
+          </div>
+        </td>
         <td style="padding: 10px 8px; text-align: left;">
           <div style="font-weight: 600; font-size: 13px;">${escapeHtml(p.pack)} · ${escapeHtml(p.name)}</div>
           <div style="font-size: 11px; color: #64748b;">${escapeHtml(p.spec)} · ${p.weight}kg/件</div>
@@ -5631,6 +5679,7 @@ function updateProfitBatchPreview() {
 }
 
 function saveProfitBatch() {
+      if (!editPermissionVerified) { checkEditPermission(() => saveProfitBatch()); return; }
   const id = document.getElementById('profitBatchId').value;
   const name = document.getElementById('pbName').value.trim();
   const rawWeight = parseFloat(document.getElementById('pbRawWeight').value) || 0;
@@ -5736,6 +5785,7 @@ function editProfitBatch(id) {
 }
 
 function deleteProfitBatch(id) {
+      if (!editPermissionVerified) { checkEditPermission(() => deleteProfitBatch(id)); return; }
   const batch = profitBatches.find(b => b.id === id);
   if (!batch) return;
   if (!confirm(`确定删除批次「${batch.name || '未命名'}」？此操作不可恢复。`)) return;
@@ -5747,6 +5797,7 @@ function deleteProfitBatch(id) {
 }
 
 function syncAllBatchProducts() {
+      if (!editPermissionVerified) { checkEditPermission(() => syncAllBatchProducts()); return; }
   if (profitBatches.length === 0) {
     showToast('暂无批次需要同步', 'info');
     return;
@@ -6588,20 +6639,20 @@ function saveCartonDataLocal() {
             // 所有纸箱都显示删除按钮
             const deleteBtn = `<button class="btn btn-danger btn-sm btn-icon" onclick="deleteCustomCarton('${carton.id}')" title="删除" style="margin-left: 6px; padding: 4px 8px; font-size: 12px;">🗑️</button>`;
             html += `<tr style="${rowStyle}">
-                <td style="font-weight: 600; color: var(--text-secondary);">${index + 1}</td>
-                <td>
-                    <div style="font-weight: 600; color: var(--text-primary);">${carton.name}</div>
-                    <div style="font-size: 12px; color: var(--text-tertiary);">单位：${carton.unit} ${carton.id && carton.id.includes('custom') ? '<span style="color: #3b82f6;">[自定义]</span>' : ''}</div>
+                <td style="font-weight: 600; color: var(--text-secondary); padding: 4px 2px; font-size: 11px;">${index + 1}</td>
+                <td style="padding: 4px 6px;">
+                    <div style="font-weight: 600; color: var(--text-primary); font-size: 12px; line-height: 1.3;">${carton.name}</div>
+                    <div style="font-size: 10px; color: var(--text-tertiary); line-height: 1.3;">单位：${carton.unit} ${carton.id && carton.id.includes('custom') ? '<span style="color: #3b82f6;">[自定义]</span>' : ''}</div>
                 </td>
-                <td style="color: var(--text-secondary); font-size: 13px;">${carton.spec}</td>
-                <td><span class="product-tag" style="font-size: 11px;">${carton.brand}</span></td>
-                <td>
-                    <div style="font-size: 24px; font-weight: 700; ${stockStyle}">${stock}</div>
-                    <div style="font-size: 11px; color: var(--text-tertiary);">${carton.unit}</div>
+                <td style="color: var(--text-secondary); font-size: 11px; padding: 4px 2px;">${carton.spec}</td>
+                <td style="padding: 4px 2px;"><span class="product-tag" style="font-size: 10px; padding: 1px 6px;">${carton.brand}</span></td>
+                <td style="padding: 4px 2px;">
+                    <div style="font-size: 16px; font-weight: 700; ${stockStyle}">${stock}</div>
+                    <div style="font-size: 10px; color: var(--text-tertiary);">${carton.unit}</div>
                 </td>
-                <td>${statusBadge}</td>
-                <td>
-                    <button class="btn btn-primary btn-sm btn-icon" onclick="showCartonAddModal('${carton.id}')" title="补货" style="padding: 4px 8px; font-size: 12px;">
+                <td style="padding: 4px 2px;">${statusBadge}</td>
+                <td style="padding: 4px 2px;">
+                    <button class="btn btn-primary btn-sm btn-icon" onclick="showCartonAddModal('${carton.id}')" title="补货" style="padding: 2px 6px; font-size: 11px;">
                         <span>➕</span>
                     </button>
                     ${deleteBtn}
@@ -6615,6 +6666,7 @@ function saveCartonDataLocal() {
 
     // 删除自定义纸箱
     async function deleteCustomCarton(cartonId) {
+      if (!editPermissionVerified) { checkEditPermission(() => deleteCustomCarton(cartonId)); return; }
         const carton = CARTON_TYPES.find(c => c.id === cartonId);
         if (!carton) return;
 
@@ -6785,6 +6837,7 @@ function saveCartonDataLocal() {
 
     // 确认批量配置
     async function confirmBatchCartonConfig() {
+      if (!editPermissionVerified) { checkEditPermission(() => confirmBatchCartonConfig()); return; }
         const carton1Id = document.getElementById('batchCarton1').value;
         const ratio1 = parseInt(document.getElementById('batchRatio1').value) || 1;
         const carton2Id = document.getElementById('batchCarton2').value;
@@ -6884,10 +6937,27 @@ function saveCartonDataLocal() {
 
     function updateCartonThreshold(value) {
         cartonAlertThreshold = parseInt(value) || 50;
-        saveCartonDataLocal();
         renderCartonTable();
         updateCartonStats();
         checkCartonAlerts();
+    }
+
+    // 保存预警阈值（手动点击保存按钮）
+    async function saveCartonThreshold() {
+        const value = document.getElementById('cartonThresholdInput').value;
+        cartonAlertThreshold = parseInt(value) || 50;
+        saveCartonDataLocal();
+
+        if (isOnline) {
+            try {
+                await saveData();
+                showToast('✅ 预警阈值已保存到云端');
+            } catch (err) {
+                showToast('⚠️ 本地已保存，云端同步失败', 'warning');
+            }
+        } else {
+            showToast('✅ 预警阈值已保存（离线模式）', 'warning');
+        }
     }
 
     // ==================== 新增纸箱规格功能 ====================
@@ -6964,6 +7034,7 @@ function saveCartonDataLocal() {
 
     // 确认添加新纸箱
     async function confirmAddNewCarton() {
+      if (!editPermissionVerified) { checkEditPermission(() => confirmAddNewCarton()); return; }
         const name = document.getElementById('newCartonName').value.trim();
         const spec = document.getElementById('newCartonSpec').value.trim();
         const unit = document.getElementById('newCartonUnit').value;
@@ -7836,6 +7907,7 @@ function saveCartonDataLocal() {
     }
 
     async function confirmImportFromBatch() {
+      if (!editPermissionVerified) { checkEditPermission(() => confirmImportFromBatch()); return; }
       if (selectedImportBatchIds.size === 0) {
         showToast('⚠️ 请至少选择一个入库批次', 'warning');
         return;
@@ -7896,6 +7968,36 @@ function saveCartonDataLocal() {
 
       const totalPieces = profitBatchItems.reduce((a,b) => a + (b.pieces || 0), 0);
       showToast(`✅ 已导入 ${productMap.size} 种产品，共 ${totalPieces} 件，请补充原料信息后保存`);
+    }
+
+
+    // ==================== 批次产品上下移动功能 ====================
+    function moveBatchItemUp(idx) {
+      if (!editPermissionVerified) { checkEditPermission(() => moveBatchItemUp(idx)); return; }
+      if (idx <= 0 || !profitBatchItems || profitBatchItems.length < 2) return;
+
+      // 交换当前项和上一项
+      const temp = profitBatchItems[idx];
+      profitBatchItems[idx] = profitBatchItems[idx - 1];
+      profitBatchItems[idx - 1] = temp;
+
+      renderProfitBatchItems();
+      calculateProfitBatchMetrics();
+      showToast('✅ 已上移');
+    }
+
+    function moveBatchItemDown(idx) {
+      if (!editPermissionVerified) { checkEditPermission(() => moveBatchItemDown(idx)); return; }
+      if (!profitBatchItems || idx >= profitBatchItems.length - 1 || profitBatchItems.length < 2) return;
+
+      // 交换当前项和下一项
+      const temp = profitBatchItems[idx];
+      profitBatchItems[idx] = profitBatchItems[idx + 1];
+      profitBatchItems[idx + 1] = temp;
+
+      renderProfitBatchItems();
+      calculateProfitBatchMetrics();
+      showToast('✅ 已下移');
     }
 </script>
 
@@ -7990,7 +8092,8 @@ function saveCartonDataLocal() {
             <table style="width: 100%; font-size: 12px;">
               <thead>
                 <tr>
-                  <th style="width: 25%; text-align: left;">产品信息</th>
+                  <th style="width: 10%; text-align: center;">排序</th>
+                  <th style="width: 22%; text-align: left;">产品信息</th>
                   <th style="width: 10%; text-align: center;">类型</th>
                   <th style="width: 10%; text-align: center;">件数</th>
                   <th style="width: 12%; text-align: right;">合计重量</th>
