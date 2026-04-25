@@ -1138,14 +1138,12 @@
                     </button>
                 </div>
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-                    <div class="p-4 border-b border-gray-200 flex space-x-4">
-                        <input type="text" id="salesSearch" placeholder="搜索单号/客户..." class="px-4 py-2 border rounded-lg" onkeyup="renderSalesList()">
-                        <select id="salesStatusFilter" class="px-4 py-2 border rounded-lg" onchange="renderSalesList()">
-                            <option value="">全部状态</option>
-                            <option value="pending">待收款</option>
-                            <option value="partial">部分收款</option>
-                            <option value="paid">已结清</option>
+                    <div class="p-4 border-b border-gray-200 flex flex-wrap gap-4">
+                        <input type="text" id="salesSearch" placeholder="搜索单号/客户..." class="px-4 py-2 border rounded-lg flex-1 min-w-[150px]" onkeyup="renderSalesList()">
+                        <select id="salesCustomerFilter" class="px-4 py-2 border rounded-lg" onchange="renderSalesList()">
+                            <option value="">全部客户</option>
                         </select>
+                        <input type="date" id="salesDateFilter" class="px-4 py-2 border rounded-lg" onchange="renderSalesList()">
                     </div>
                     <table class="w-full">
                         <thead class="bg-gray-50">
@@ -2218,6 +2216,7 @@
                 data.salesOrders = cloudData.salesOrders || [];
                 data.transactions = cloudData.transactions || [];
                 data.lastPurchaseDocNumber = cloudData.lastPurchaseDocNumber || 0;
+                data.lastSalesDocNumbers = cloudData.lastSalesDocNumbers || {};  // 加载销售单号计数器
                 data.expenses = cloudData.expenses || [];  // 加载费用数据
             data.expensePayments = cloudData.expensePayments || [];  // 加载费用付款记录（独立存储）
             data.expenseTypes = cloudData.expenseTypes || {};  // 加载自定义费用类别
@@ -2240,6 +2239,7 @@
                         data.salesOrders = parsed.salesOrders || [];
                         data.transactions = parsed.transactions || [];
                         data.lastPurchaseDocNumber = parsed.lastPurchaseDocNumber || 0;
+                        data.lastSalesDocNumbers = parsed.lastSalesDocNumbers || {};  // 加载销售单号计数器
                         data.expenses = parsed.expenses || [];
                         data.shareholders = parsed.shareholders || [];
                         showToast('⚠️ 离线模式，使用本地数据', 'warning');
@@ -2261,6 +2261,7 @@
 
             updateAllViews();
             updateProductBrandFilter();
+            initSalesCustomerFilter();
         }
 
         // ==================== Toast提示 ====================
@@ -4045,11 +4046,13 @@
 
         function renderSalesList() {
             const search = document.getElementById('salesSearch').value.toLowerCase();
-            const statusFilter = document.getElementById('salesStatusFilter').value;
+            const customerFilter = document.getElementById('salesCustomerFilter').value;
+            const dateFilter = document.getElementById('salesDateFilter').value;
 
             let orders = [...data.salesOrders]; // 创建副本以便排序
             if (search) orders = orders.filter(o => o.id.toLowerCase().includes(search) || o.customerName.toLowerCase().includes(search));
-            if (statusFilter) orders = orders.filter(o => o.paymentStatus === statusFilter);
+            if (customerFilter) orders = orders.filter(o => o.customerId === customerFilter);
+            if (dateFilter) orders = orders.filter(o => o.date === dateFilter);
 
             // 应用排序
             if (salesSortConfig.column) {
@@ -5237,6 +5240,26 @@ function renderTransactionList() {
         });
     
         
+        // ==================== 销售客户筛选初始化 ====================
+        function initSalesCustomerFilter() {
+            const select = document.getElementById('salesCustomerFilter');
+            if (!select) return;
+            const uniqueCustomers = [];
+            const seenNames = new Set();
+            data.customers.forEach(c => {
+                if (!seenNames.has(c.name)) {
+                    seenNames.add(c.name);
+                    uniqueCustomers.push(c);
+                }
+            });
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">全部客户</option>' +
+                uniqueCustomers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            if (uniqueCustomers.some(c => c.id === currentValue)) {
+                select.value = currentValue;
+            }
+        }
+
         // ==================== 销售列表排序功能 ====================
         let salesSortConfig = { column: null, direction: 'asc' };
 
@@ -7146,7 +7169,8 @@ function syncPaymentDataToOrders() {
                         transactions: data.transactions || [],
                         expenses: data.expenses || [],
                         shareholders: data.shareholders || [],
-                        lastPurchaseDocNumber: data.lastPurchaseDocNumber || 0
+                        lastPurchaseDocNumber: data.lastPurchaseDocNumber || 0,
+                        lastSalesDocNumbers: data.lastSalesDocNumbers || {}
                     },
                     statistics: {
                         suppliers: (data.suppliers || []).length,
@@ -7362,6 +7386,7 @@ function syncPaymentDataToOrders() {
                         data.expenses = importData.data.expenses || [];
                         data.shareholders = importData.data.shareholders || [];
                         data.lastPurchaseDocNumber = importData.data.lastPurchaseDocNumber || 0;
+                        data.lastSalesDocNumbers = importData.data.lastSalesDocNumbers || {};
 
                         // 保存到云端
                         await saveData();
