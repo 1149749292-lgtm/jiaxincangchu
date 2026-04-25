@@ -6,6 +6,7 @@
   <meta name="timestamp" content="2026-04-12 10:41">
   <title>佳信水产仓库管理系统 v4.5 - 纸箱同步修复版 - 批次编辑版</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -373,6 +374,7 @@
     }
 </style>
 <base target="_blank">
+  <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
 </head>
 <body>
   <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><div class="loading-text">正在处理...</div></div>
@@ -388,7 +390,7 @@
         </div>
       <div style="position: relative; z-index: 1;">
         <h1>🦐 佳信水产</h1>
-        <p>智能仓库管理系统 v4.5 · 批次编辑版</p>
+        <p>智能仓库管理系统 v4.6 · 批次联动产品库版</p>
       </div>
     </div>
 
@@ -892,6 +894,89 @@
   </div>
 
 
+<!-- 批次管理页面 -->
+  <div class="page" id="batch">
+    <!-- 统计卡片 -->
+    <div class="stats-grid" style="margin-bottom: 20px;">
+      <div class="stat-card">
+        <div class="stat-label">📦 总批次</div>
+        <div class="stat-value" id="batchTotalCount" style="color: var(--primary);">0</div>
+        <div class="stat-unit">个</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">💰 总净利润</div>
+        <div class="stat-value" id="batchTotalProfit" style="color: var(--success);">0</div>
+        <div class="stat-unit">元</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">📊 总销售额</div>
+        <div class="stat-value" id="batchTotalSales" style="color: var(--warning);">0</div>
+        <div class="stat-unit">元</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">📈 平均出品率</div>
+        <div class="stat-value" id="batchAvgYield" style="color: var(--danger);">0</div>
+        <div class="stat-unit">%</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>📦 批次利润管理</span>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <span id="batchListCount" style="font-size: 13px; color: var(--text-tertiary); font-weight: 500;">共 0 个批次</span>
+        </div>
+      </div>
+
+      <!-- 操作栏 -->
+      <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+        <button class="btn btn-success" onclick="openProfitBatchModal()" style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+          <span>➕</span> 新建批次
+        </button>
+        <button class="btn btn-primary" onclick="showImportFromBatchModal()" style="display: flex; align-items: center; gap: 8px; white-space: nowrap; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+          <span>📥</span> 从入库导入
+        </button>
+        <button class="btn btn-primary" onclick="syncAllBatchProducts()" style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+          <span>🔄</span> 批量同步产品信息
+        </button>
+        <button class="btn btn-secondary" onclick="exportBatchProfitList()" style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+          <span>📊</span> 导出Excel
+        </button>
+      </div>
+
+      <!-- 筛选栏 -->
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label style="font-size: 12px; margin-bottom: 4px;">开始日期</label>
+          <input type="date" id="batchFilterStart" onchange="filterProfitBatchList()" style="min-height: 38px; font-size: 13px;">
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label style="font-size: 12px; margin-bottom: 4px;">结束日期</label>
+          <input type="date" id="batchFilterEnd" onchange="filterProfitBatchList()" style="min-height: 38px; font-size: 13px;">
+        </div>
+      </div>
+
+      <!-- 搜索栏 -->
+      <div style="margin-bottom: 20px;">
+        <input type="text" id="batchSearchInput" placeholder="🔍 搜索批次名称、产品名称、规格..." 
+               style="width: 100%; padding: 12px 16px; border: 1.5px solid var(--border); border-radius: var(--radius); 
+                      font-size: 14px; transition: all 0.2s;" 
+               onkeyup="filterProfitBatchList()"
+               onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
+               onblur="this.style.borderColor='var(--border)'; this.style.boxShadow='none';">
+      </div>
+
+      <!-- 批次列表 -->
+      <div id="profitBatchList" style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="text-align: center; padding: 60px 20px; color: var(--text-tertiary);">
+          <div style="font-size: 64px; margin-bottom: 16px; opacity: 0.5;">📦</div>
+          <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">暂无批次记录</div>
+          <div style="font-size: 14px;">点击"新建批次"开始录入加工批次并计算利润</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <!-- 纸箱管理页面 -->
   <div class="page" id="carton">
     <div class="stats-grid" style="margin-bottom: 20px;">
@@ -1066,6 +1151,7 @@
     <div class="nav-item active" data-page="stock" onclick="switchPage('stock')"><span class="icon">📊</span><span>库存</span></div>
     <div class="nav-item" data-page="import" onclick="switchPage('import')"><span class="icon">📁</span><span>导入</span></div>
     <div class="nav-item" data-page="flow" onclick="switchPage('flow')"><span class="icon">📋</span><span>流水</span></div>
+    <div class="nav-item" data-page="batch" onclick="switchPage('batch')"><span class="icon">📦</span><span>批次</span></div>
     <div class="nav-item" data-page="manual" onclick="switchPage('manual')"><span class="icon">⚡</span><span>手动出入库</span></div>
     <div class="nav-item" data-page="products" onclick="switchPage('products')"><span class="icon">📦</span><span>产品</span></div>
     <div class="nav-item" data-page="carton" onclick="switchPage('carton')"><span class="icon">📦</span><span>纸箱</span></div>
@@ -1390,6 +1476,7 @@ async function init() {
         products = data.products || [];
         stock = data.stock || {};
         batches = data.batches || [];
+        loadProfitBatchData(data);
 
         // 清理无效产品数据（删除包含undefined的产品）
         cleanInvalidProducts();
@@ -1458,12 +1545,27 @@ async function init() {
       if (!response.ok) throw new Error('获取数据失败');
       const result = await response.json();
 
-      // 如果云端有纸箱数据，加载它
-      if (result.record && result.record.cartons) {
-        loadCartonDataFromCloud(result.record.cartons);
+      let record = result.record;
+
+      // 兼容：如果数据是压缩格式（之前版本保存的），解压
+      if (record && record.compressed && typeof LZString !== 'undefined') {
+        try {
+          const decompressed = LZString.decompressFromUTF16(record.compressed);
+          if (decompressed) {
+            record = JSON.parse(decompressed);
+            console.log('✅ 云端数据解压成功');
+          }
+        } catch (e) {
+          console.error('解压失败:', e);
+        }
       }
 
-      return result.record;
+      // 如果云端有纸箱数据，加载它
+      if (record && record.cartons) {
+        loadCartonDataFromCloud(record.cartons);
+      }
+
+      return record;
     }
 
     // 修复：从云端加载纸箱数据
@@ -1534,6 +1636,9 @@ async function init() {
     }
 
     async function saveData() {
+      // 批次利润数据始终保存到 localStorage（数据量大，避免云端100KB限制）
+      localStorage.setItem('warehouse_profit_batches', JSON.stringify(profitBatches || []));
+
       if (!isOnline) { 
         showToast('⚠️ 离线模式，数据仅保存在本地', 'warning'); 
         saveCartonDataLocal();
@@ -1561,6 +1666,7 @@ async function init() {
           deductedBatchIds: cartonDeductedBatchIds
         };
 
+        // 注意：profitBatches 不发送到云端，只保存在 localStorage
         const savePayload = { 
           products, 
           stock, 
@@ -1659,6 +1765,7 @@ async function init() {
       else if (page === 'flow') { renderFlow(); updateFlowCascadeOptions(); }
       else if (page === 'manual') { initManualPage(); }
     else if (page === 'products') { initProductPage(); }
+    else if (page === 'batch') { initProfitBatchPage(); }
     else if (page === 'carton') { initCartonModule(); }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -3559,7 +3666,9 @@ async function doExecuteImport() {
       }
     }
 
-    function exportAllData() {
+    
+
+function exportAllData() {
       const data = { products: products, stock: stock, batches: batches, exportTime: new Date().toISOString() };
       const ws = XLSX.utils.json_to_sheet([['数据类型', '数量'], ['产品种类', products.length], ['库存记录', Object.keys(stock).length], ['批次记录', batches.length], ['导出时间', new Date().toLocaleString('zh-CN')]]);
       const wb = XLSX.utils.book_new();
@@ -4785,7 +4894,316 @@ function showLoading(text) {
     // 标记是否已从云端加载
     let cartonsLoadedFromCloud = false;
 
-    // 初始化纸箱模块（云端数据已在 fetchData 中加载，这里加载本地备份）
+    
+// ==================== 批次利润管理模块 ====================
+
+// 利润系统内置产品数据（38种）
+const PROFIT_PRODUCTS = [
+    // 大富肴 - 白灼（干冰类）
+    { id: 'p1', name: "白灼黑虎熟虾", spec: "21-25", pack: "大富肴", weight: 2.5, price: 174, boxCost: 2.35, packCost: 0.6, processFee: 3300, freight: 3, isBLevel: false, isPricePerKg: false },
+    { id: 'p2', name: "白灼黑虎熟虾", spec: "26-30", pack: "大富肴", weight: 2.5, price: 169, boxCost: 2.35, packCost: 0.6, processFee: 3300, freight: 3, isBLevel: false, isPricePerKg: false },
+    { id: 'p3', name: "白灼黑虎熟虾", spec: "30-40", pack: "大富肴", weight: 2.5, price: 164, boxCost: 2.35, packCost: 0.6, processFee: 3300, freight: 3, isBLevel: false, isPricePerKg: false },
+    { id: 'p4', name: "白灼黑虎熟虾", spec: "40-50", pack: "大富肴", weight: 2.5, price: 154, boxCost: 2.35, packCost: 0.6, processFee: 3300, freight: 3, isBLevel: false, isPricePerKg: false },
+    { id: 'p5', name: "白灼黑虎熟虾", spec: "50-60", pack: "大富肴", weight: 2.5, price: 124, boxCost: 2.35, packCost: 0.6, processFee: 3300, freight: 3, isBLevel: false, isPricePerKg: false },
+    // 大富肴 - 盒冻
+    { id: 'p6', name: "盒冻熟虾", spec: "30-40", pack: "大富肴", weight: 2.9, price: 142, boxCost: 7, packCost: 0.3, processFee: 4200, freight: 3, isBLevel: false, isPricePerKg: false },
+    { id: 'p7', name: "盒冻熟虾", spec: "40-50", pack: "大富肴", weight: 2.9, price: 132, boxCost: 7, packCost: 0.3, processFee: 4200, freight: 3, isBLevel: false, isPricePerKg: false },
+    { id: 'p8', name: "盒冻熟虾", spec: "50-60", pack: "大富肴", weight: 2.9, price: 122, boxCost: 7, packCost: 0.3, processFee: 4200, freight: 3, isBLevel: false, isPricePerKg: false },
+    // 大富肴 - B级
+    { id: 'p9', name: "B级黑虎熟虾", spec: "B级21-25", pack: "大富肴", weight: 2.5, price: 134, boxCost: 3.45, packCost: 0.3, processFee: 3300, freight: 3, isBLevel: true, isPricePerKg: false },
+    { id: 'p10', name: "B级黑虎熟虾", spec: "B级26-30", pack: "大富肴", weight: 2.5, price: 129, boxCost: 3.45, packCost: 0.3, processFee: 3300, freight: 3, isBLevel: true, isPricePerKg: false },
+    { id: 'p11', name: "B级黑虎熟虾", spec: "B级30-40", pack: "大富肴", weight: 2.5, price: 124, boxCost: 3.45, packCost: 0.3, processFee: 3300, freight: 3, isBLevel: true, isPricePerKg: false },
+    { id: 'p12', name: "B级黑虎熟虾", spec: "B级40-50", pack: "大富肴", weight: 2.5, price: 114, boxCost: 3.45, packCost: 0.3, processFee: 3300, freight: 3, isBLevel: true, isPricePerKg: false },
+    // 豪杰 - 干冰
+    { id: 'p13', name: "干冰熟虾", spec: "2-4", pack: "豪杰", weight: 2.5, price: 95, boxCost: 2.35, packCost: 0.6, processFee: 3300, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p14', name: "干冰熟虾", spec: "4-6", pack: "豪杰", weight: 2.5, price: 87, boxCost: 2.35, packCost: 0.6, processFee: 3300, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p15', name: "干冰熟虾", spec: "6-8", pack: "豪杰", weight: 2.5, price: 83, boxCost: 2.35, packCost: 0.6, processFee: 3300, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p16', name: "干冰熟虾", spec: "8-12", pack: "豪杰", weight: 2.5, price: 78, boxCost: 2.35, packCost: 0.6, processFee: 3300, freight: 0, isBLevel: false, isPricePerKg: false },
+    // 佳信 - 干冰
+    { id: 'p17', name: "干冰熟虾", spec: "1-2", pack: "佳信", weight: 2.5, price: 103, boxCost: 2.35, packCost: 0.6, processFee: 3900, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p18', name: "干冰熟虾", spec: "2-4", pack: "佳信", weight: 2.5, price: 95, boxCost: 2.35, packCost: 0.6, processFee: 3900, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p19', name: "干冰熟虾", spec: "4-6", pack: "佳信", weight: 2.5, price: 87, boxCost: 2.35, packCost: 0.6, processFee: 3900, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p20', name: "干冰熟虾", spec: "6-8", pack: "佳信", weight: 2.5, price: 83, boxCost: 2.35, packCost: 0.6, processFee: 3900, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p21', name: "干冰熟虾", spec: "8-12", pack: "佳信", weight: 2.5, price: 78, boxCost: 2.35, packCost: 0.6, processFee: 3900, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p22', name: "干冰熟虾", spec: "特大A", pack: "佳信", weight: 2.5, price: 120, boxCost: 2.35, packCost: 0.6, processFee: 3900, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p23', name: "干冰熟虾", spec: "特大", pack: "佳信", weight: 2.5, price: 112, boxCost: 2.35, packCost: 0.6, processFee: 3900, freight: 0, isBLevel: false, isPricePerKg: false },
+    // 佳信 - B级
+    { id: 'p24', name: "干冰B级熟虾", spec: "B级2-4", pack: "佳信", weight: 6.25, price: 137.5, boxCost: 3.45, packCost: 0.3, processFee: 3900, freight: 0, isBLevel: true, isPricePerKg: false },
+    { id: 'p25', name: "干冰B级熟虾", spec: "B级4-6", pack: "佳信", weight: 6.25, price: 112.5, boxCost: 3.45, packCost: 0.3, processFee: 3900, freight: 0, isBLevel: true, isPricePerKg: false },
+    { id: 'p26', name: "干冰B级熟虾", spec: "B级特大", pack: "佳信", weight: 6.25, price: 162.5, boxCost: 3.45, packCost: 0.3, processFee: 3900, freight: 0, isBLevel: true, isPricePerKg: false },
+    // 佳信 - 盒冻
+    { id: 'p27', name: "盒冻熟虾", spec: "13-15", pack: "佳信", weight: 3.2, price: 190, boxCost: 7, packCost: 0.3, processFee: 3900, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p28', name: "盒冻熟虾", spec: "16-20", pack: "佳信", weight: 3.2, price: 185, boxCost: 7, packCost: 0.3, processFee: 3900, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p29', name: "盒冻熟虾", spec: "21-25", pack: "佳信", weight: 3.2, price: 175, boxCost: 7, packCost: 0.3, processFee: 3900, freight: 0, isBLevel: false, isPricePerKg: false },
+    // 佳信 - 黑虎B级
+    { id: 'p30', name: "黑虎B级熟虾", spec: "B级2-4", pack: "佳信", weight: 6.25, price: 137.5, boxCost: 3.45, packCost: 0.3, processFee: 3900, freight: 0, isBLevel: true, isPricePerKg: false },
+    { id: 'p31', name: "黑虎B级熟虾", spec: "B级4-6", pack: "佳信", weight: 6.25, price: 112.5, boxCost: 3.45, packCost: 0.3, processFee: 3900, freight: 0, isBLevel: true, isPricePerKg: false },
+    { id: 'p32', name: "软虾", spec: "软虾", pack: "佳信", weight: 8.5, price: 340, boxCost: 3.45, packCost: 0.3, processFee: 3900, freight: 0, isBLevel: true, isPricePerKg: false },
+    // 蓝琼
+    { id: 'p33', name: "白灼黑虎熟虾", spec: "6-8", pack: "蓝琼", weight: 6.3, price: 65.5, boxCost: 2.35, packCost: 0.6, processFee: 3700, freight: 0, isBLevel: false, isPricePerKg: true },
+    { id: 'p34', name: "白灼黑虎熟虾", spec: "8-10", pack: "蓝琼", weight: 2.8, price: 64.5, boxCost: 2.35, packCost: 0.6, processFee: 4200, freight: 0, isBLevel: false, isPricePerKg: true },
+    { id: 'p35', name: "白灼黑虎熟虾", spec: "10-15", pack: "蓝琼", weight: 2.8, price: 63, boxCost: 2.35, packCost: 0.6, processFee: 4200, freight: 0, isBLevel: false, isPricePerKg: true },
+    { id: 'p36', name: "白灼黑虎熟虾", spec: "16-20", pack: "蓝琼", weight: 6.3, price: 61.5, boxCost: 2.35, packCost: 0.6, processFee: 3700, freight: 0, isBLevel: false, isPricePerKg: true }
+];
+
+// 将仓库产品库转换为利润计算格式（联动仓库系统产品库）
+function getProfitProduct(productId) {
+  // 优先从仓库产品库查找（实时同步最新价格）
+  const p = products.find(prod => prod.id === productId);
+  if (p) {
+    const isBLevel = (p.sku && p.sku.includes('B级')) || (p.name && p.name.includes('B级'));
+    const isBoxFrozen = p.name && p.name.includes('盒冻');
+    const brand = p.brand || '';
+
+    // 优先使用仓库产品库中的最新价格
+    let currentPrice = parseFloat(p.price) || 0;
+    if (!currentPrice) {
+      currentPrice = getProductPrice(p);
+    }
+
+    return {
+      id: p.id,
+      name: p.name,
+      spec: p.sku,
+      pack: brand,
+      weight: parseFloat(p.net) || 0,
+      price: currentPrice,
+      boxCost: isBoxFrozen ? 7 : (isBLevel ? 3.45 : 2.35),
+      packCost: (isBLevel || isBoxFrozen) ? 0.3 : 0.6,
+      processFee: isBoxFrozen ? 4200 : (brand === '佳信' ? 3900 : (brand === '蓝琼' ? 3700 : 3300)),
+      freight: brand === '大富肴' ? 3 : 0,
+      isBLevel: isBLevel,
+      isPricePerKg: brand === '蓝琼'
+    };
+  }
+  // 兼容旧数据：从内置 PROFIT_PRODUCTS 查找
+  const oldP = PROFIT_PRODUCTS.find(prod => prod.id === productId);
+  if (oldP) return oldP;
+  return null;
+}
+
+function getAllProfitProducts() {
+  // 优先使用仓库产品库
+  const warehouseProducts = products.map(p => getProfitProduct(p.id)).filter(Boolean);
+  if (warehouseProducts.length > 0) return warehouseProducts;
+  // 如果仓库为空，回退到内置数据
+  return [...PROFIT_PRODUCTS];
+}
+
+let profitBatchItems = []; // 当前编辑的批次明细
+let profitBatches = [];    // 利润批次数据（从云端加载）
+
+// 初始化批次利润页面
+function initProfitBatchPage() {
+  // 确保利润批次数据已加载
+  if (!profitBatches || profitBatches.length === 0) {
+    profitBatches = [];
+  }
+  updateProfitBatchStats();
+  filterProfitBatchList();
+  initQuickAddSelect();
+}
+
+function initQuickAddSelect() {
+  const select = document.getElementById('pbQuickAddProduct');
+  if (!select) return;
+  const profitProducts = getAllProfitProducts();
+  select.innerHTML = '<option value="">快速添加产品...</option>' +
+    profitProducts.map(p => `<option value="${p.id}">${p.pack} · ${p.name} · ${p.spec} ${p.isBLevel ? '[B级]' : ''}</option>`).join('');
+}
+
+function updateProfitBatchStats() {
+  const totalCount = profitBatches.length;
+  const totalProfit = profitBatches.reduce((sum, b) => sum + (b.profit || 0), 0);
+  const totalSales = profitBatches.reduce((sum, b) => sum + (b.totalSales || 0), 0);
+  const avgYield = totalCount > 0 ? (profitBatches.reduce((sum, b) => sum + (b.yieldRate || 0), 0) / totalCount) : 0;
+
+  document.getElementById('batchTotalCount').textContent = totalCount;
+  document.getElementById('batchTotalProfit').textContent = (totalProfit >= 0 ? '' : '-') + '¥' + Math.abs(totalProfit).toLocaleString('zh-CN', {maximumFractionDigits: 0});
+  document.getElementById('batchTotalProfit').style.color = totalProfit >= 0 ? 'var(--success)' : 'var(--danger)';
+  document.getElementById('batchTotalSales').textContent = '¥' + totalSales.toLocaleString('zh-CN', {maximumFractionDigits: 0});
+  document.getElementById('batchAvgYield').textContent = avgYield.toFixed(2);
+}
+
+function filterProfitBatchList() {
+  const start = document.getElementById('batchFilterStart').value;
+  const end = document.getElementById('batchFilterEnd').value;
+  const search = normalizeString(document.getElementById('batchSearchInput').value);
+
+  let filtered = [...profitBatches];
+
+  if (start) filtered = filtered.filter(b => (b.date || '') >= start);
+  if (end) filtered = filtered.filter(b => (b.date || '') <= end);
+  if (search) {
+    filtered = filtered.filter(b => {
+      if (normalizeString(b.name || '').includes(search)) return true;
+      if (normalizeString(b.id || '').includes(search)) return true;
+      return (b.items || []).some(item =>
+        normalizeString(item.productName || '').includes(search) ||
+        normalizeString(item.productSpec || '').includes(search) ||
+        normalizeString(item.productPack || '').includes(search)
+      );
+    });
+  }
+
+  // 按日期倒序
+  filtered.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+  renderProfitBatchList(filtered);
+  document.getElementById('batchListCount').textContent = `共 ${filtered.length} 个批次`;
+}
+
+function renderProfitBatchList(batchList) {
+  const container = document.getElementById('profitBatchList');
+
+  if (batchList.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 60px 20px; color: var(--text-tertiary);">
+        <div style="font-size: 64px; margin-bottom: 16px; opacity: 0.5;">📦</div>
+        <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">暂无批次记录</div>
+        <div style="font-size: 14px;">点击"新建批次"开始录入加工批次并计算利润</div>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = batchList.map(batch => {
+    const isProfit = (batch.profit || 0) >= 0;
+    const profitColor = isProfit ? '#059669' : '#dc2626';
+    const profitBg = isProfit ? '#f0fdf4' : '#fef2f2';
+    const profitBorder = isProfit ? '#bbf7d0' : '#fecaca';
+
+    // 计算批次净利润（实时计算确保准确）
+    const batchProfit = batch.items ? batch.items.reduce((sum, item) => {
+      const p = getProfitProduct(item.productId);
+      const packCost = item.packCost !== undefined ? item.packCost : (item.pieces * (p?.packCost || 0.6));
+      return sum + (item.sales - (item.materialCost || 0) - (item.boxCost || 0) - packCost - (item.freightCost || 0) - (item.processCost || 0));
+    }, 0) : (batch.profit || 0);
+
+    return `
+      <div style="background: white; border-radius: 12px; border: 2px solid ${profitBorder}; overflow: hidden; transition: all 0.2s; cursor: pointer;"
+           onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)'; this.style.transform='translateY(-1px)';"
+           onmouseout="this.style.boxShadow='none'; this.style.transform='translateY(0)';"
+           onclick="toggleProfitBatchDetail('${batch.id}')">
+        <div style="padding: 16px 20px; background: ${profitBg}; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <span style="font-size: 24px;">📦</span>
+            <div>
+              <div style="font-weight: 700; font-size: 16px; color: #0f172a;">
+                ${escapeHtml(batch.name || '未命名批次')}
+                <span style="display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; background: #374151; color: white; margin-left: 8px;">#${(batch.id || '').toString().slice(-6)}</span>
+              </div>
+              <div style="font-size: 13px; color: #64748b; margin-top: 4px;">
+                📅 ${batch.date || '-'} · 原料${batch.rawWeight || 0}斤 · 出品率${(batch.yieldRate || 0).toFixed(1)}% · 出称${(batch.lossWeight || 0).toFixed(1)}kg
+              </div>
+            </div>
+          </div>
+          <div style="text-align: center; flex-shrink: 0;">
+            <div style="font-size: 13px; color: #64748b; margin-bottom: 2px;">净利润</div>
+            <div style="font-size: 24px; font-weight: 700; color: ${profitColor}; font-variant-numeric: tabular-nums;">
+              ${isProfit ? '+' : ''}¥${Math.abs(batchProfit).toFixed(0)}
+            </div>
+          </div>
+        </div>
+
+        <!-- 批次详情（可展开） -->
+        <div id="pbdetail-${batch.id}" style="display: none; border-top: 1px solid ${profitBorder};">
+          <div style="padding: 16px 20px;">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
+              <div style="padding: 12px; background: #f0fdf4; border-radius: 8px; text-align: center; border: 1px solid #bbf7d0;">
+                <div style="font-size: 12px; color: #15803d; font-weight: 600;">✅ 非B级</div>
+                <div style="font-size: 18px; font-weight: 700; color: #15803d;">${(batch.normalWeight || 0).toFixed(2)}kg</div>
+              </div>
+              <div style="padding: 12px; background: #fef2f2; border-radius: 8px; text-align: center; border: 1px solid #fecaca;">
+                <div style="font-size: 12px; color: #b91c1c; font-weight: 600;">⚠️ B级</div>
+                <div style="font-size: 18px; font-weight: 700; color: #b91c1c;">${(batch.bLevelWeight || 0).toFixed(2)}kg</div>
+              </div>
+              <div style="padding: 12px; background: #f8fafc; border-radius: 8px; text-align: center; border: 1px solid #e2e8f0;">
+                <div style="font-size: 12px; color: #475569; font-weight: 600;">📦 成品总重</div>
+                <div style="font-size: 18px; font-weight: 700; color: #0f172a;">${(batch.totalWeight || 0).toFixed(2)}kg</div>
+              </div>
+            </div>
+
+            <div style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 12px;">📋 明细列表</div>
+            <div class="table-wrapper" style="max-height: 300px; margin-bottom: 16px;">
+              <table style="width: 100%; font-size: 12px;">
+                <thead>
+                  <tr>
+                    <th style="text-align: left;">产品</th>
+                    <th style="text-align: center;">类型</th>
+                    <th style="text-align: center;">件数</th>
+                    <th style="text-align: right;">净重</th>
+                    <th style="text-align: right;">销售额</th>
+                    <th style="text-align: right;">净利润</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${(batch.items || []).map(item => {
+                    const p = getProfitProduct(item.productId);
+                    const packCost = item.packCost !== undefined ? item.packCost : (item.pieces * (p?.packCost || 0.6));
+                    const netProfit = item.sales - (item.materialCost || 0) - (item.boxCost || 0) - packCost - (item.freightCost || 0) - (item.processCost || 0);
+                    const isItemProfit = netProfit >= 0;
+                    return `
+                      <tr style="border-bottom: 1px solid #f1f5f9;">
+                        <td style="padding: 8px; text-align: left;">
+                          <div style="font-weight: 600;">${escapeHtml(item.productName || '')}</div>
+                          <div style="font-size: 11px; color: #64748b;">${escapeHtml(item.productPack || '')} · ${escapeHtml(item.productSpec || '')}</div>
+                        </td>
+                        <td style="padding: 8px; text-align: center;">
+                          <span style="display: inline-flex; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; background: ${item.isBLevel ? '#fef3c7' : '#d1fae5'}; color: ${item.isBLevel ? '#92400e' : '#065f46'};">${item.isBLevel ? 'B级' : '正常'}</span>
+                        </td>
+                        <td style="padding: 8px; text-align: center; font-weight: 600;">${item.pieces || 0}</td>
+                        <td style="padding: 8px; text-align: right;">${(item.netWeight || 0).toFixed(2)}kg</td>
+                        <td style="padding: 8px; text-align: right; color: #059669; font-weight: 600;">¥${(item.sales || 0).toFixed(1)}</td>
+                        <td style="padding: 8px; text-align: right; font-weight: 700; color: ${isItemProfit ? '#059669' : '#dc2626'};">${isItemProfit ? '+' : ''}¥${netProfit.toFixed(1)}</td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+
+            <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; padding-top: 12px; border-top: 1px dashed #e2e8f0; font-size: 13px;">
+              <span>总销售额: <strong style="color: #059669;">¥${(batch.totalSales || 0).toFixed(1)}</strong></span>
+              <span>原料成本: <strong style="color: #dc2626;">¥${(batch.rawCost || 0).toFixed(1)}</strong></span>
+              <span>总成本: <strong style="color: #d97706;">¥${(batch.totalCost || 0).toFixed(1)}</strong></span>
+              <span style="color: ${isProfit ? '#059669' : '#dc2626'}; font-weight: 700;">净利润: ${isProfit ? '+' : ''}¥${Math.abs(batchProfit).toFixed(2)}</span>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div style="display: flex; gap: 10px; margin-top: 16px;">
+              <button onclick="event.stopPropagation(); editProfitBatch('${batch.id}')" 
+                      style="flex: 1; padding: 10px; background: #dbeafe; color: #2563eb; border: 1.5px solid #bfdbfe; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer;">✏️ 编辑批次</button>
+              <button onclick="event.stopPropagation(); exportSingleBatchImage('${batch.id}')" 
+                      style="flex: 1; padding: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer;">📷 导出图片</button>
+              <button onclick="event.stopPropagation(); deleteProfitBatch('${batch.id}')" 
+                      style="flex: 1; padding: 10px; background: #fee2e2; color: #dc2626; border: 1.5px solid #fecaca; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer;">🗑️ 删除批次</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="pbtoggle-${batch.id}" style="text-align: center; padding: 6px; background: ${profitBg}; border-top: 1px solid ${profitBorder}; color: #94a3b8; font-size: 12px;">
+          ▼ 点击查看详情
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleProfitBatchDetail(batchId) {
+  const detail = document.getElementById(`pbdetail-${batchId}`);
+  const toggle = document.getElementById(`pbtoggle-${batchId}`);
+  if (!detail || !toggle) return;
+  if (detail.style.display === 'none') {
+    detail.style.display = 'block';
+    toggle.textContent = '▲ 点击收起详情';
+  } else {
+    detail.style.display = 'none';
+    toggle.textContent = '▼ 点击查看详情';
+  }
+}
+
+// 初始化纸箱模块（云端数据已在 fetchData 中加载，这里加载本地备份）
     function initCartonModule() {
         // 如果云端已加载，则合并本地数据（本地作为补充）
         // 如果云端未加载（离线模式），则完全从本地加载
@@ -4905,7 +5323,1128 @@ function showLoading(text) {
     }
 
     // 保存到本地
-    function saveCartonDataLocal() {
+    
+// ==================== 批次弹窗操作 ====================
+
+function openProfitBatchModal(batch = null) {
+  const modal = document.getElementById('profitBatchModal');
+  modal.classList.add('show');
+  document.getElementById('pbDate').value = new Date().toISOString().split('T')[0];
+  initQuickAddSelect();
+
+  if (batch) {
+    document.getElementById('profitBatchModalTitle').textContent = '编辑加工批次';
+    document.getElementById('profitBatchId').value = batch.id;
+    document.getElementById('pbName').value = batch.name || '';
+    document.getElementById('pbDate').value = batch.date || new Date().toISOString().split('T')[0];
+    document.getElementById('pbRawWeight').value = batch.rawWeight || '';
+    document.getElementById('pbRawPrice').value = batch.rawPrice || '';
+    document.getElementById('pbOtherFee').value = batch.otherFee || 0;
+
+    profitBatchItems = (batch.items || []).map(item => ({
+      productId: item.productId,
+      pieces: item.pieces || 0,
+      boxPerPiece: item.boxPerPiece || item.boxCost || 0.6,
+      freightPerPiece: item.freightPerPiece || item.freightCost || 0,
+      processPerTon: item.processPerTon || item.processCost || 3300,
+      price: item.price || 0,
+      productName: item.productName || '',
+      productSpec: item.productSpec || '',
+      productPack: item.productPack || '',
+      isBLevel: item.isBLevel || false,
+      unitWeight: item.unitWeight || 0
+    }));
+  } else {
+    document.getElementById('profitBatchModalTitle').textContent = '新建加工批次';
+    document.getElementById('profitBatchId').value = '';
+    document.getElementById('pbName').value = '';
+    document.getElementById('pbRawWeight').value = '';
+    document.getElementById('pbRawPrice').value = '';
+    document.getElementById('pbOtherFee').value = 0;
+    profitBatchItems = [];
+  }
+
+  calculateProfitBatchMetrics();
+  renderProfitBatchItems();
+}
+
+function closeProfitBatchModal() {
+  document.getElementById('profitBatchModal').classList.remove('show');
+}
+
+function calculateProfitBatchMetrics() {
+  const rawWeight = parseFloat(document.getElementById('pbRawWeight').value) || 0;
+  const rawPrice = parseFloat(document.getElementById('pbRawPrice').value) || 0;
+  const cost = rawWeight * rawPrice;
+  document.getElementById('pbRawCost').textContent = '¥' + cost.toFixed(2);
+  document.getElementById('pbRawKgDisplay').textContent = (rawWeight * 0.5).toFixed(1);
+  updateProfitBatchYieldLoss();
+}
+
+function updateProfitBatchYieldLoss() {
+  let normalWeight = 0, bLevelWeight = 0;
+  profitBatchItems.forEach(item => {
+    const p = getProfitProduct(item.productId);
+    if (p && item.pieces > 0) {
+      const w = item.pieces * p.weight;
+      if (p.isBLevel) bLevelWeight += w;
+      else normalWeight += w;
+    }
+  });
+
+  const totalWeight = normalWeight + bLevelWeight;
+  const yieldRate = totalWeight > 0 ? (normalWeight / totalWeight * 100) : 0;
+  const rawWeight = parseFloat(document.getElementById('pbRawWeight').value) || 0;
+  const rawKg = rawWeight / 2;
+  const lossWeight = totalWeight - rawKg;
+
+  document.getElementById('pbNormalWeight').textContent = normalWeight.toFixed(2) + ' kg';
+  document.getElementById('pbBLevelWeight').textContent = bLevelWeight.toFixed(2) + ' kg';
+  document.getElementById('pbTotalWeight').textContent = totalWeight.toFixed(2) + ' kg';
+  document.getElementById('pbYieldRate').textContent = yieldRate.toFixed(2) + '%';
+  document.getElementById('pbLossWeight').textContent = lossWeight.toFixed(1);
+  document.getElementById('pbFinishedDisplay').textContent = totalWeight.toFixed(2);
+}
+
+function quickAddProfitBatchProduct() {
+  const select = document.getElementById('pbQuickAddProduct');
+  const pid = select.value;
+  if (!pid) return;
+  const p = getProfitProduct(pid);
+  if (!p) return;
+
+  profitBatchItems.push({
+    productId: p.id,
+    pieces: 0,
+    boxPerPiece: p.boxCost !== undefined ? p.boxCost : (p.isBLevel ? 0.3 : (p.name.includes('盒冻') ? 7 : 0.6)),
+    freightPerPiece: p.freight !== undefined ? p.freight : (p.pack === '大富肴' ? 3 : 0),
+    processPerTon: p.processFee !== undefined ? p.processFee : (p.name.includes('盒冻') ? 4200 : 3300),
+    price: p.price,
+    productName: p.name,
+    productSpec: p.spec,
+    productPack: p.pack,
+    isBLevel: p.isBLevel,
+    unitWeight: p.weight
+  });
+  select.value = '';
+  renderProfitBatchItems();
+}
+
+function addProfitBatchItem() {
+  const allProducts = getAllProfitProducts();
+  if (allProducts.length === 0) return;
+  const p = allProducts[0];
+  profitBatchItems.push({
+    productId: p.id,
+    pieces: 0,
+    boxPerPiece: p.boxCost !== undefined ? p.boxCost : 0.6,
+    freightPerPiece: p.freight !== undefined ? p.freight : 0,
+    processPerTon: p.processFee !== undefined ? p.processFee : 3300,
+    price: p.price,
+    productName: p.name,
+    productSpec: p.spec,
+    productPack: p.pack,
+    isBLevel: p.isBLevel,
+    unitWeight: p.weight
+  });
+  renderProfitBatchItems();
+}
+
+function renderProfitBatchItems() {
+  const tbody = document.getElementById('pbItemsTable');
+  if (!tbody) return;
+
+  if (profitBatchItems.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 30px; color: #94a3b8;">暂无产品，请快速添加或手动添加</td></tr>';
+    updateProfitBatchYieldLoss();
+    updateProfitBatchPreview();
+    return;
+  }
+
+  const rawWeight = parseFloat(document.getElementById('pbRawWeight').value) || 0;
+  const rawPrice = parseFloat(document.getElementById('pbRawPrice').value) || 0;
+  const rawCost = rawWeight * rawPrice;
+
+  let totalFinishedWeight = 0;
+  profitBatchItems.forEach(item => {
+    const p = getProfitProduct(item.productId);
+    if (p && item.pieces > 0) totalFinishedWeight += item.pieces * p.weight;
+  });
+  const allocationRate = totalFinishedWeight > 0 ? rawCost / totalFinishedWeight : 0;
+
+  tbody.innerHTML = profitBatchItems.map((item, idx) => {
+    const p = getProfitProduct(item.productId);
+    if (!p) return '';
+    const netWeight = item.pieces * p.weight;
+    const isPricePerKg = p.isPricePerKg || false;
+
+    let singlePrice, sales;
+    if (isPricePerKg) {
+      singlePrice = item.price * p.weight;
+      sales = netWeight * item.price;
+    } else {
+      singlePrice = item.price;
+      sales = item.pieces * item.price;
+    }
+
+    const materialCost = netWeight * allocationRate;
+    const boxCostTotal = item.pieces * item.boxPerPiece;
+    const packCostTotal = item.pieces * (p.packCost || 0.6);
+    const freightCostTotal = item.pieces * item.freightPerPiece;
+    const processCostTotal = (netWeight / 1000) * item.processPerTon;
+    const netProfit = sales - materialCost - boxCostTotal - packCostTotal - freightCostTotal - processCostTotal;
+    const isProfit = netProfit >= 0;
+
+    return `
+      <tr style="border-bottom: 2px solid #e5e7eb; background: ${isProfit ? '#f0fdf4' : '#fef2f2'};">
+        <td style="padding: 10px 8px; text-align: left;">
+          <div style="font-weight: 600; font-size: 13px;">${escapeHtml(p.pack)} · ${escapeHtml(p.name)}</div>
+          <div style="font-size: 11px; color: #64748b;">${escapeHtml(p.spec)} · ${p.weight}kg/件</div>
+        </td>
+        <td style="padding: 10px 8px; text-align: center;">
+          <span style="display: inline-flex; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; background: ${p.isBLevel ? '#fef3c7' : '#d1fae5'}; color: ${p.isBLevel ? '#92400e' : '#065f46'};">${p.isBLevel ? 'B级' : '正常'}</span>
+        </td>
+        <td style="padding: 10px 8px; text-align: center;">
+          <input type="number" value="${item.pieces}" min="0" style="width: 60px; padding: 4px; border: 1.5px solid #e2e8f0; border-radius: 6px; text-align: center; font-weight: 600; font-size: 13px;" onchange="updateProfitBatchItem(${idx}, 'pieces', this.value)">
+        </td>
+        <td style="padding: 10px 8px; text-align: right; font-weight: 600;">${netWeight.toFixed(2)}kg</td>
+        <td style="padding: 10px 8px; text-align: right; font-size: 12px;">
+          <div style="color: #7c3aed; font-weight: 600;">¥${singlePrice.toFixed(2)}</div>
+          <div style="color: #94a3b8; font-size: 10px;">${isPricePerKg ? '元/kg×' + p.weight + 'kg' : '元/件'}</div>
+        </td>
+        <td style="padding: 10px 8px; text-align: right; color: #059669; font-weight: 700;">¥${sales.toFixed(1)}</td>
+        <td style="padding: 10px 8px; text-align: right; font-weight: 700; color: ${isProfit ? '#059669' : '#dc2626'};">${isProfit ? '+' : ''}¥${netProfit.toFixed(1)}</td>
+        <td style="padding: 10px 8px; text-align: center;">
+          <button onclick="removeProfitBatchItem(${idx})" style="background: #fee2e2; color: #dc2626; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;">🗑️</button>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="8" style="padding: 8px 12px; background: #f8fafc;">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; font-size: 11px; color: #64748b;">
+            <span>📦纸箱: <input type="number" value="${item.boxPerPiece}" step="0.01" style="width: 50px; padding: 2px 4px; border: 1px solid #e2e8f0; border-radius: 4px; text-align: right;" onchange="updateProfitBatchItem(${idx}, 'boxPerPiece', this.value)">×${item.pieces}=<strong style="color: #2563eb;">¥${boxCostTotal.toFixed(2)}</strong></span>
+            <span>🎁包装: ¥${(p.packCost || 0.6).toFixed(2)}×${item.pieces}=<strong style="color: #2563eb;">¥${packCostTotal.toFixed(2)}</strong></span>
+            <span>🚚运费: <input type="number" value="${item.freightPerPiece}" step="0.1" style="width: 50px; padding: 2px 4px; border: 1px solid #e2e8f0; border-radius: 4px; text-align: right;" onchange="updateProfitBatchItem(${idx}, 'freightPerPiece', this.value)">×${item.pieces}=<strong style="color: #2563eb;">¥${freightCostTotal.toFixed(2)}</strong></span>
+            <span>⚙️加工: <input type="number" value="${item.processPerTon}" step="100" style="width: 55px; padding: 2px 4px; border: 1px solid #e2e8f0; border-radius: 4px; text-align: right;" onchange="updateProfitBatchItem(${idx}, 'processPerTon', this.value)">元/吨×${netWeight.toFixed(2)}kg=<strong style="color: #2563eb;">¥${processCostTotal.toFixed(2)}</strong></span>
+            <span style="margin-left: auto; background: #fff7ed; padding: 2px 8px; border-radius: 6px; border: 1px solid #fed7aa;">原料分摊: <strong style="color: #ea580c;">¥${materialCost.toFixed(2)}</strong></span>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  updateProfitBatchYieldLoss();
+  updateProfitBatchPreview();
+}
+
+function updateProfitBatchItem(idx, field, value) {
+  profitBatchItems[idx][field] = field === 'productId' ? value : parseFloat(value) || 0;
+  renderProfitBatchItems();
+}
+
+function removeProfitBatchItem(idx) {
+  profitBatchItems.splice(idx, 1);
+  renderProfitBatchItems();
+}
+
+function syncProfitBatchProducts() {
+  if (!profitBatchItems || profitBatchItems.length === 0) {
+    showToast('没有产品需要同步', 'info');
+    return;
+  }
+  let syncCount = 0;
+  profitBatchItems.forEach(item => {
+    const p = getProfitProduct(item.productId);
+    if (p) {
+      item.price = p.price;
+      item.boxPerPiece = p.boxCost !== undefined ? p.boxCost : item.boxPerPiece;
+      item.freightPerPiece = p.freight !== undefined ? p.freight : item.freightPerPiece;
+      item.processPerTon = p.processFee !== undefined ? p.processFee : item.processPerTon;
+      item.productName = p.name;
+      item.productSpec = p.spec;
+      item.productPack = p.pack;
+      item.isBLevel = p.isBLevel;
+      item.unitWeight = p.weight;
+      syncCount++;
+    }
+  });
+  renderProfitBatchItems();
+  showToast(`✅ 已同步 ${syncCount} 个产品信息`, 'success');
+}
+
+function updateProfitBatchPreview() {
+  const rawWeight = parseFloat(document.getElementById('pbRawWeight').value) || 0;
+  const rawPrice = parseFloat(document.getElementById('pbRawPrice').value) || 0;
+  const rawCost = rawWeight * rawPrice;
+
+  let totalFinishedWeight = 0;
+  profitBatchItems.forEach(item => {
+    const p = getProfitProduct(item.productId);
+    if (p && item.pieces > 0) totalFinishedWeight += item.pieces * p.weight;
+  });
+
+  const materialRate = totalFinishedWeight > 0 ? rawCost / totalFinishedWeight : 0;
+  let totalSales = 0, totalBoxCost = 0, totalPackCost = 0, totalFreight = 0, totalProcess = 0, totalPieces = 0, totalWeight = 0;
+
+  profitBatchItems.forEach(item => {
+    const p = getProfitProduct(item.productId);
+    if (!p) return;
+    const netWeight = item.pieces * p.weight;
+    const isPricePerKg = p.isPricePerKg || false;
+
+    if (isPricePerKg) totalSales += netWeight * item.price;
+    else totalSales += item.pieces * item.price;
+
+    totalBoxCost += item.pieces * item.boxPerPiece;
+    totalPackCost += item.pieces * (p.packCost || 0.6);
+    totalFreight += item.pieces * item.freightPerPiece;
+    totalProcess += (netWeight / 1000) * item.processPerTon;
+    totalPieces += item.pieces;
+    totalWeight += netWeight;
+  });
+
+  const otherFee = parseFloat(document.getElementById('pbOtherFee').value) || 0;
+  const totalCost = rawCost + totalBoxCost + totalPackCost + totalFreight + totalProcess + otherFee;
+  const totalProcessingFee = totalBoxCost + totalPackCost + totalFreight + totalProcess;
+  const profit = totalSales - totalCost;
+
+  document.getElementById('pbPackingFee').value = totalPackCost.toFixed(2);
+  document.getElementById('pbBoxFee').value = totalBoxCost.toFixed(2);
+  document.getElementById('pbPreviewProcessFee').textContent = '¥' + totalProcessingFee.toFixed(2);
+  document.getElementById('pbPreviewSales').textContent = '¥' + totalSales.toFixed(2);
+
+  const profitEl = document.getElementById('pbPreviewProfit');
+  const profitCard = document.getElementById('pbProfitCard');
+  profitEl.textContent = (profit >= 0 ? '+' : '') + '¥' + profit.toFixed(2);
+
+  if (profit >= 0) {
+    profitCard.style.background = '#f0fdf4';
+    profitCard.style.borderColor = '#22c55e';
+    profitEl.style.color = '#15803d';
+  } else {
+    profitCard.style.background = '#fef2f2';
+    profitCard.style.borderColor = '#ef4444';
+    profitEl.style.color = '#b91c1c';
+  }
+
+  document.getElementById('pbPreviewPieces').textContent = totalPieces + ' 件';
+  document.getElementById('pbPreviewTotalWeight').textContent = totalWeight.toFixed(2) + ' kg';
+}
+
+function saveProfitBatch() {
+  const id = document.getElementById('profitBatchId').value;
+  const name = document.getElementById('pbName').value.trim();
+  const rawWeight = parseFloat(document.getElementById('pbRawWeight').value) || 0;
+  const rawPrice = parseFloat(document.getElementById('pbRawPrice').value) || 0;
+
+  if (!name) { showToast('⚠️ 请填写批次名称', 'warning'); return; }
+  if (!rawWeight || !rawPrice) { showToast('⚠️ 请填写原料重量和单价', 'warning'); return; }
+
+  const rawCost = rawWeight * rawPrice;
+
+  let normalWeight = 0, bLevelWeight = 0, totalWeight = 0;
+  profitBatchItems.forEach(item => {
+    const p = getProfitProduct(item.productId);
+    if (p && item.pieces > 0) {
+      const w = item.pieces * p.weight;
+      if (p.isBLevel) bLevelWeight += w;
+      else normalWeight += w;
+      totalWeight += w;
+    }
+  });
+
+  const materialRate = totalWeight > 0 ? rawCost / totalWeight : 0;
+  let totalSales = 0, totalBoxCost = 0, totalPackCost = 0, totalFreight = 0, totalProcess = 0;
+
+  const items = profitBatchItems.map(item => {
+    const p = getProfitProduct(item.productId);
+    if (!p) return null;
+    const netWeight = item.pieces * p.weight;
+    const isPricePerKg = p.isPricePerKg || false;
+
+    let sales;
+    if (isPricePerKg) sales = netWeight * item.price;
+    else sales = item.pieces * item.price;
+
+    const materialCost = netWeight * materialRate;
+    const boxCost = item.pieces * item.boxPerPiece;
+    const packCost = item.pieces * (p.packCost || 0.6);
+    const freightCost = item.pieces * item.freightPerPiece;
+    const processCost = (netWeight / 1000) * item.processPerTon;
+
+    totalSales += sales;
+    totalBoxCost += boxCost;
+    totalPackCost += packCost;
+    totalFreight += freightCost;
+    totalProcess += processCost;
+
+    return {
+      productId: item.productId,
+      productName: p.name,
+      productSpec: p.spec,
+      productPack: p.pack,
+      isBLevel: p.isBLevel,
+      unitWeight: p.weight,
+      price: item.price,
+      isPricePerKg: isPricePerKg,
+      pieces: item.pieces,
+      netWeight,
+      sales,
+      materialCost,
+      boxCost,
+      packCost,
+      freightCost,
+      processCost,
+      boxPerPiece: item.boxPerPiece,
+      freightPerPiece: item.freightPerPiece,
+      processPerTon: item.processPerTon
+    };
+  }).filter(Boolean);
+
+  const otherFee = parseFloat(document.getElementById('pbOtherFee').value) || 0;
+  const totalCost = rawCost + totalBoxCost + totalPackCost + totalFreight + totalProcess + otherFee;
+  const yieldRate = totalWeight > 0 ? (normalWeight / totalWeight * 100) : 0;
+  const lossWeight = totalWeight - (rawWeight / 2);
+
+  const batch = {
+    id: id || ('pb_' + Date.now()),
+    name: name,
+    date: document.getElementById('pbDate').value,
+    rawWeight, rawPrice, rawCost, otherFee, items,
+    normalWeight, bLevelWeight, totalWeight, yieldRate, lossWeight,
+    totalSales, totalBoxCost, totalPackCost, totalFreight, totalProcess, totalCost,
+    profit: totalSales - totalCost
+  };
+
+  if (id) {
+    const idx = profitBatches.findIndex(b => b.id === id);
+    if (idx >= 0) profitBatches[idx] = batch;
+    else profitBatches.push(batch);
+  } else {
+    profitBatches.push(batch);
+  }
+
+  closeProfitBatchModal();
+  updateProfitBatchStats();
+  filterProfitBatchList();
+  saveProfitBatchData();
+  showToast(`✅ 批次「${name}」已保存，净利润: ${batch.profit >= 0 ? '+' : ''}¥${batch.profit.toFixed(2)}`, 'success');
+}
+
+function editProfitBatch(id) {
+  const batch = profitBatches.find(b => b.id === id);
+  if (batch) openProfitBatchModal(batch);
+}
+
+function deleteProfitBatch(id) {
+  const batch = profitBatches.find(b => b.id === id);
+  if (!batch) return;
+  if (!confirm(`确定删除批次「${batch.name || '未命名'}」？此操作不可恢复。`)) return;
+  profitBatches = profitBatches.filter(b => b.id !== id);
+  updateProfitBatchStats();
+  filterProfitBatchList();
+  saveProfitBatchData();
+  showToast('✅ 批次已删除', 'success');
+}
+
+function syncAllBatchProducts() {
+  if (profitBatches.length === 0) {
+    showToast('暂无批次需要同步', 'info');
+    return;
+  }
+  let syncCount = 0;
+  profitBatches.forEach(batch => {
+    (batch.items || []).forEach(item => {
+      const p = getProfitProduct(item.productId);
+      if (p) {
+        item.productName = p.name;
+        item.productSpec = p.spec;
+        item.productPack = p.pack;
+        item.unitWeight = p.weight;
+        item.isBLevel = p.isBLevel;
+        syncCount++;
+      }
+    });
+  });
+  saveProfitBatchData();
+  filterProfitBatchList();
+  showToast(`✅ 已同步 ${syncCount} 条产品信息`, 'success');
+}
+
+// 保存批次利润数据（只保存到 localStorage，避免云端100KB限制）
+async function saveProfitBatchData() {
+  // 始终保存到 localStorage
+  localStorage.setItem('warehouse_profit_batches', JSON.stringify(profitBatches || []));
+  console.log('批次利润数据已保存到本地:', profitBatches.length, '个');
+
+  // 注意：不再发送到云端，避免触发100KB限制
+  // 如果需要云端备份，可以单独创建一个 bin
+}
+
+// 加载批次利润数据
+function loadProfitBatchData(data) {
+  // 批次利润数据只从 localStorage 加载（避免云端100KB限制）
+  const local = localStorage.getItem('warehouse_profit_batches');
+  if (local) {
+    try { 
+      const localData = JSON.parse(local);
+      if (Array.isArray(localData)) {
+        profitBatches = localData;
+        console.log('从本地加载批次利润数据:', profitBatches.length, '个');
+        return;
+      }
+    } catch(e) { 
+      console.error('本地批次利润数据解析失败:', e);
+    }
+  }
+
+  // 兼容旧逻辑：如果云端有数据也读取（旧版本可能保存在云端）
+  if (data && data.profitBatches && Array.isArray(data.profitBatches) && data.profitBatches.length > 0) {
+    profitBatches = data.profitBatches;
+    console.log('从云端加载批次利润数据:', profitBatches.length, '个');
+    // 同时保存到本地
+    localStorage.setItem('warehouse_profit_batches', JSON.stringify(profitBatches));
+  } else {
+    profitBatches = [];
+  }
+}
+
+
+
+
+
+
+// ==================== 批次利润图片导出 ====================
+
+// 桥接函数：批次卡片导出（带可用性检查）
+function exportSingleBatchImage(batchId) {
+  if (typeof htmlToImage === 'undefined') {
+    showToast('❌ 图片导出库加载失败，请检查网络连接后刷新页面', 'error');
+    return;
+  }
+  exportBatchImage(batchId);
+}
+
+// 桥接函数：弹窗导出（带可用性检查）
+function exportProfitBatchImage() {
+  if (typeof htmlToImage === 'undefined') {
+    showToast('❌ 图片导出库加载失败，请检查网络连接后刷新页面', 'error');
+    return;
+  }
+  exportCurrentBatchImage();
+}
+
+async function exportBatchImage(batchId) {
+            showToast('正在生成横向报表...', 'info');
+
+            const batch = profitBatches.find(b => b.id === batchId);
+            if (!batch) {
+                showToast('未找到批次数据', 'error');
+                return;
+            }
+
+            // 创建宽屏横向容器
+            const exportContainer = document.createElement('div');
+            exportContainer.style.cssText = `
+                width: 1650px;
+                background: #ffffff;
+                padding: 30px;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                color: #0f172a;
+                line-height: 1.4;
+                -webkit-font-smoothing: antialiased;
+            `;
+
+            // 计算合计数据
+            let totalBoxCost = 0, totalPackCost = 0, totalFreight = 0, totalProcess = 0;
+            batch.items.forEach(item => {
+                totalBoxCost += (item.boxCost || 0);
+                totalPackCost += (item.packCost || item.pieces * 0.6);
+                totalFreight += (item.freightCost || 0);
+                totalProcess += (item.processCost || 0);
+            });
+
+            // 构建表格行HTML
+            let rowsHtml = '';
+            batch.items.forEach((item, idx) => {
+                const product = getProfitProduct(item.productId);
+                const boxPerPiece = item.boxCost && item.pieces ? (item.boxCost / item.pieces).toFixed(2) : (product?.boxCost || 0).toFixed(2);
+                const packPerPiece = (product?.packCost || 0.6).toFixed(2);
+                const freightPerPiece = item.freightCost && item.pieces ? (item.freightCost / item.pieces).toFixed(2) : (product?.freight || 0).toFixed(2);
+                const processPerTon = item.processCost && item.netWeight ? (item.processCost / item.netWeight * 1000).toFixed(0) : (product?.processFee || 3300);
+
+                const netProfit = item.sales - (item.materialCost || 0) - (item.boxCost || 0) - (item.packCost || item.pieces * 0.6) - (item.freightCost || 0) - (item.processCost || 0);
+                const isProfit = netProfit >= 0;
+
+                rowsHtml += `
+                    <tr style="background: ${isProfit ? '#d1fae5' : '#fee2e2'}; border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 10px 6px; text-align: center; font-size: 13px; color: #374151; border-right: 1px solid #e5e7eb;">${idx + 1}</td>
+                        <td style="padding: 10px 8px; text-align: left; font-size: 13px; color: #1e40af; font-weight: 600; border-right: 1px solid #e5e7eb;">
+                            ${item.productName}<br>
+                            <span style="font-size: 11px; color: #6b7280; font-weight: normal;">${item.productPack}</span>
+                        </td>
+                        <td style="padding: 10px 8px; text-align: center; font-size: 13px; color: #374151; border-right: 1px solid #e5e7eb;">${item.productSpec}</td>
+                        <td style="padding: 10px 8px; text-align: center; font-size: 13px; color: #0369a1; font-weight: 600; border-right: 1px solid #e5e7eb;">${item.unitWeight.toFixed(2)}kg</td>
+                        <td style="padding: 10px 6px; text-align: center; font-size: 13px; color: #0f172a; font-weight: 600; border-right: 1px solid #e5e7eb;">${item.pieces}</td>
+                        <td style="padding: 10px 8px; text-align: right; font-size: 13px; color: #0369a1; font-weight: 600; border-right: 1px solid #e5e7eb;">${item.netWeight.toFixed(2)}kg</td>
+                        <td style="padding: 10px 6px; text-align: right; font-size: 13px; color: #7c3aed; font-weight: 600; border-right: 1px solid #e5e7eb;">${item.price.toFixed(2)}</td>
+                        <td style="padding: 10px 8px; text-align: right; font-size: 13px; color: #ea580c; font-weight: 700; border-right: 1px solid #e5e7eb;">¥${item.sales.toFixed(2)}</td>
+                        <td style="padding: 10px 8px; text-align: right; font-size: 13px; color: #dc2626; border-right: 1px solid #e5e7eb;">¥${(item.materialCost || 0).toFixed(2)}</td>
+                        <td style="padding: 10px 6px; text-align: right; font-size: 11px; color: #6b7280; border-right: 1px solid #f3f4f6; background: #f9fafb;">¥${boxPerPiece}</td>
+                        <td style="padding: 10px 8px; text-align: right; font-size: 12px; color: #2563eb; font-weight: 600; border-right: 1px solid #e5e7eb;">¥${(item.boxCost || 0).toFixed(2)}</td>
+                        <td style="padding: 10px 6px; text-align: right; font-size: 11px; color: #6b7280; border-right: 1px solid #f3f4f6; background: #f9fafb;">¥${packPerPiece}</td>
+                        <td style="padding: 10px 8px; text-align: right; font-size: 12px; color: #2563eb; font-weight: 600; border-right: 1px solid #e5e7eb;">¥${(item.packCost || item.pieces * 0.6).toFixed(2)}</td>
+                        <td style="padding: 10px 6px; text-align: right; font-size: 11px; color: #6b7280; border-right: 1px solid #f3f4f6; background: #f9fafb;">¥${freightPerPiece}</td>
+                        <td style="padding: 10px 8px; text-align: right; font-size: 12px; color: #2563eb; font-weight: 600; border-right: 1px solid #e5e7eb;">¥${(item.freightCost || 0).toFixed(2)}</td>
+                        <td style="padding: 10px 6px; text-align: right; font-size: 11px; color: #6b7280; border-right: 1px solid #f3f4f6; background: #f9fafb;">¥${processPerTon}</td>
+                        <td style="padding: 10px 8px; text-align: right; font-size: 12px; color: #2563eb; font-weight: 600; border-right: 1px solid #e5e7eb;">¥${(item.processCost || 0).toFixed(2)}</td>
+                        <td style="padding: 10px 8px; text-align: right; font-size: 14px; color: ${isProfit ? '#059669' : '#dc2626'}; font-weight: 800; background: ${isProfit ? '#ecfdf5' : '#fef2f2'};">${isProfit ? '+' : ''}¥${netProfit.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+
+            const isTotalProfit = (batch.profit || 0) >= 0;
+
+            exportContainer.innerHTML = `
+                <div style="background: white; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); overflow: hidden; border: 2px solid #e5e7eb;">
+                    <!-- 标题区域 -->
+                    <div style="background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 24px; text-align: center;">
+                        <h1 style="font-size: 28px; font-weight: 800; margin: 0 0 8px 0; letter-spacing: -0.5px;">${batch.name || '佳信加工批次报表'}</h1>
+                        <p style="font-size: 18px; margin: 0; opacity: 0.95; font-weight: 600;">${batch.date} · ${batch.name || '加工批次'}</p>
+                        <p style="font-size: 16px; margin: 6px 0 0 0; opacity: 0.9;">原料${batch.rawWeight}斤 · 出品率${(batch.yieldRate || 0).toFixed(2)}% · 出称${(batch.lossWeight || 0).toFixed(2)}kg</p>
+                    </div>
+
+                    <!-- 汇总卡片 -->
+                    <div style="display: flex; padding: 20px; background: #f8fafc; gap: 16px; border-bottom: 2px solid #e5e7eb;">
+                        <div style="flex: 1; background: #dbeafe; border: 2px solid #3b82f6; border-radius: 12px; padding: 16px; text-align: center;">
+                            <div style="font-size: 13px; color: #1e40af; font-weight: 600; margin-bottom: 4px;">原料成本</div>
+                            <div style="font-size: 24px; font-weight: 800; color: #1e3a8a;">¥${batch.rawCost.toFixed(2)}</div>
+                        </div>
+                        <div style="flex: 1; background: #d1fae5; border: 2px solid #10b981; border-radius: 12px; padding: 16px; text-align: center;">
+                            <div style="font-size: 13px; color: #065f46; font-weight: 600; margin-bottom: 4px;">成品总重</div>
+                            <div style="font-size: 24px; font-weight: 800; color: #064e3b;">${(batch.totalWeight || 0).toFixed(2)}kg</div>
+                        </div>
+                        <div style="flex: 1; background: #fef3c7; border: 2px solid #f59e0b; border-radius: 12px; padding: 16px; text-align: center;">
+                            <div style="font-size: 13px; color: #92400e; font-weight: 600; margin-bottom: 4px;">总销售额</div>
+                            <div style="font-size: 24px; font-weight: 800; color: #78350f;">¥${(batch.totalSales || 0).toFixed(2)}</div>
+                        </div>
+                        <div style="flex: 1; background: ${isTotalProfit ? '#d1fae5' : '#fee2e2'}; border: 3px solid ${isTotalProfit ? '#10b981' : '#ef4444'}; border-radius: 12px; padding: 16px; text-align: center;">
+                            <div style="font-size: 13px; color: ${isTotalProfit ? '#065f46' : '#991b1b'}; font-weight: 600; margin-bottom: 4px;">净利润</div>
+                            <div style="font-size: 32px; font-weight: 900; color: ${isTotalProfit ? '#059669' : '#dc2626'}; letter-spacing: -1px;">${isTotalProfit ? '+' : ''}¥${(batch.profit || 0).toFixed(2)}</div>
+                        </div>
+                    </div>
+
+                    <!-- 横向表格 -->
+                    <div style="padding: 20px; overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                            <thead>
+                                <tr style="background: #374151; color: white;">
+                                    <th style="padding: 12px 6px; text-align: center; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 40px;">序号</th>
+                                    <th style="padding: 12px 8px; text-align: left; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 120px;">品名·品牌</th>
+                                    <th style="padding: 12px 8px; text-align: center; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 70px;">规格</th>
+                                    <th style="padding: 12px 8px; text-align: center; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 80px;">净重<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">(kg/件)</span></th>
+                                    <th style="padding: 12px 6px; text-align: center; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 55px;">件数</th>
+                                    <th style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 85px;">合计重量</th>
+                                    <th style="padding: 12px 6px; text-align: right; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 65px;">售价<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">(元)</span></th>
+                                    <th style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 90px;">销售额<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">(元)</span></th>
+                                    <th style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 90px;">原料成本<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">(元)</span></th>
+                                    <th style="padding: 12px 6px; text-align: right; font-weight: 700; font-size: 11px; border-right: 1px solid #4b5563; width: 55px; background: #4b5563;">纸箱<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">单价</span></th>
+                                    <th style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 85px;">纸箱成本<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">(元)</span></th>
+                                    <th style="padding: 12px 6px; text-align: right; font-weight: 700; font-size: 11px; border-right: 1px solid #4b5563; width: 55px; background: #4b5563;">包装<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">单价</span></th>
+                                    <th style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 85px;">包装成本<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">(元)</span></th>
+                                    <th style="padding: 12px 6px; text-align: right; font-weight: 700; font-size: 11px; border-right: 1px solid #4b5563; width: 55px; background: #4b5563;">运费<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">单价</span></th>
+                                    <th style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 85px;">运费成本<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">(元)</span></th>
+                                    <th style="padding: 12px 6px; text-align: right; font-weight: 700; font-size: 11px; border-right: 1px solid #4b5563; width: 60px; background: #4b5563;">加工<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">元/吨</span></th>
+                                    <th style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 85px;">加工成本<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">(元)</span></th>
+                                    <th style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 12px; width: 100px;">净利润<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">(元)</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rowsHtml}
+                                <!-- 合计行 -->
+                                <tr style="background: #1e293b; color: white; font-weight: 700;">
+                                    <td colspan="3" style="padding: 14px 8px; text-align: center; font-size: 14px; border-right: 1px solid #374151;">合计</td>
+                                    <td style="padding: 14px 8px; text-align: center; font-size: 13px; border-right: 1px solid #374151;">-</td>
+                                    <td style="padding: 14px 6px; text-align: center; font-size: 13px; border-right: 1px solid #374151;">${batch.items.reduce((a,b)=>a+b.pieces,0)}</td>
+                                    <td style="padding: 14px 8px; text-align: right; font-size: 13px; border-right: 1px solid #374151;">${(batch.totalWeight || 0).toFixed(2)}kg</td>
+                                    <td style="padding: 14px 6px; text-align: right; font-size: 13px; border-right: 1px solid #374151;">-</td>
+                                    <td style="padding: 14px 8px; text-align: right; font-size: 14px; color: #fbbf24; border-right: 1px solid #374151;">¥${(batch.totalSales || 0).toFixed(2)}</td>
+                                    <td style="padding: 14px 8px; text-align: right; font-size: 14px; color: #f87171; border-right: 1px solid #374151;">¥${batch.rawCost.toFixed(2)}</td>
+                                    <td style="padding: 14px 6px; text-align: right; font-size: 12px; color: #94a3b8; border-right: 1px solid #374151;">-</td>
+                                    <td style="padding: 14px 8px; text-align: right; font-size: 13px; color: #60a5fa; border-right: 1px solid #374151;">¥${totalBoxCost.toFixed(2)}</td>
+                                    <td style="padding: 14px 6px; text-align: right; font-size: 12px; color: #94a3b8; border-right: 1px solid #374151;">-</td>
+                                    <td style="padding: 14px 8px; text-align: right; font-size: 13px; color: #60a5fa; border-right: 1px solid #374151;">¥${totalPackCost.toFixed(2)}</td>
+                                    <td style="padding: 14px 6px; text-align: right; font-size: 12px; color: #94a3b8; border-right: 1px solid #374151;">-</td>
+                                    <td style="padding: 14px 8px; text-align: right; font-size: 13px; color: #60a5fa; border-right: 1px solid #374151;">¥${totalFreight.toFixed(2)}</td>
+                                    <td style="padding: 14px 6px; text-align: right; font-size: 12px; color: #94a3b8; border-right: 1px solid #374151;">-</td>
+                                    <td style="padding: 14px 8px; text-align: right; font-size: 13px; color: #60a5fa; border-right: 1px solid #374151;">¥${totalProcess.toFixed(2)}</td>
+                                    <td style="padding: 14px 8px; text-align: right; font-size: 18px; color: ${isTotalProfit ? '#34d399' : '#f87171'}; font-weight: 800;">${isTotalProfit ? '+' : ''}¥${(batch.profit || 0).toFixed(2)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 页脚说明 -->
+                    <div style="padding: 16px 24px; background: #f1f5f9; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="font-size: 12px; color: #64748b;">
+                            <span style="display: inline-block; width: 12px; height: 12px; background: #d1fae5; border: 1px solid #10b981; margin-right: 4px; vertical-align: middle;"></span> 盈利产品
+                            <span style="display: inline-block; width: 12px; height: 12px; background: #fee2e2; border: 1px solid #ef4444; margin-left: 12px; margin-right: 4px; vertical-align: middle;"></span> 亏损产品
+                        </div>
+                        <div style="font-size: 12px; color: #94a3b8;">
+                            单价说明：纸箱(元/件) | 包装(元/件) | 运费(元/件) | 加工(元/吨) · 佳信利润管理系统 v16.4
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(exportContainer);
+
+            try {
+                const dataUrl = await htmlToImage.toPng(exportContainer, {
+                    quality: 1.0,
+                    backgroundColor: '#ffffff',
+                    pixelRatio: 2,
+                    width: 1650,
+                    height: exportContainer.scrollHeight
+                });
+
+                const link = document.createElement('a');
+                link.download = `佳信利润表_${batch.name || batch.date}_${batchId.toString().slice(-4)}.png`;
+                link.href = dataUrl;
+                link.click();
+
+                showToast('横向利润表已生成！', 'success');
+            } catch (error) {
+                console.error('导出失败:', error);
+                showToast('导出失败，请重试', 'error');
+            } finally {
+                document.body.removeChild(exportContainer);
+            }
+        }
+
+        // 导出当前编辑的批次为美观图片（手机优化版）
+        // 导出当前编辑批次为横向布局图片（包含所有单价明细）
+        // 导出当前编辑批次为横向布局图片（包含所有单价明细）
+        
+async function exportCurrentBatchImage() {
+            if (profitBatchItems.length === 0) {
+                showToast('请先添加产品再导出', 'error');
+                return;
+            }
+
+            showToast('正在生成横向报表...', 'info');
+
+            const exportContainer = document.createElement('div');
+            exportContainer.style.cssText = `
+                width: 1650px;
+                background: #ffffff;
+                padding: 30px;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                color: #0f172a;
+                line-height: 1.4;
+                -webkit-font-smoothing: antialiased;
+            `;
+
+            const pbName = document.getElementById('pbName').value.trim() || '佳信加工批次报表（预览）';
+            const rawWeight = document.getElementById('pbRawWeight').value || 0;
+            const rawPrice = document.getElementById('pbRawPrice').value || 0;
+            const rawCost = (parseFloat(rawWeight) * parseFloat(rawPrice));
+            const pbDate = document.getElementById('pbDate').value || new Date().toLocaleDateString('zh-CN');
+            const yieldRate = document.getElementById('pbYieldRate').textContent;
+            const lossWeight = document.getElementById('pbLossWeight').textContent;
+
+            // 构建表格行
+            let rowsHtml = '';
+            let totalBoxCost = 0, totalPackCost = 0, totalFreight = 0, totalProcess = 0, totalMaterialCost = 0, totalSalesValue = 0, totalPieces = 0, totalNetWeight = 0;
+
+            // 计算原料分摊率
+            let allNetWeight = 0;
+            profitBatchItems.forEach(item => {
+                const p = getProfitProduct(item.productId);
+                if (p && item.pieces > 0) allNetWeight += item.pieces * p.weight;
+            });
+            const materialRate = allNetWeight > 0 ? (rawCost / allNetWeight) : 0;
+
+            profitBatchItems.forEach((item, idx) => {
+                const product = getProfitProduct(item.productId);
+                if (!product) return;
+
+                const netWeight = item.pieces * product.weight;
+                const isPricePerKg = product.isPricePerKg || false;
+
+                let sales;
+                if (isPricePerKg) sales = netWeight * item.price;
+                else sales = item.pieces * item.price;
+
+                const materialCost = netWeight * materialRate;
+                const boxCost = item.pieces * item.boxPerPiece;
+                const packCost = item.pieces * (product?.packCost || 0.6);
+                const freightCost = item.pieces * item.freightPerPiece;
+                const processCost = (netWeight / 1000) * item.processPerTon;
+
+                totalBoxCost += boxCost;
+                totalPackCost += packCost;
+                totalFreight += freightCost;
+                totalProcess += processCost;
+                totalMaterialCost += materialCost;
+                totalSalesValue += sales;
+                totalPieces += item.pieces;
+                totalNetWeight += netWeight;
+
+                const netProfit = sales - materialCost - boxCost - packCost - freightCost - processCost;
+                const isProfit = netProfit >= 0;
+
+                rowsHtml += `
+                    <tr style="background: ${isProfit ? '#d1fae5' : '#fee2e2'}; border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 10px 6px; text-align: center; font-size: 13px; color: #374151; border-right: 1px solid #e5e7eb;">${idx + 1}</td>
+                        <td style="padding: 10px 8px; text-align: left; font-size: 13px; color: #1e40af; font-weight: 600; border-right: 1px solid #e5e7eb;">
+                            ${product.name}<br>
+                            <span style="font-size: 11px; color: #6b7280; font-weight: normal;">${product.pack}</span>
+                        </td>
+                        <td style="padding: 10px 8px; text-align: center; font-size: 13px; color: #374151; border-right: 1px solid #e5e7eb;">${product.spec}</td>
+                        <td style="padding: 10px 8px; text-align: center; font-size: 13px; color: #0369a1; font-weight: 600; border-right: 1px solid #e5e7eb;">${product.weight.toFixed(2)}kg</td>
+                        <td style="padding: 10px 6px; text-align: center; font-size: 13px; color: #0f172a; font-weight: 600; border-right: 1px solid #e5e7eb;">${item.pieces}</td>
+                        <td style="padding: 10px 8px; text-align: right; font-size: 13px; color: #0369a1; font-weight: 600; border-right: 1px solid #e5e7eb;">${netWeight.toFixed(2)}kg</td>
+                        <td style="padding: 10px 6px; text-align: right; font-size: 13px; color: #7c3aed; font-weight: 600; border-right: 1px solid #e5e7eb;">${item.price.toFixed(2)}${isPricePerKg ? '/kg' : ''}</td>
+                        <td style="padding: 10px 8px; text-align: right; font-size: 13px; color: #ea580c; font-weight: 700; border-right: 1px solid #e5e7eb;">¥${sales.toFixed(2)}</td>
+                        <td style="padding: 10px 8px; text-align: right; font-size: 13px; color: #dc2626; border-right: 1px solid #e5e7eb;">¥${materialCost.toFixed(2)}</td>
+                        <td style="padding: 10px 6px; text-align: right; font-size: 11px; color: #6b7280; border-right: 1px solid #f3f4f6; background: #f9fafb;">¥${item.boxPerPiece.toFixed(2)}</td>
+                        <td style="padding: 10px 8px; text-align: right; font-size: 12px; color: #2563eb; font-weight: 600; border-right: 1px solid #e5e7eb;">¥${boxCost.toFixed(2)}</td>
+                        <td style="padding: 10px 6px; text-align: right; font-size: 11px; color: #6b7280; border-right: 1px solid #f3f4f6; background: #f9fafb;">¥${(product?.packCost || 0.6).toFixed(2)}</td>
+                        <td style="padding: 10px 8px; text-align: right; font-size: 12px; color: #2563eb; font-weight: 600; border-right: 1px solid #e5e7eb;">¥${packCost.toFixed(2)}</td>
+                        <td style="padding: 10px 6px; text-align: right; font-size: 11px; color: #6b7280; border-right: 1px solid #f3f4f6; background: #f9fafb;">¥${item.freightPerPiece.toFixed(2)}</td>
+                        <td style="padding: 10px 8px; text-align: right; font-size: 12px; color: #2563eb; font-weight: 600; border-right: 1px solid #e5e7eb;">¥${freightCost.toFixed(2)}</td>
+                        <td style="padding: 10px 6px; text-align: right; font-size: 11px; color: #6b7280; border-right: 1px solid #f3f4f6; background: #f9fafb;">¥${item.processPerTon}</td>
+                        <td style="padding: 10px 8px; text-align: right; font-size: 12px; color: #2563eb; font-weight: 600; border-right: 1px solid #e5e7eb;">¥${processCost.toFixed(2)}</td>
+                        <td style="padding: 10px 8px; text-align: right; font-size: 14px; color: ${isProfit ? '#059669' : '#dc2626'}; font-weight: 800; background: ${isProfit ? '#ecfdf5' : '#fef2f2'};">${isProfit ? '+' : ''}¥${netProfit.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+
+            const totalProfitValue = totalSalesValue - totalMaterialCost - totalBoxCost - totalPackCost - totalFreight - totalProcess;
+            const isTotalProfit = totalProfitValue >= 0;
+
+            exportContainer.innerHTML = `
+                <div style="background: white; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); overflow: hidden; border: 2px solid #e5e7eb;">
+                    <!-- 标题区域 -->
+                    <div style="background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 24px; text-align: center;">
+                        <h1 style="font-size: 28px; font-weight: 800; margin: 0 0 8px 0; letter-spacing: -0.5px;">${pbName}</h1>
+                        <p style="font-size: 18px; margin: 0; opacity: 0.95; font-weight: 600;">${pbDate} · ${pbName}</p>
+                        <p style="font-size: 16px; margin: 6px 0 0 0; opacity: 0.9;">原料${rawWeight}斤 · 出品率${yieldRate} · 出称${lossWeight}kg</p>
+                    </div>
+
+                    <!-- 汇总卡片 -->
+                    <div style="display: flex; padding: 20px; background: #f8fafc; gap: 16px; border-bottom: 2px solid #e5e7eb;">
+                        <div style="flex: 1; background: #dbeafe; border: 2px solid #3b82f6; border-radius: 12px; padding: 16px; text-align: center;">
+                            <div style="font-size: 13px; color: #1e40af; font-weight: 600; margin-bottom: 4px;">原料成本</div>
+                            <div style="font-size: 24px; font-weight: 800; color: #1e3a8a;">¥${rawCost.toFixed(2)}</div>
+                        </div>
+                        <div style="flex: 1; background: #d1fae5; border: 2px solid #10b981; border-radius: 12px; padding: 16px; text-align: center;">
+                            <div style="font-size: 13px; color: #065f46; font-weight: 600; margin-bottom: 4px;">成品总重</div>
+                            <div style="font-size: 24px; font-weight: 800; color: #064e3b;">${totalNetWeight.toFixed(2)}kg</div>
+                        </div>
+                        <div style="flex: 1; background: #fef3c7; border: 2px solid #f59e0b; border-radius: 12px; padding: 16px; text-align: center;">
+                            <div style="font-size: 13px; color: #92400e; font-weight: 600; margin-bottom: 4px;">总销售额</div>
+                            <div style="font-size: 24px; font-weight: 800; color: #78350f;">¥${totalSalesValue.toFixed(2)}</div>
+                        </div>
+                        <div style="flex: 1; background: ${isTotalProfit ? '#d1fae5' : '#fee2e2'}; border: 3px solid ${isTotalProfit ? '#10b981' : '#ef4444'}; border-radius: 12px; padding: 16px; text-align: center;">
+                            <div style="font-size: 13px; color: ${isTotalProfit ? '#065f46' : '#991b1b'}; font-weight: 600; margin-bottom: 4px;">净利润</div>
+                            <div style="font-size: 32px; font-weight: 900; color: ${isTotalProfit ? '#059669' : '#dc2626'}; letter-spacing: -1px;">${isTotalProfit ? '+' : ''}¥${totalProfitValue.toFixed(2)}</div>
+                        </div>
+                    </div>
+
+                    <!-- 横向表格 -->
+                    <div style="padding: 20px; overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                            <thead>
+                                <tr style="background: #374151; color: white;">
+                                    <th style="padding: 12px 6px; text-align: center; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 40px;">序号</th>
+                                    <th style="padding: 12px 8px; text-align: left; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 120px;">品名·品牌</th>
+                                    <th style="padding: 12px 8px; text-align: center; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 70px;">规格</th>
+                                    <th style="padding: 12px 8px; text-align: center; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 80px;">净重<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">(kg/件)</span></th>
+                                    <th style="padding: 12px 6px; text-align: center; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 55px;">件数</th>
+                                    <th style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 85px;">合计重量</th>
+                                    <th style="padding: 12px 6px; text-align: right; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 65px;">售价<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">(元)</span></th>
+                                    <th style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 90px;">销售额<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">(元)</span></th>
+                                    <th style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 90px;">原料成本<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">(元)</span></th>
+                                    <th style="padding: 12px 6px; text-align: right; font-weight: 700; font-size: 11px; border-right: 1px solid #4b5563; width: 55px; background: #4b5563;">纸箱<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">单价</span></th>
+                                    <th style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 85px;">纸箱成本<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">(元)</span></th>
+                                    <th style="padding: 12px 6px; text-align: right; font-weight: 700; font-size: 11px; border-right: 1px solid #4b5563; width: 55px; background: #4b5563;">包装<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">单价</span></th>
+                                    <th style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 85px;">包装成本<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">(元)</span></th>
+                                    <th style="padding: 12px 6px; text-align: right; font-weight: 700; font-size: 11px; border-right: 1px solid #4b5563; width: 55px; background: #4b5563;">运费<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">单价</span></th>
+                                    <th style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 85px;">运费成本<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">(元)</span></th>
+                                    <th style="padding: 12px 6px; text-align: right; font-weight: 700; font-size: 11px; border-right: 1px solid #4b5563; width: 60px; background: #4b5563;">加工<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">元/吨</span></th>
+                                    <th style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 12px; border-right: 1px solid #4b5563; width: 85px;">加工成本<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">(元)</span></th>
+                                    <th style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 12px; width: 100px;">净利润<br><span style="font-size: 10px; font-weight: normal; opacity: 0.8;">(元)</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rowsHtml}
+                                <!-- 合计行 -->
+                                <tr style="background: #1e293b; color: white; font-weight: 700;">
+                                    <td colspan="3" style="padding: 14px 8px; text-align: center; font-size: 14px; border-right: 1px solid #374151;">合计</td>
+                                    <td style="padding: 14px 8px; text-align: center; font-size: 13px; border-right: 1px solid #374151;">-</td>
+                                    <td style="padding: 14px 6px; text-align: center; font-size: 13px; border-right: 1px solid #374151;">${totalPieces}</td>
+                                    <td style="padding: 14px 8px; text-align: right; font-size: 13px; border-right: 1px solid #374151;">${totalNetWeight.toFixed(2)}kg</td>
+                                    <td style="padding: 14px 6px; text-align: right; font-size: 13px; border-right: 1px solid #374151;">-</td>
+                                    <td style="padding: 14px 8px; text-align: right; font-size: 14px; color: #fbbf24; border-right: 1px solid #374151;">¥${totalSalesValue.toFixed(2)}</td>
+                                    <td style="padding: 14px 8px; text-align: right; font-size: 14px; color: #f87171; border-right: 1px solid #374151;">¥${totalMaterialCost.toFixed(2)}</td>
+                                    <td style="padding: 14px 6px; text-align: right; font-size: 12px; color: #94a3b8; border-right: 1px solid #374151;">-</td>
+                                    <td style="padding: 14px 8px; text-align: right; font-size: 13px; color: #60a5fa; border-right: 1px solid #374151;">¥${totalBoxCost.toFixed(2)}</td>
+                                    <td style="padding: 14px 6px; text-align: right; font-size: 12px; color: #94a3b8; border-right: 1px solid #374151;">-</td>
+                                    <td style="padding: 14px 8px; text-align: right; font-size: 13px; color: #60a5fa; border-right: 1px solid #374151;">¥${totalPackCost.toFixed(2)}</td>
+                                    <td style="padding: 14px 6px; text-align: right; font-size: 12px; color: #94a3b8; border-right: 1px solid #374151;">-</td>
+                                    <td style="padding: 14px 8px; text-align: right; font-size: 13px; color: #60a5fa; border-right: 1px solid #374151;">¥${totalFreight.toFixed(2)}</td>
+                                    <td style="padding: 14px 6px; text-align: right; font-size: 12px; color: #94a3b8; border-right: 1px solid #374151;">-</td>
+                                    <td style="padding: 14px 8px; text-align: right; font-size: 13px; color: #60a5fa; border-right: 1px solid #374151;">¥${totalProcess.toFixed(2)}</td>
+                                    <td style="padding: 14px 8px; text-align: right; font-size: 18px; color: ${isTotalProfit ? '#34d399' : '#f87171'}; font-weight: 800;">${isTotalProfit ? '+' : ''}¥${totalProfitValue.toFixed(2)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 页脚 -->
+                    <div style="padding: 16px 24px; background: #f1f5f9; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="font-size: 12px; color: #64748b;">
+                            <span style="display: inline-block; width: 12px; height: 12px; background: #d1fae5; border: 1px solid #10b981; margin-right: 4px; vertical-align: middle;"></span> 盈利产品
+                            <span style="display: inline-block; width: 12px; height: 12px; background: #fee2e2; border: 1px solid #ef4444; margin-left: 12px; margin-right: 4px; vertical-align: middle;"></span> 亏损产品
+                        </div>
+                        <div style="font-size: 12px; color: #94a3b8;">
+                            单价说明：纸箱(元/件) | 包装(元/件) | 运费(元/件) | 加工(元/吨) · 佳信利润管理系统 v16.4
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(exportContainer);
+
+            try {
+                const dataUrl = await htmlToImage.toPng(exportContainer, {
+                    quality: 1.0,
+                    backgroundColor: '#ffffff',
+                    pixelRatio: 2,
+                    width: 1650,
+                    height: exportContainer.scrollHeight
+                });
+
+                const link = document.createElement('a');
+                link.download = `佳信利润表_${pbName.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '_')}_预览.png`;
+                link.href = dataUrl;
+                link.click();
+
+                showToast('横向利润表已生成！', 'success');
+            } catch (error) {
+                console.error('导出失败:', error);
+                showToast('导出失败，请重试', 'error');
+            } finally {
+                document.body.removeChild(exportContainer);
+            }
+        }
+
+        function renderProfitStats() {
+            const totalBatches = batches.length;
+            const totalRawCost = batches.reduce((a, b) => a + (b.rawCost || 0), 0);
+            const totalSales = batches.reduce((a, b) => a + (b.totalSales || 0), 0);
+            const totalProfit = batches.reduce((a, b) => a + (b.items || []).reduce((sum, item) => {
+                const packCost = item.packCost !== undefined ? item.packCost : (item.pieces * ((getProfitProduct(item.productId)?.packCost) || 0.6));
+                return sum + (item.sales - (item.materialCost || 0) - (item.boxCost || 0) - packCost - (item.freightCost || 0) - (item.processCost || 0));
+            }, 0), 0);
+            const avgYield = totalBatches > 0 ? (batches.reduce((a, b) => a + (b.yieldRate || 0), 0) / totalBatches) : 0;
+            const avgLoss = totalBatches > 0 ? (batches.reduce((a, b) => a + (b.lossWeight || 0), 0) / totalBatches) : 0;
+
+            document.getElementById('statTotalBatches').textContent = totalBatches;
+            document.getElementById('statTotalRawCost').textContent = '¥' + totalRawCost.toLocaleString('zh-CN', {maximumFractionDigits: 0});
+            document.getElementById('statTotalSales').textContent = '¥' + totalSales.toLocaleString('zh-CN', {maximumFractionDigits: 0});
+
+            const profitEl = document.getElementById('statTotalProfit');
+            profitEl.textContent = (totalProfit >= 0 ? '+' : '') + '¥' + Math.abs(totalProfit).toLocaleString('zh-CN', {maximumFractionDigits: 0});
+            profitEl.style.color = totalProfit >= 0 ? '#059669' : '#dc2626';
+
+            document.getElementById('statAvgYield').textContent = avgYield.toFixed(2) + '%';
+            document.getElementById('statAvgLoss').textContent = avgLoss.toFixed(2) + 'kg';
+
+            const chart = document.getElementById('yieldChart');
+            if (batches.length === 0) {
+                chart.innerHTML = '<div class="text-gray-400">暂无数据</div>';
+            } else {
+                chart.innerHTML = batches.slice().reverse().map(batch => {
+                    const normalPercent = batch.totalWeight > 0 ? ((batch.normalWeight || 0) / batch.totalWeight * 100) : 0;
+                    const bLevelPercent = batch.totalWeight > 0 ? ((batch.bLevelWeight || 0) / batch.totalWeight * 100) : 0;
+                    return `
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; min-width: 80px;">
+                            <div style="font-size: 12px; color: #6b7280; font-weight: 500;">${batch.date.slice(5)}</div>
+                            <div style="width: 100%; display: flex; flex-direction: column; justify-content: flex-end; border-radius: 6px 6px 0 0; overflow: hidden; background: #f3f4f6; height: 180px;">
+                                <div style="background: #10b981; width: 100%; height: ${normalPercent}%; transition: all 0.5s;"></div>
+                                <div style="background: #f59e0b; width: 100%; height: ${bLevelPercent}%; transition: all 0.5s;"></div>
+                            </div>
+                            <div style="font-size: 12px; font-weight: 700; color: #7c3aed;">${(batch.yieldRate || 0).toFixed(1)}%</div>
+                            <div style="font-size: 11px; color: #9ca3af;">出称${(batch.lossWeight || 0).toFixed(1)}kg</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            document.getElementById('profitTableBody').innerHTML = batches.slice().reverse().map(batch => `
+                <tr class="hover:bg-gray-50">
+                    <td class="font-medium py-3 px-4">${batch.date}</td>
+                    <td class="text-right py-3 px-4">${batch.rawWeight}</td>
+                    <td class="text-right font-bold py-3 px-4" style="color: #d97706;">${(batch.lossWeight || 0).toFixed(1)}kg</td>
+                    <td class="text-right font-bold py-3 px-4" style="color: #7c3aed;">${(batch.yieldRate || 0).toFixed(2)}%</td>
+                    <td class="text-right text-emerald-600 py-3 px-4">¥${(batch.totalSales || 0).toFixed(0)}</td>
+                    <td class="text-right font-bold py-3 px-4 ${(batch.profit || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}">${(batch.profit || 0) >= 0 ? '+' : ''}¥${(batch.profit || 0).toFixed(0)}</td>
+                </tr>
+            `).join('');
+        }
+
+        // ==================== JSON 资料备份导出/导入 ====================
+        function exportJsonBackup() {
+            try {
+                const backupData = {
+                    system: '佳信利润管理系统',
+                    version: 'v16.4',
+                    exportDate: new Date().toISOString(),
+                    exportTime: new Date().toLocaleString('zh-CN'),
+                    products: products,
+                    batches: batches,
+                    stats: {
+                        productCount: products.length,
+                        batchCount: batches.length,
+                        totalProfit: batches.reduce((a, b) => a + (b.profit || 0), 0),
+                        totalSales: batches.reduce((a, b) => a + (b.totalSales || 0), 0),
+                        totalRawCost: batches.reduce((a, b) => a + (b.rawCost || 0), 0)
+                    }
+                };
+
+                const jsonStr = JSON.stringify(backupData, null, 2);
+                const blob = new Blob([jsonStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `佳信利润系统资料备份_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                showToast(`✅ JSON资料备份导出成功！\n产品:${products.length}种 | 批次:${batches.length}个`, 'success');
+            } catch (error) {
+                console.error('JSON导出失败:', error);
+                showToast('❌ 导出失败: ' + error.message, 'error');
+            }
+        }
+
+        function importJsonBackup(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+
+                    if (!data.products || !Array.isArray(data.products)) {
+                        throw new Error('备份文件格式错误：缺少产品数据');
+                    }
+
+                    if (confirm(`确认导入JSON备份？\n\n来源系统：${data.system || '未知'}\n版本：${data.version || '未知'}\n导出时间：${data.exportTime || '未知'}\n\n产品：${data.products.length}种\n批次：${(data.batches || []).length}个\n\n⚠️ 当前数据将被覆盖，建议先导出当前备份！`)) {
+
+                        // 导入产品数据
+                        products = data.products.map(p => ({
+                            id: p.id || Date.now() + Math.random(),
+                            name: p.name || '',
+                            spec: p.spec || '',
+                            pack: p.pack || '',
+                            weight: parseFloat(p.weight) || 0,
+                            price: parseFloat(p.price) || 0,
+                            boxCost: parseFloat(p.boxCost) || 0,
+                            packCost: parseFloat(p.packCost) || (p.isBLevel || (p.name && p.name.includes('盒冻')) ? 0.3 : 0.6),
+                            processFee: parseFloat(p.processFee) || 3300,
+                            freight: parseFloat(p.freight) || 0,
+                            isBLevel: !!p.isBLevel,
+                            isPricePerKg: !!p.isPricePerKg
+                        }));
+
+                        // 导入批次数据
+                        if (data.batches && Array.isArray(data.batches)) {
+                            batches = data.batches.map(b => ({
+                                id: b.id || Date.now(),
+                                name: b.name || '',
+                                date: b.date || new Date().toISOString().split('T')[0],
+                                rawWeight: parseFloat(b.rawWeight) || 0,
+                                rawPrice: parseFloat(b.rawPrice) || 0,
+                                rawCost: parseFloat(b.rawCost) || 0,
+                                otherFee: parseFloat(b.otherFee) || 0,
+                                items: (b.items || []).map(item => ({
+                                    productId: item.productId || null,
+                                    productName: item.productName || '',
+                                    productSpec: item.productSpec || '',
+                                    productPack: item.productPack || '',
+                                    isBLevel: !!item.isBLevel,
+                                    pieces: parseInt(item.pieces) || 0,
+                                    unitWeight: parseFloat(item.unitWeight) || 0,
+                                    price: parseFloat(item.price) || 0,
+                                    isPricePerKg: !!item.isPricePerKg,
+                                    netWeight: parseFloat(item.netWeight) || 0,
+                                    sales: parseFloat(item.sales) || 0,
+                                    materialCost: parseFloat(item.materialCost) || 0,
+                                    boxCost: parseFloat(item.boxCost) || 0,
+                                    packCost: parseFloat(item.packCost) || 0,
+                                    freightCost: parseFloat(item.freightCost) || 0,
+                                    processCost: parseFloat(item.processCost) || 0,
+                                    boxPerPiece: parseFloat(item.boxPerPiece) || 0,
+                                    freightPerPiece: parseFloat(item.freightPerPiece) || 0,
+                                    processPerTon: parseFloat(item.processPerTon) || 3300
+                                })),
+                                normalWeight: parseFloat(b.normalWeight) || 0,
+                                bLevelWeight: parseFloat(b.bLevelWeight) || 0,
+                                totalWeight: parseFloat(b.totalWeight) || 0,
+                                yieldRate: parseFloat(b.yieldRate) || 0,
+                                lossWeight: parseFloat(b.lossWeight) || 0,
+                                totalSales: parseFloat(b.totalSales) || 0,
+                                totalBoxCost: parseFloat(b.totalBoxCost) || 0,
+                                totalPackCost: parseFloat(b.totalPackCost) || 0,
+                                totalFreight: parseFloat(b.totalFreight) || 0,
+                                totalProcess: parseFloat(b.totalProcess) || 0,
+                                totalCost: parseFloat(b.totalCost) || 0,
+                                profit: parseFloat(b.profit) || 0
+                            }));
+                        } else {
+                            batches = [];
+                        }
+
+                        // 保存到本地存储
+                        saveToLocalStorage();
+
+                        // 刷新所有显示
+                        updateDashboardStats();
+                        renderProducts();
+                        renderBatches();
+
+                        showToast(`✅ JSON备份导入成功！\n产品:${products.length}种 | 批次:${batches.length}个`, 'success');
+                    }
+                } catch (error) {
+                    console.error('JSON导入失败:', error);
+                    showToast('❌ 导入失败: ' + error.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+            input.value = '';
+        }
+
+        
+
+function getCartonSaveData() {
+  return {
+    types: CARTON_TYPES.map(c => ({ id: c.id, name: c.name, spec: c.spec, unit: c.unit, brand: c.brand, isDefault: c.isDefault || false })),
+    stock: { ...cartonStockData },
+    threshold: cartonAlertThreshold || 50,
+    productMap: { ...PRODUCT_CARTON_MAP },
+    history: cartonHistory.slice(0, 200),
+    deductedBatchIds: cartonDeductedBatchIds
+  };
+}
+
+
+function saveCartonDataLocal() {
         localStorage.setItem('warehouse_carton_stock_v1', JSON.stringify(cartonStockData));
         localStorage.setItem('warehouse_carton_threshold_v1', cartonAlertThreshold);
         localStorage.setItem('warehouse_carton_history_v1', JSON.stringify(cartonHistory));
@@ -6187,6 +7726,360 @@ function showLoading(text) {
     });
 
 
+
+
+    // ==================== 从入库批次导入功能 ====================
+    let selectedImportBatchIds = new Set();
+
+    function showImportFromBatchModal() {
+      selectedImportBatchIds.clear();
+      renderImportBatchList();
+      document.getElementById('importFromBatchModal').classList.add('show');
+    }
+
+    function renderImportBatchList() {
+      const container = document.getElementById('importBatchList');
+      const countEl = document.getElementById('importBatchSelectedCount');
+
+      const inBatches = batches.filter(b => b.type === 'in').slice(0, 50);
+
+      if (inBatches.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 40px; color: var(--text-tertiary);">
+            <div style="font-size: 48px; margin-bottom: 8px;">📭</div>
+            <div style="font-size: 16px; font-weight: 600;">暂无入库批次</div>
+            <div style="font-size: 13px; margin-top: 4px;">请先进行入库操作后再来导入</div>
+          </div>
+        `;
+        if (countEl) countEl.textContent = '已选 0 个';
+        return;
+      }
+
+      container.innerHTML = inBatches.map(batch => {
+        const dateStr = batch.dateRange ? batch.dateRange.min : (batch.date || '').split('T')[0];
+        const totalQty = batch.totalQty || 0;
+        const productCount = batch.items ? batch.items.length : 0;
+        const remark = batch.remark || '';
+        const isSelected = selectedImportBatchIds.has(batch.id);
+
+        let productSummary = '';
+        if (batch.items && batch.items.length > 0) {
+          const summary = batch.items.slice(0, 3).map(item => 
+            `${escapeHtml(item.brand || '')} ${escapeHtml(item.name || '')} ${escapeHtml(item.sku || '')} ${item.qty}件`
+          ).join('、');
+          productSummary = summary;
+          if (batch.items.length > 3) {
+            productSummary += ` 等${batch.items.length}种`;
+          }
+        }
+
+        return `
+          <div style="padding: 14px 16px; background: ${isSelected ? 'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%)' : 'var(--bg)'}; 
+                      border: 2px solid ${isSelected ? '#8b5cf6' : 'var(--border)'}; 
+                      border-radius: 12px; cursor: pointer; transition: all 0.2s;"
+               onclick="toggleSelectImportBatch('${batch.id}')">
+            <div style="display: flex; align-items: flex-start; gap: 12px;">
+              <div style="flex-shrink: 0; margin-top: 2px;">
+                <div style="width: 22px; height: 22px; border: 2px solid ${isSelected ? '#8b5cf6' : '#cbd5e1'}; 
+                            border-radius: 6px; display: flex; align-items: center; justify-content: center;
+                            background: ${isSelected ? '#8b5cf6' : 'white'}; transition: all 0.2s;">
+                  ${isSelected ? '<span style="color: white; font-size: 14px;">✓</span>' : ''}
+                </div>
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <div style="font-weight: 700; font-size: 15px; color: var(--text-primary);">
+                    📦 批次 #${batch.id.toString().slice(-6)}
+                  </div>
+                  <div style="font-size: 13px; color: var(--success); font-weight: 600;">
+                    ${totalQty} 件
+                  </div>
+                </div>
+                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;">
+                  📅 ${dateStr} · ${productCount} 种产品
+                </div>
+                ${remark ? `<div style="font-size: 12px; color: var(--primary); background: white; padding: 4px 8px; border-radius: 4px; display: inline-block;">📝 ${escapeHtml(remark)}</div>` : ''}
+                <div style="font-size: 12px; color: var(--text-tertiary); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  ${escapeHtml(productSummary)}
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (countEl) countEl.textContent = `已选 ${selectedImportBatchIds.size} 个`;
+    }
+
+    function toggleSelectImportBatch(batchId) {
+      if (selectedImportBatchIds.has(batchId)) {
+        selectedImportBatchIds.delete(batchId);
+      } else {
+        selectedImportBatchIds.add(batchId);
+      }
+      renderImportBatchList();
+    }
+
+    function selectAllImportBatches(checked) {
+      const inBatches = batches.filter(b => b.type === 'in').slice(0, 50);
+      if (checked) {
+        inBatches.forEach(b => selectedImportBatchIds.add(b.id));
+      } else {
+        selectedImportBatchIds.clear();
+      }
+      renderImportBatchList();
+    }
+
+    function cancelImportFromBatch() {
+      document.getElementById('importFromBatchModal').classList.remove('show');
+      selectedImportBatchIds.clear();
+    }
+
+    async function confirmImportFromBatch() {
+      if (selectedImportBatchIds.size === 0) {
+        showToast('⚠️ 请至少选择一个入库批次', 'warning');
+        return;
+      }
+
+      const productMap = new Map();
+
+      batches.filter(b => selectedImportBatchIds.has(b.id)).forEach(batch => {
+        if (batch.items) {
+          batch.items.forEach(item => {
+            const qty = parseInt(item.qty) || 0;
+            if (qty <= 0) return;
+
+            const existing = productMap.get(item.productId);
+            if (existing) {
+              existing.pieces += qty;
+            } else {
+              const p = getProfitProduct(item.productId);
+              if (p) {
+                productMap.set(item.productId, {
+                  productId: item.productId,
+                  pieces: qty,
+                  boxPerPiece: p.boxCost !== undefined ? p.boxCost : (p.isBLevel ? 0.3 : (p.name && p.name.includes('盒冻') ? 7 : 0.6)),
+                  freightPerPiece: p.freight !== undefined ? p.freight : (p.pack === '大富肴' ? 3 : 0),
+                  processPerTon: p.processFee !== undefined ? p.processFee : (p.name && p.name.includes('盒冻') ? 4200 : 3300),
+                  price: p.price,
+                  productName: p.name,
+                  productSpec: p.spec,
+                  productPack: p.pack,
+                  isBLevel: p.isBLevel,
+                  unitWeight: p.weight
+                });
+              }
+            }
+          });
+        }
+      });
+
+      if (productMap.size === 0) {
+        showToast('⚠️ 选中批次中没有可识别产品', 'warning');
+        return;
+      }
+
+      document.getElementById('importFromBatchModal').classList.remove('show');
+
+      // 先打开新建批次弹窗初始化结构
+      openProfitBatchModal();
+
+      // 再填入导入的数据
+      profitBatchItems = Array.from(productMap.values());
+
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('pbName').value = `加工批次_${today}`;
+      document.getElementById('pbDate').value = today;
+
+      renderProfitBatchItems();
+      calculateProfitBatchMetrics();
+
+      const totalPieces = profitBatchItems.reduce((a,b) => a + (b.pieces || 0), 0);
+      showToast(`✅ 已导入 ${productMap.size} 种产品，共 ${totalPieces} 件，请补充原料信息后保存`);
+    }
 </script>
+
+  <!-- 批次利润编辑弹窗 -->
+  <div class="modal-overlay" id="profitBatchModal" style="align-items: flex-start; overflow-y: auto; padding-top: 20px; padding-bottom: 20px;">
+    <div class="modal-content" style="max-width: 900px; width: 95%; max-height: none;">
+      <div class="modal-header">
+        <div class="modal-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white;">📦</div>
+        <div class="modal-title" id="profitBatchModalTitle">新建加工批次</div>
+      </div>
+      <div class="modal-body" style="max-height: none;">
+        <input type="hidden" id="profitBatchId">
+
+        <!-- 批次基本信息 -->
+        <div style="background: linear-gradient(135deg, #ede9fe, #ddd6fe); border: 2px solid #8b5cf6; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+          <div style="font-weight: 700; color: #5b21b6; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+            <span>📋</span> 批次基本信息
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 12px;">批次名称 <span style="color: var(--danger);">*</span></label>
+              <input type="text" id="pbName" placeholder="如：2024年第一批黑虎虾" style="font-size: 14px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 12px;">批次日期 <span style="color: var(--danger);">*</span></label>
+              <input type="date" id="pbDate" style="font-size: 14px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 12px;">原料重量(斤) <span style="color: var(--danger);">*</span></label>
+              <input type="number" id="pbRawWeight" step="0.1" placeholder="输入斤数" style="font-size: 14px;" onchange="calculateProfitBatchMetrics()">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 12px;">原料单价(元/斤) <span style="color: var(--danger);">*</span></label>
+              <input type="number" id="pbRawPrice" step="0.01" placeholder="输入单价" style="font-size: 14px;" onchange="calculateProfitBatchMetrics()">
+            </div>
+          </div>
+          <div style="margin-top: 12px; padding: 10px; background: white; border-radius: 8px; border: 2px solid #3b82f6; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 13px; color: #1e40af; font-weight: 600;">原料总成本</span>
+            <span id="pbRawCost" style="font-size: 20px; font-weight: 700; color: #1e40af;">¥0.00</span>
+          </div>
+        </div>
+
+        <!-- 出称数计算 -->
+        <div style="background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 2px solid #f59e0b; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+          <div style="font-weight: 700; color: #92400e; margin-bottom: 8px;">📊 出称数(kg)</div>
+          <div style="display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; font-size: 14px; color: #92400e;">
+            <span>原料 <strong id="pbRawKgDisplay">0</strong> kg</span>
+            <span style="font-weight: 700;">−</span>
+            <span>成品 <strong id="pbFinishedDisplay">0</strong> kg</span>
+            <span style="font-weight: 700;">=</span>
+            <div style="background: white; padding: 8px 16px; border-radius: 8px; border: 2px solid #f59e0b;">
+              <strong id="pbLossWeight" style="font-size: 20px; color: #d97706;">0.00</strong>
+              <strong style="color: #d97706;">kg</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- 成品统计 -->
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;">
+          <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 12px; text-align: center;">
+            <div style="font-size: 12px; color: #15803d; font-weight: 600; margin-bottom: 4px;">✅ 非B级重量</div>
+            <div id="pbNormalWeight" style="font-size: 20px; font-weight: 700; color: #15803d;">0.00 kg</div>
+          </div>
+          <div style="background: #fef2f2; border: 2px solid #ef4444; border-radius: 12px; padding: 12px; text-align: center;">
+            <div style="font-size: 12px; color: #b91c1c; font-weight: 600; margin-bottom: 4px;">⚠️ B级重量</div>
+            <div id="pbBLevelWeight" style="font-size: 20px; font-weight: 700; color: #b91c1c;">0.00 kg</div>
+          </div>
+          <div style="background: #f8fafc; border: 2px solid #94a3b8; border-radius: 12px; padding: 12px; text-align: center;">
+            <div style="font-size: 12px; color: #475569; font-weight: 600; margin-bottom: 4px;">📦 成品总重</div>
+            <div id="pbTotalWeight" style="font-size: 20px; font-weight: 700; color: #0f172a;">0.00 kg</div>
+          </div>
+          <div style="background: #faf5ff; border: 2px solid #a855f7; border-radius: 12px; padding: 12px; text-align: center;">
+            <div style="font-size: 12px; color: #7e22ce; font-weight: 600; margin-bottom: 4px;">📈 出品率</div>
+            <div id="pbYieldRate" style="font-size: 20px; font-weight: 700; color: #7e22ce;">0.00%</div>
+          </div>
+        </div>
+
+        <!-- 生产明细 -->
+        <div style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="font-weight: 700; color: var(--text-primary); font-size: 16px;">📝 生产明细录入</div>
+            <div style="display: flex; gap: 8px;">
+              <select id="pbQuickAddProduct" class="input-field" style="width: 200px; font-size: 13px; min-height: 36px;" onchange="quickAddProfitBatchProduct()">
+                <option value="">快速添加产品...</option>
+              </select>
+              <button class="btn btn-secondary btn-sm" onclick="addProfitBatchItem()" style="padding: 8px 14px; font-size: 13px;">➕ 手动添加</button>
+              <button class="btn btn-primary btn-sm" onclick="syncProfitBatchProducts()" style="padding: 8px 14px; font-size: 13px;">🔄 刷新产品</button>
+            </div>
+          </div>
+
+          <div class="table-wrapper" style="max-height: 400px;">
+            <table style="width: 100%; font-size: 12px;">
+              <thead>
+                <tr>
+                  <th style="width: 25%; text-align: left;">产品信息</th>
+                  <th style="width: 10%; text-align: center;">类型</th>
+                  <th style="width: 10%; text-align: center;">件数</th>
+                  <th style="width: 12%; text-align: right;">合计重量</th>
+                  <th style="width: 12%; text-align: right;">单件售价</th>
+                  <th style="width: 12%; text-align: right;">销售额</th>
+                  <th style="width: 12%; text-align: right;">净利润</th>
+                  <th style="width: 7%; text-align: center;">删除</th>
+                </tr>
+              </thead>
+              <tbody id="pbItemsTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 合计统计 -->
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; padding-top: 16px; border-top: 2px solid var(--border);">
+          <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 12px; text-align: center;">
+            <div style="font-size: 12px; color: #1e40af; font-weight: 600; margin-bottom: 4px;">📦 合计件数</div>
+            <div id="pbPreviewPieces" style="font-size: 22px; font-weight: 700; color: #1e40af;">0 件</div>
+          </div>
+          <div style="background: #faf5ff; border: 2px solid #a855f7; border-radius: 12px; padding: 12px; text-align: center;">
+            <div style="font-size: 12px; color: #7e22ce; font-weight: 600; margin-bottom: 4px;">⚖️ 合计重量</div>
+            <div id="pbPreviewTotalWeight" style="font-size: 22px; font-weight: 700; color: #7e22ce;">0.00 kg</div>
+          </div>
+          <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 12px; text-align: center;">
+            <div style="font-size: 12px; color: #15803d; font-weight: 600; margin-bottom: 4px;">💰 预计总销售额</div>
+            <div id="pbPreviewSales" style="font-size: 20px; font-weight: 700; color: #15803d;">¥0.00</div>
+          </div>
+          <div id="pbProfitCard" style="background: #f8fafc; border: 2px solid #94a3b8; border-radius: 12px; padding: 12px; text-align: center;">
+            <div style="font-size: 12px; color: #475569; font-weight: 600; margin-bottom: 4px;">💵 预计净利润</div>
+            <div id="pbPreviewProfit" style="font-size: 20px; font-weight: 700; color: #0f172a;">¥0.00</div>
+          </div>
+        </div>
+
+        <!-- 费用明细 -->
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding-top: 16px; border-top: 2px solid var(--border);">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="font-size: 12px;">包装费用(元)</label>
+            <input type="number" id="pbPackingFee" value="0" step="0.1" readonly style="background: #f8fafc; cursor: not-allowed; font-size: 14px;">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="font-size: 12px;">纸箱费用(元)</label>
+            <input type="number" id="pbBoxFee" value="0" step="0.1" readonly style="background: #f8fafc; cursor: not-allowed; font-size: 14px;">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="font-size: 12px;">其他费用(元)</label>
+            <input type="number" id="pbOtherFee" value="0" step="0.1" style="font-size: 14px;" onchange="updateProfitBatchPreview()">
+          </div>
+          <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 12px; text-align: center;">
+            <div style="font-size: 12px; color: #1e40af; font-weight: 600; margin-bottom: 4px;">🔧 总加工费</div>
+            <div id="pbPreviewProcessFee" style="font-size: 20px; font-weight: 700; color: #1e40af;">¥0.00</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-secondary" onclick="closeProfitBatchModal()">取消</button>
+        <button class="modal-btn modal-btn-primary" onclick="exportProfitBatchImage()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">📷 导出图片</button>
+        <button class="modal-btn modal-btn-primary" onclick="saveProfitBatch()">💾 保存批次</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 从入库批次导入弹窗 -->
+  <div class="modal-overlay" id="importFromBatchModal" style="padding-bottom: 80px;">
+    <div class="modal-content" style="max-width: 600px; max-height: 70vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="flex-shrink: 0;">
+        <div class="modal-icon" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white;">📥</div>
+        <div class="modal-title">从入库批次导入</div>
+      </div>
+      <div class="modal-body" style="flex: 1; overflow-y: auto; min-height: 0;">
+        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;">
+          勾选已入库的批次，自动将产品数据带入利润计算。导入后只需补充原料重量和单价即可。
+        </p>
+        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+          <button class="btn btn-secondary btn-sm" onclick="selectAllImportBatches(true)" style="padding: 6px 12px; font-size: 12px;">☑️ 全选</button>
+          <button class="btn btn-secondary btn-sm" onclick="selectAllImportBatches(false)" style="padding: 6px 12px; font-size: 12px;">⬜ 取消全选</button>
+          <span id="importBatchSelectedCount" style="font-size: 13px; color: var(--text-tertiary); margin-left: auto; align-self: center;">已选 0 个</span>
+        </div>
+        <div id="importBatchList" style="display: flex; flex-direction: column; gap: 8px; padding-bottom: 16px;">
+          <!-- 动态生成 -->
+        </div>
+      </div>
+      <div class="modal-footer" style="flex-shrink: 0; padding: 16px 24px; background: #f8fafc; border-top: 1px solid #e2e8f0;">
+        <button class="modal-btn modal-btn-secondary" onclick="cancelImportFromBatch()">取消</button>
+        <button class="modal-btn modal-btn-primary" onclick="confirmImportFromBatch()" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">📥 确认导入</button>
+      </div>
+    </div>
+  </div>
+
+
 </body>
 </html>
