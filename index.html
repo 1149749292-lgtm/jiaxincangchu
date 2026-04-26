@@ -1677,8 +1677,8 @@ async function init() {
           deductedBatchIds: cartonDeductedBatchIds
         };
 
-        // 注意：profitBatches 不发送到云端，只保存在 localStorage
-        const savePayload = { 
+        // 构建完整数据包（包含批次利润）
+        let savePayload = { 
           products, 
           stock, 
           batches,
@@ -1689,11 +1689,40 @@ async function init() {
 
         // 使用 LZString 压缩数据，避免超出 JSONBin 100KB 限制
         let requestBody;
+        let compressed;
         if (typeof LZString !== 'undefined') {
-          const compressed = LZString.compressToUTF16(JSON.stringify(savePayload));
+          compressed = LZString.compressToUTF16(JSON.stringify(savePayload));
           requestBody = JSON.stringify({ compressed: compressed });
         } else {
           requestBody = JSON.stringify(savePayload);
+        }
+
+        // 检查数据大小（JSONBin 限制约 100KB）
+        const sizeKB = requestBody.length / 1024;
+        console.log('云端数据大小:', sizeKB.toFixed(2), 'KB');
+
+        // 如果数据超过 90KB，尝试移除批次利润后保存（确保其他数据能保存）
+        if (sizeKB > 90) {
+          console.warn('数据过大(' + sizeKB.toFixed(2) + 'KB)，尝试不包含批次利润保存');
+          savePayload = { 
+            products, 
+            stock, 
+            batches,
+            cartons: cartonDataToSave,
+            lastSyncTime: new Date().toISOString()
+          };
+          if (typeof LZString !== 'undefined') {
+            compressed = LZString.compressToUTF16(JSON.stringify(savePayload));
+            requestBody = JSON.stringify({ compressed: compressed });
+          } else {
+            requestBody = JSON.stringify(savePayload);
+          }
+          const newSizeKB = requestBody.length / 1024;
+          console.log('精简后数据大小:', newSizeKB.toFixed(2), 'KB');
+
+          if (newSizeKB > 90) {
+            throw new Error(`数据过大(${newSizeKB.toFixed(1)}KB)，超出云端存储限制。批次利润已保存到本地，请导出备份。`);
+          }
         }
 
         const response = await fetch(API_URL, {
@@ -1707,6 +1736,10 @@ async function init() {
 
         if (!response.ok) {
           const errorText = await response.text();
+          // 如果是 413 或 400，可能是大小问题
+          if (response.status === 413 || response.status === 400 || errorText.includes('size') || errorText.includes('limit')) {
+            throw new Error(`云端存储空间不足(${sizeKB.toFixed(1)}KB)。批次利润已保存到本地，建议导出备份或清理历史数据。`);
+          }
           throw new Error(`保存失败: ${response.status} - ${errorText}`);
         }
 
@@ -5688,7 +5721,7 @@ function updateProfitBatchPreview() {
   document.getElementById('pbPreviewTotalWeight').textContent = totalWeight.toFixed(2) + ' kg';
 }
 
-function saveProfitBatch() {
+async function saveProfitBatch() {
       if (!editPermissionVerified) { checkEditPermission(() => saveProfitBatch()); return; }
   const id = document.getElementById('profitBatchId').value;
   const name = document.getElementById('pbName').value.trim();
@@ -5785,8 +5818,14 @@ function saveProfitBatch() {
   closeProfitBatchModal();
   updateProfitBatchStats();
   filterProfitBatchList();
-  saveProfitBatchData();
-  showToast(`✅ 批次「${name}」已保存，净利润: ${batch.profit >= 0 ? '+' : ''}¥${batch.profit.toFixed(2)}`, 'success');
+
+  // 修复：await 保存并处理错误
+  try {
+    await saveProfitBatchData();
+    showToast(`✅ 批次「${name}」已保存并同步到云端，净利润: ${batch.profit >= 0 ? '+' : ''}¥${batch.profit.toFixed(2)}`, 'success');
+  } catch (err) {
+    showToast(`⚠️ 批次「${name}」已保存到本地，但云端同步失败: ${err.message}`, 'warning');
+  }
 }
 
 function editProfitBatch(id) {
@@ -5794,7 +5833,7 @@ function editProfitBatch(id) {
   if (batch) openProfitBatchModal(batch);
 }
 
-function deleteProfitBatch(id) {
+async function deleteProfitBatch(id) {
       if (!editPermissionVerified) { checkEditPermission(() => deleteProfitBatch(id)); return; }
   const batch = profitBatches.find(b => b.id === id);
   if (!batch) return;
@@ -5802,11 +5841,15 @@ function deleteProfitBatch(id) {
   profitBatches = profitBatches.filter(b => b.id !== id);
   updateProfitBatchStats();
   filterProfitBatchList();
-  saveProfitBatchData();
-  showToast('✅ 批次已删除', 'success');
+  try {
+    await saveProfitBatchData();
+    showToast('✅ 批次已删除并同步到云端', 'success');
+  } catch (err) {
+    showToast('⚠️ 批次已删除到本地，云端同步失败', 'warning');
+  }
 }
 
-function syncAllBatchProducts() {
+async function syncAllBatchProducts() {
       if (!editPermissionVerified) { checkEditPermission(() => syncAllBatchProducts()); return; }
   if (profitBatches.length === 0) {
     showToast('暂无批次需要同步', 'info');
@@ -5826,9 +5869,14 @@ function syncAllBatchProducts() {
       }
     });
   });
-  saveProfitBatchData();
-  filterProfitBatchList();
-  showToast(`✅ 已同步 ${syncCount} 条产品信息`, 'success');
+  try {
+    await saveProfitBatchData();
+    filterProfitBatchList();
+    showToast(`✅ 已同步 ${syncCount} 条产品信息并保存到云端`, 'success');
+  } catch (err) {
+    filterProfitBatchList();
+    showToast(`⚠️ 已同步 ${syncCount} 条产品信息到本地，云端同步失败: ${err.message}`, 'warning');
+  }
 }
 
 // 保存批次利润数据（保存到 localStorage + 云端同步）
@@ -5844,6 +5892,8 @@ async function saveProfitBatchData() {
       console.log('批次利润数据已同步到云端');
     } catch (err) {
       console.warn('批次利润云端同步失败:', err.message);
+      // 重新抛出错误，让调用者处理
+      throw new Error('云端同步失败: ' + err.message);
     }
   }
 }
@@ -5864,9 +5914,10 @@ function loadProfitBatchData(data) {
     }
   }
 
-  // 如果云端有数据且本地为空，从云端加载（新设备首次同步）
+  // 如果云端有数据，优先使用云端数据（云端为最新）
   if (data && data.profitBatches && Array.isArray(data.profitBatches) && data.profitBatches.length > 0) {
-    if (localBatches.length === 0) {
+    // 如果本地为空，或云端数据比本地多，使用云端数据
+    if (localBatches.length === 0 || data.profitBatches.length >= localBatches.length) {
       profitBatches = data.profitBatches;
       localStorage.setItem('warehouse_profit_batches', JSON.stringify(profitBatches));
       console.log('从云端加载批次利润数据:', profitBatches.length, '个');
