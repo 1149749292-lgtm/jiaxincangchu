@@ -1682,9 +1682,19 @@ async function init() {
           products, 
           stock, 
           batches,
+          profitBatches: profitBatches || [],
           cartons: cartonDataToSave,
           lastSyncTime: new Date().toISOString()
         };
+
+        // 使用 LZString 压缩数据，避免超出 JSONBin 100KB 限制
+        let requestBody;
+        if (typeof LZString !== 'undefined') {
+          const compressed = LZString.compressToUTF16(JSON.stringify(savePayload));
+          requestBody = JSON.stringify({ compressed: compressed });
+        } else {
+          requestBody = JSON.stringify(savePayload);
+        }
 
         const response = await fetch(API_URL, {
           method: 'PUT',
@@ -1692,7 +1702,7 @@ async function init() {
             'Content-Type': 'application/json', 
             'X-Master-Key': MASTER_KEY 
           },
-          body: JSON.stringify(savePayload)
+          body: requestBody
         });
 
         if (!response.ok) {
@@ -5821,41 +5831,53 @@ function syncAllBatchProducts() {
   showToast(`✅ 已同步 ${syncCount} 条产品信息`, 'success');
 }
 
-// 保存批次利润数据（只保存到 localStorage，避免云端100KB限制）
+// 保存批次利润数据（保存到 localStorage + 云端同步）
 async function saveProfitBatchData() {
   // 始终保存到 localStorage
   localStorage.setItem('warehouse_profit_batches', JSON.stringify(profitBatches || []));
   console.log('批次利润数据已保存到本地:', profitBatches.length, '个');
 
-  // 注意：不再发送到云端，避免触发100KB限制
-  // 如果需要云端备份，可以单独创建一个 bin
+  // 同步到云端（通过 saveData，已启用 LZString 压缩）
+  if (isOnline) {
+    try {
+      await saveData();
+      console.log('批次利润数据已同步到云端');
+    } catch (err) {
+      console.warn('批次利润云端同步失败:', err.message);
+    }
+  }
 }
 
 // 加载批次利润数据
 function loadProfitBatchData(data) {
-  // 批次利润数据只从 localStorage 加载（避免云端100KB限制）
+  // 优先从本地加载
   const local = localStorage.getItem('warehouse_profit_batches');
+  let localBatches = [];
   if (local) {
     try { 
       const localData = JSON.parse(local);
       if (Array.isArray(localData)) {
-        profitBatches = localData;
-        console.log('从本地加载批次利润数据:', profitBatches.length, '个');
-        return;
+        localBatches = localData;
       }
     } catch(e) { 
       console.error('本地批次利润数据解析失败:', e);
     }
   }
 
-  // 兼容旧逻辑：如果云端有数据也读取（旧版本可能保存在云端）
+  // 如果云端有数据且本地为空，从云端加载（新设备首次同步）
   if (data && data.profitBatches && Array.isArray(data.profitBatches) && data.profitBatches.length > 0) {
-    profitBatches = data.profitBatches;
-    console.log('从云端加载批次利润数据:', profitBatches.length, '个');
-    // 同时保存到本地
-    localStorage.setItem('warehouse_profit_batches', JSON.stringify(profitBatches));
-  } else {
-    profitBatches = [];
+    if (localBatches.length === 0) {
+      profitBatches = data.profitBatches;
+      localStorage.setItem('warehouse_profit_batches', JSON.stringify(profitBatches));
+      console.log('从云端加载批次利润数据:', profitBatches.length, '个');
+      return;
+    }
+  }
+
+  // 使用本地数据
+  profitBatches = localBatches;
+  if (profitBatches.length > 0) {
+    console.log('从本地加载批次利润数据:', profitBatches.length, '个');
   }
 }
 
