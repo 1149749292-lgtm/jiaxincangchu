@@ -1442,6 +1442,10 @@
                         <label class="text-sm font-medium text-gray-600">日期：</label>
                         <input type="date" id="expenseDateFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none" onchange="renderExpenseList()">
                     </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm font-medium text-gray-600">支付时间：</label>
+                        <input type="date" id="expensePaymentDateFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none" onchange="renderExpenseList()">
+                    </div>
                     <button onclick="resetExpenseFilters()" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
                         重置筛选
                     </button>
@@ -1449,17 +1453,19 @@
             </div>
 
                 <!-- 费用列表 -->
-                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-                    <table class="w-full">
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="w-full" style="min-width: 900px;">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">日期</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">费用类型</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">总费用</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">已付</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">未付</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">备注</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                                <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase" style="white-space: nowrap;">日期</th>
+                                <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase" style="white-space: nowrap;">类型</th>
+                                <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase" style="white-space: nowrap;">总费用</th>
+                                <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase" style="white-space: nowrap;">已付</th>
+                                <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase" style="white-space: nowrap;">未付</th>
+                                <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase" style="white-space: nowrap;">状态</th>
+                                <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase" style="white-space: nowrap;">支付时间</th>
+                                <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase" style="white-space: nowrap;">备注</th>
+                                <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase" style="white-space: nowrap;">操作</th>
                             </tr>
                         </thead>
                         <tbody id="expenseList" class="divide-y divide-gray-200"></tbody>
@@ -1912,39 +1918,66 @@
 
     <!-- 费用简化付款模态框 -->
     <div id="expensePaymentSimpleModal" class="modal">
-        <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-content" style="max-width: 600px;">
             <div class="p-6 border-b border-gray-200 flex justify-between items-center">
                 <h3 class="text-xl font-bold text-green-600">费用付款登记</h3>
                 <button onclick="closeExpensePaymentSimpleModal()" class="text-gray-400 hover:text-gray-600">✕</button>
             </div>
-            <div class="p-6 space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">费用类型 *</label>
-                    <select id="expensePaymentSimpleType" class="w-full px-3 py-2 border rounded-lg">
-                        <option value="processing">加工费用</option>
-                        <option value="packaging">包装费用</option>
-                        <option value="carton">纸箱</option>
-                        <option value="office">办公杂费</option>
-                        <option value="other">其他费用</option>
-                    </select>
+            <div class="p-6">
+                <!-- 未付费用列表 -->
+                <div style="max-height: 280px; overflow-y: auto; margin-bottom: 16px; border: 1px solid #e5e7eb; border-radius: 8px;">
+                    <table class="w-full" style="font-size: 13px;">
+                        <thead style="background: #f9fafb; position: sticky; top: 0;">
+                            <tr>
+                                <th style="padding: 8px; text-align: center; width: 40px;">
+                                    <input type="checkbox" id="selectAllUnpaidExpenses" onclick="toggleAllUnpaidExpenses(this)">
+                                </th>
+                                <th style="padding: 8px; text-align: left;">日期</th>
+                                <th style="padding: 8px; text-align: left;">类型</th>
+                                <th style="padding: 8px; text-align: right;">未付金额</th>
+                                <th style="padding: 8px; text-align: left;">备注</th>
+                            </tr>
+                        </thead>
+                        <tbody id="unpaidExpenseListBody">
+                            <!-- 动态填充 -->
+                        </tbody>
+                    </table>
+                    <div id="noUnpaidExpensesMsg" style="padding: 20px; text-align: center; color: #6b7280; display: none;">
+                        暂无未支付的费用
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">付款日期 *</label>
-                    <input type="date" id="expensePaymentSimpleDate" class="w-full px-3 py-2 border rounded-lg">
+
+                <!-- 选中合计 -->
+                <div style="background: #fef3c7; border-radius: 8px; padding: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-weight: 600; color: #92400e;">选中合计未付：</span>
+                    <span id="selectedUnpaidTotal" style="font-size: 18px; font-weight: 800; color: #b45309;">¥0.00</span>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">付款金额 *</label>
-                    <input type="number" id="expensePaymentSimpleAmount" class="w-full px-3 py-2 border rounded-lg" placeholder="0.00" step="0.01">
+
+                <!-- 支付信息 -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">付款日期 *</label>
+                        <input type="date" id="expensePaymentSimpleDate" class="w-full px-3 py-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">付款金额 *</label>
+                        <input type="number" id="expensePaymentSimpleAmount" class="w-full px-3 py-2 border rounded-lg" placeholder="0.00" step="0.01" oninput="validatePaymentAmount()">
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">支付方式</label>
-                    <input type="text" id="expensePaymentSimpleMethod" class="w-full px-3 py-2 border rounded-lg" placeholder="例如：微信转账、银行转账、现金">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">支付方式</label>
+                        <input type="text" id="expensePaymentSimpleMethod" class="w-full px-3 py-2 border rounded-lg" placeholder="例如：微信转账、银行转账">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">备注</label>
+                        <input type="text" id="expensePaymentSimpleRemark" class="w-full px-3 py-2 border rounded-lg" placeholder="可选">
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">备注</label>
-                    <input type="text" id="expensePaymentSimpleRemark" class="w-full px-3 py-2 border rounded-lg" placeholder="可选">
-                </div>
-                <div class="flex justify-end space-x-3 pt-4">
+
+                <div id="paymentValidationMsg" style="color: #dc2626; font-size: 13px; margin-bottom: 12px; display: none;"></div>
+
+                <div class="flex justify-end space-x-3 pt-2">
                     <button onclick="closeExpensePaymentSimpleModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-50">取消</button>
                     <button onclick="saveExpensePaymentSimple()" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">确认付款</button>
                 </div>
@@ -6006,22 +6039,138 @@ function syncPaymentDataToOrders() {
 
         // ==================== 费用简化付款功能 ====================
         function openExpensePaymentSimpleModal() {
-            document.getElementById('expensePaymentSimpleType').value = 'processing';
+            // 初始化
             document.getElementById('expensePaymentSimpleDate').value = new Date().toISOString().split('T')[0];
             document.getElementById('expensePaymentSimpleAmount').value = '';
             document.getElementById('expensePaymentSimpleMethod').value = '';
             document.getElementById('expensePaymentSimpleRemark').value = '';
+            document.getElementById('paymentValidationMsg').style.display = 'none';
+            document.getElementById('selectedUnpaidTotal').textContent = '¥0.00';
+
+            // 获取所有未付费用
+            const tbody = document.getElementById('unpaidExpenseListBody');
+            tbody.innerHTML = '';
+
+            let unpaidExpenses = [];
+            (data.expenses || []).forEach(expense => {
+                const paidFromRegistration = expense.paidAmount || 0;
+                const paidFromPayments = (data.expensePayments || []).filter(p => p.expenseId === expense.id).reduce((sum, p) => sum + (p.amount || 0), 0);
+                const totalPaid = paidFromRegistration + paidFromPayments;
+                const unpaid = Math.max(0, (expense.totalAmount || 0) - totalPaid);
+
+                if (unpaid > 0) {
+                    const typeInfo = EXPENSE_TYPES[expense.type] || { name: expense.type, color: 'gray' };
+                    unpaidExpenses.push({
+                        id: expense.id,
+                        date: expense.date,
+                        typeName: typeInfo.name,
+                        typeColor: typeInfo.color,
+                        unpaid: unpaid,
+                        remark: expense.remark || ''
+                    });
+                }
+            });
+
+            // 按日期倒序排列
+            unpaidExpenses.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (unpaidExpenses.length === 0) {
+                document.getElementById('noUnpaidExpensesMsg').style.display = 'block';
+                document.getElementById('selectAllUnpaidExpenses').checked = false;
+            } else {
+                document.getElementById('noUnpaidExpensesMsg').style.display = 'none';
+                tbody.innerHTML = unpaidExpenses.map((e, idx) => `
+                    <tr style="border-bottom: 1px solid #f3f4f6;" data-expense-id="${e.id}" data-unpaid="${e.unpaid}">
+                        <td style="padding: 8px; text-align: center;">
+                            <input type="checkbox" class="unpaid-expense-checkbox" value="${e.id}" data-unpaid="${e.unpaid}" onchange="toggleUnpaidExpense(this)">
+                        </td>
+                        <td style="padding: 8px; color: #6b7280;">${e.date}</td>
+                        <td style="padding: 8px;">
+                            <span class="status-badge status-${e.typeColor}">${e.typeName}</span>
+                        </td>
+                        <td style="padding: 8px; text-align: right; color: #dc2626; font-weight: 600;">¥${e.unpaid.toFixed(2)}</td>
+                        <td style="padding: 8px; color: #6b7280; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${e.remark || '-'}</td>
+                    </tr>
+                `).join('');
+            }
+
             document.getElementById('expensePaymentSimpleModal').classList.add('active');
+        }
+
+        function toggleAllUnpaidExpenses(checkbox) {
+            const checkboxes = document.querySelectorAll('.unpaid-expense-checkbox');
+            checkboxes.forEach(cb => cb.checked = checkbox.checked);
+            updateSelectedUnpaidTotal();
+        }
+
+        function toggleUnpaidExpense(checkbox) {
+            const allCheckboxes = document.querySelectorAll('.unpaid-expense-checkbox');
+            const checkedBoxes = document.querySelectorAll('.unpaid-expense-checkbox:checked');
+            document.getElementById('selectAllUnpaidExpenses').checked = allCheckboxes.length === checkedBoxes.length;
+            updateSelectedUnpaidTotal();
+        }
+
+        function updateSelectedUnpaidTotal() {
+            const checkedBoxes = document.querySelectorAll('.unpaid-expense-checkbox:checked');
+            let total = 0;
+            checkedBoxes.forEach(cb => {
+                total += parseFloat(cb.dataset.unpaid) || 0;
+            });
+            document.getElementById('selectedUnpaidTotal').textContent = '¥' + total.toFixed(2);
+
+            // 自动填充付款金额为选中合计
+            const amountInput = document.getElementById('expensePaymentSimpleAmount');
+            if (total > 0 && !amountInput.value) {
+                amountInput.value = total.toFixed(2);
+            }
+            validatePaymentAmount();
+        }
+
+        function validatePaymentAmount() {
+            const checkedBoxes = document.querySelectorAll('.unpaid-expense-checkbox:checked');
+            let totalUnpaid = 0;
+            checkedBoxes.forEach(cb => {
+                totalUnpaid += parseFloat(cb.dataset.unpaid) || 0;
+            });
+
+            const inputAmount = parseFloat(document.getElementById('expensePaymentSimpleAmount').value) || 0;
+            const msgEl = document.getElementById('paymentValidationMsg');
+
+            if (checkedBoxes.length === 0) {
+                msgEl.textContent = '请至少勾选一项未付费用';
+                msgEl.style.display = 'block';
+                return false;
+            }
+
+            if (inputAmount <= 0) {
+                msgEl.textContent = '请输入付款金额';
+                msgEl.style.display = 'block';
+                return false;
+            }
+
+            if (inputAmount > totalUnpaid) {
+                msgEl.textContent = '付款金额不能超过选中费用的未付总额 ¥' + totalUnpaid.toFixed(2);
+                msgEl.style.display = 'block';
+                return false;
+            }
+
+            msgEl.style.display = 'none';
+            return true;
         }
 
         function closeExpensePaymentSimpleModal() {
             document.getElementById('expensePaymentSimpleModal').classList.remove('active');
+            document.getElementById('selectAllUnpaidExpenses').checked = false;
+            document.getElementById('unpaidExpenseListBody').innerHTML = '';
+            document.getElementById('selectedUnpaidTotal').textContent = '¥0.00';
+            document.getElementById('paymentValidationMsg').style.display = 'none';
         }
 
         async function saveExpensePaymentSimple() {
             if (!checkEditPermission()) return;
 
-            const type = document.getElementById('expensePaymentSimpleType').value;
+            if (!validatePaymentAmount()) return;
+
             const date = document.getElementById('expensePaymentSimpleDate').value;
             const amount = parseFloat(document.getElementById('expensePaymentSimpleAmount').value) || 0;
             const paymentMethod = document.getElementById('expensePaymentSimpleMethod').value.trim();
@@ -6032,33 +6181,75 @@ function syncPaymentDataToOrders() {
                 return;
             }
 
-            // 费用板块独立管理 - 不同步到收付款板块
-            // 创建费用付款记录，直接存储在费用数据中
-            const paymentRecord = {
-                id: 'EXPPAY' + Date.now(),
-                expenseType: type,
-                date: date,
-                amount: amount,
-                paymentMethod: paymentMethod,
-                remark: remark,
-                createTime: Date.now()
-            };
+            // 获取勾选的未付费用
+            const checkedBoxes = document.querySelectorAll('.unpaid-expense-checkbox:checked');
+            if (checkedBoxes.length === 0) {
+                showToast('⚠️ 请至少勾选一项未付费用', 'warning');
+                return;
+            }
 
-            // 初始化费用付款记录数组（如果不存在）
+            // 初始化费用付款记录数组
             if (!data.expensePayments) {
                 data.expensePayments = [];
             }
-            data.expensePayments.push(paymentRecord);
+
+            let remainingAmount = amount;
+            let paidCount = 0;
+
+            // 按未付金额从小到大排序，优先结清小额
+            const selectedExpenses = Array.from(checkedBoxes).map(cb => ({
+                id: cb.value,
+                unpaid: parseFloat(cb.dataset.unpaid) || 0
+            })).sort((a, b) => a.unpaid - b.unpaid);
+
+            // 分配付款金额到各费用，同步更新原 expense 记录
+            for (const expenseInfo of selectedExpenses) {
+                if (remainingAmount <= 0) break;
+
+                const alloc = Math.min(expenseInfo.unpaid, remainingAmount);
+                remainingAmount -= alloc;
+                paidCount++;
+
+                // 同步更新原费用登记的已付金额和未付金额
+                const expenseRecord = data.expenses.find(e => e.id === expenseInfo.id);
+                if (expenseRecord) {
+                    expenseRecord.paidAmount = (expenseRecord.paidAmount || 0) + alloc;
+                    expenseRecord.remainingAmount = Math.max(0, (expenseRecord.totalAmount || 0) - expenseRecord.paidAmount);
+                    // 记录最后一次支付信息
+                    expenseRecord.lastPaymentDate = date;
+                    expenseRecord.lastPaymentMethod = paymentMethod;
+                    expenseRecord.lastPaymentRemark = remark;
+                    expenseRecord.lastUpdated = Date.now();
+                }
+
+                // 创建付款流水记录（用于后台追溯，不在列表显示）
+                const paymentRecord = {
+                    id: 'EXPPAY' + Date.now() + '_' + paidCount,
+                    expenseId: expenseInfo.id,
+                    expenseType: expenseRecord ? expenseRecord.type : '',
+                    date: expenseRecord ? expenseRecord.date : date,
+                    amount: alloc,
+                    paymentMethod: paymentMethod,
+                    remark: remark,
+                    createTime: Date.now()
+                };
+                data.expensePayments.push(paymentRecord);
+            }
 
             try {
                 await saveData();
                 closeExpensePaymentSimpleModal();
                 renderExpenseList();
                 updateExpenseStats();
-                // 不再同步到收付款板块
                 updateDashboard();
                 updateCapitalOverview();
-                showToast('✅ 费用付款已登记');
+
+                const totalUnpaid = selectedExpenses.reduce((sum, e) => sum + e.unpaid, 0);
+                if (amount >= totalUnpaid) {
+                    showToast(`✅ 已结清 ${paidCount} 笔费用，共支付 ¥${amount.toFixed(2)}`);
+                } else {
+                    showToast(`✅ 已支付 ${paidCount} 笔费用共 ¥${amount.toFixed(2)}，还有部分未结清`);
+                }
             } catch (err) {
                 console.error('保存失败:', err);
                 showToast('❌ 保存失败', 'error');
@@ -6157,6 +6348,7 @@ function syncPaymentDataToOrders() {
             const dateFilter = document.getElementById('expenseDateFilter').value;
             const paymentFilter = document.getElementById('expensePaymentFilter').value;
             const searchKeyword = document.getElementById('expenseSearch').value.toLowerCase().trim();
+            const paymentDateFilter = document.getElementById('expensePaymentDateFilter').value;
 
             // 获取费用登记记录
             let expenses = data.expenses || [];
@@ -6187,6 +6379,11 @@ function syncPaymentDataToOrders() {
                 });
             }
 
+            // 支付日期筛选
+            if (paymentDateFilter) {
+                expenses = expenses.filter(e => e.lastPaymentDate === paymentDateFilter);
+            }
+
             // 筛选费用付款记录
             let filteredPayments = expensePayments;
             if (typeFilter) {
@@ -6195,12 +6392,8 @@ function syncPaymentDataToOrders() {
             if (dateFilter) {
                 filteredPayments = filteredPayments.filter(p => p.date === dateFilter);
             }
-            // 支付状态筛选：付款流水只在"全部"或"已支付"状态下显示
-            // 当筛选"未支付"时，隐藏所有付款流水（因为付款流水代表已支付）
-            if (paymentFilter === 'unpaid') {
-                filteredPayments = []; // 未支付状态下不显示付款流水
-            }
-            // 搜索关键词也应用于付款流水
+            // 支付状态筛选：只根据费用登记记录的状态筛选
+            // 已支付 = paidAmount >= totalAmount, 未支付 = paidAmount <= 0, 部分支付 = 其他
             if (searchKeyword) {
                 filteredPayments = filteredPayments.filter(p => {
                     const remark = (p.remark || '').toLowerCase();
@@ -6239,99 +6432,85 @@ function syncPaymentDataToOrders() {
             // 列表下方的合计行显示筛选后的合计
             updateExpenseStats();
 
-            // 合并费用记录和付款记录用于显示
-            const allRecords = [
-                ...expenses.map(e => ({ ...e, recordType: 'expense' })),
-                ...filteredPayments.map(p => ({ ...p, recordType: 'payment' }))
-            ].sort((a, b) => new Date(b.date) - new Date(a.date));
-
-            // 计算筛选后的合计：未付 = 总费用 - 已付
+            const tbody = document.getElementById('expenseList');
+            // 计算筛选后的合计（expense.paidAmount 已包含所有付款，无需重复累加）
             let totalAmount = 0, totalPaid = 0;
-
-            // 累加所有筛选出的费用条目的金额
             expenses.forEach(e => {
                 totalAmount += e.totalAmount || 0;
-                totalPaid += e.paidAmount || 0;  // 费用登记时填写的已付金额
+                totalPaid += e.paidAmount || 0;
             });
-
-            // 加上独立付款流水的金额
-            filteredPayments.forEach(p => {
-                totalPaid += p.amount || 0;
-            });
-
-            // 未付 = 总费用 - 已付
             const totalUnpaid = Math.max(0, totalAmount - totalPaid);
 
-            const tbody = document.getElementById('expenseList');
+            // 只显示费用登记记录，支付记录作为后台数据不展示
+            let html = expenses.sort((a, b) => new Date(b.date) - new Date(a.date)).map(expense => {
+                const typeInfo = EXPENSE_TYPES[expense.type] || { name: expense.type, color: 'gray' };
 
-            if (allRecords.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500"><div class="text-4xl mb-2">📋</div><p>暂无费用记录</p></td></tr>`;
-                return;
-            }
+                // 计算已付和未付（expense.paidAmount 已在付款时同步更新，无需重复加 payment 流水）
+                const totalPaidForExpense = expense.paidAmount || 0;
+                const unpaid = Math.max(0, (expense.totalAmount || 0) - totalPaidForExpense);
 
-            let html = allRecords.map(record => {
-                if (record.recordType === 'expense') {
-                    // 费用登记记录 - 从expensePayments计算实际已付金额
-                    const expense = record;
-                    const typeInfo = EXPENSE_TYPES[expense.type] || { name: expense.type, color: 'gray' };
-
-                    // 只使用本条费用记录的已付金额
-                    const paidAmount = expense.paidAmount || 0;
-                    const unpaid = Math.max(0, (expense.totalAmount || 0) - paidAmount);
-
-                    // 已付金额显示（如果有付款则显示绿色）
-                    const paidDisplay = paidAmount > 0 
-                        ? `<span class="text-green-600 font-medium">¥${paidAmount.toFixed(2)}</span>`
-                        : `<span class="text-gray-400">-</span>`;
-
-                    // 未付金额显示（如果有未付则显示红色）
-                    const unpaidDisplay = unpaid > 0
-                        ? `<span class="text-red-600 font-medium">¥${unpaid.toFixed(2)}</span>`
-                        : `<span class="text-gray-400">¥0.00</span>`;
-
-                    return `<tr class="hover:bg-gray-50">
-                        <td class="px-4 py-3 text-sm text-gray-600">${expense.date}</td>
-                        <td class="px-4 py-3 text-sm">
-                            <span class="status-badge status-${typeInfo.color}">${typeInfo.name}</span>
-                        </td>
-                        <td class="px-4 py-3 text-sm font-medium">¥${(expense.totalAmount || 0).toFixed(2)}</td>
-                        <td class="px-4 py-3 text-sm">${paidDisplay}</td>
-                        <td class="px-4 py-3 text-sm">${unpaidDisplay}</td>
-                        <td class="px-4 py-3 text-sm text-gray-500">${expense.remark || '费用登记'}</td>
-                        <td class="px-4 py-3 text-sm space-x-2">
-                            <button onclick="editExpense('${expense.id}')" class="text-blue-600 hover:underline">编辑</button>
-                            <button onclick="deleteExpense('${expense.id}')" class="text-red-600 hover:underline">删除</button>
-                        </td>
-                    </tr>`;
+                // 支付状态判断
+                let paymentStatusText, paymentStatusClass;
+                if (totalPaidForExpense <= 0) {
+                    paymentStatusText = '未支付';
+                    paymentStatusClass = 'status-pending';
+                } else if (unpaid <= 0) {
+                    paymentStatusText = '已支付';
+                    paymentStatusClass = 'status-paid';
                 } else {
-                    // 付款记录（绿色显示）
-                    const payment = record;
-                    const typeInfo = EXPENSE_TYPES[payment.expenseType] || { name: payment.expenseType, color: 'gray' };
-                    return `<tr class="hover:bg-green-50 bg-green-50/30">
-                        <td class="px-4 py-3 text-sm text-gray-600">${payment.date}</td>
-                        <td class="px-4 py-3 text-sm">
-                            <span class="status-badge status-paid">${typeInfo.name}·付款</span>
-                        </td>
-                        <td class="px-4 py-3 text-sm text-gray-400">-</td>
-                        <td class="px-4 py-3 text-sm text-green-600 font-medium">¥${(payment.amount || 0).toFixed(2)}</td>
-                        <td class="px-4 py-3 text-sm text-gray-400">-</td>
-                        <td class="px-4 py-3 text-sm text-gray-500">${payment.paymentMethod || ''} ${payment.remark ? '- ' + payment.remark : ''}</td>
-                        <td class="px-4 py-3 text-sm space-x-2">
-                            <span class="text-gray-400 text-xs">付款流水</span>
-                            <button onclick="deleteExpensePayment('${payment.id}')" class="text-red-600 hover:underline">删除</button>
-                        </td>
-                    </tr>`;
+                    paymentStatusText = '部分支付';
+                    paymentStatusClass = 'status-partial';
                 }
+
+                // 已付金额显示
+                const paidDisplay = totalPaidForExpense > 0 
+                    ? `<span class="text-green-600 font-medium">¥${totalPaidForExpense.toFixed(2)}</span>`
+                    : `<span class="text-gray-400">-</span>`;
+
+                // 未付金额显示
+                const unpaidDisplay = unpaid > 0
+                    ? `<span class="text-red-600 font-medium">¥${unpaid.toFixed(2)}</span>`
+                    : `<span class="text-gray-400">¥0.00</span>`;
+
+                // 支付时间显示（取最后一次付款日期）
+                const paymentTimeDisplay = expense.lastPaymentDate 
+                    ? `<span class="text-blue-600">${expense.lastPaymentDate}</span>`
+                    : `<span class="text-gray-400">-</span>`;
+
+                // 备注显示（包含支付方式）
+                let remarkDisplay = expense.remark || '费用登记';
+                if (expense.lastPaymentMethod) {
+                    remarkDisplay += `<br><span class="text-xs text-green-600">💳 ${expense.lastPaymentMethod}</span>`;
+                }
+
+                return `<tr class="hover:bg-gray-50">
+                    <td class="px-2 py-2 text-sm text-gray-600">${expense.date}</td>
+                    <td class="px-2 py-2 text-sm">
+                        <span class="status-badge status-${typeInfo.color}">${typeInfo.name}</span>
+                    </td>
+                    <td class="px-2 py-2 text-sm font-medium">¥${(expense.totalAmount || 0).toFixed(2)}</td>
+                    <td class="px-2 py-2 text-sm">${paidDisplay}</td>
+                    <td class="px-2 py-2 text-sm">${unpaidDisplay}</td>
+                    <td class="px-2 py-2 text-sm">
+                        <span class="status-badge ${paymentStatusClass}">${paymentStatusText}</span>
+                    </td>
+                    <td class="px-2 py-2 text-sm">${paymentTimeDisplay}</td>
+                    <td class="px-2 py-2 text-sm text-gray-500">${remarkDisplay}</td>
+                    <td class="px-2 py-2 text-sm space-x-2">
+                        <button onclick="editExpense('${expense.id}')" class="text-blue-600 hover:underline">编辑</button>
+                        <button onclick="deleteExpense('${expense.id}')" class="text-red-600 hover:underline">删除</button>
+                    </td>
+                </tr>`;
             }).join('');
 
             // 添加合计行
             if (expenses.length > 0 || filteredPayments.length > 0) {
                 html += `<tr style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-top: 2px solid #0ea5e9;">
-                    <td class="px-4 py-3 text-sm font-bold text-blue-900" colspan="2">合计 (${expenses.length}笔登记, ${filteredPayments.length}笔付款)</td>
-                    <td class="px-4 py-3 text-sm font-bold text-blue-900">¥${totalAmount.toFixed(2)}</td>
-                    <td class="px-4 py-3 text-sm font-bold text-green-700">¥${totalPaid.toFixed(2)}</td>
-                    <td class="px-4 py-3 text-sm font-bold ${totalUnpaid > 0 ? 'text-red-700' : 'text-blue-600'}">¥${totalUnpaid.toFixed(2)}</td>
-                    <td class="px-4 py-3" colspan="2"></td>
+                    <td class="px-2 py-2 text-sm font-bold text-blue-900" colspan="2">合计 (${expenses.length}笔登记)</td>
+                    <td class="px-2 py-2 text-sm font-bold text-blue-900">¥${totalAmount.toFixed(2)}</td>
+                    <td class="px-2 py-2 text-sm font-bold text-green-700">¥${totalPaid.toFixed(2)}</td>
+                    <td class="px-2 py-2 text-sm font-bold ${totalUnpaid > 0 ? 'text-red-700' : 'text-blue-600'}">¥${totalUnpaid.toFixed(2)}</td>
+                    <td class="px-2 py-2" colspan="4"></td>
                 </tr>`;
             }
 
@@ -6693,6 +6872,7 @@ function syncPaymentDataToOrders() {
             document.getElementById('expenseDateFilter').value = '';
             document.getElementById('expensePaymentFilter').value = '';
             document.getElementById('expenseSearch').value = '';
+            document.getElementById('expensePaymentDateFilter').value = '';
             renderExpenseList();
         }
 
