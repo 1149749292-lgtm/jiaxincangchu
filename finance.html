@@ -2865,8 +2865,10 @@
             document.getElementById('todayIncome').textContent = `¥${todayIncome.toFixed(0)}`;
             document.getElementById('todayExpense').textContent = `¥${totalTodayExpense.toFixed(0)}`;
 
-            const totalReceivable = data.customers.reduce((sum, c) => sum + (c.balance || 0), 0);
-            const totalPayable = data.suppliers.reduce((sum, s) => sum + (s.balance || 0), 0);
+            // 从销售订单实时计算客户欠款（与对账单一致）
+            const totalReceivable = (data.salesOrders || []).reduce((sum, o) => sum + (o.remainingAmount || 0), 0);
+            // 从采购订单实时计算供应商欠款
+            const totalPayable = (data.purchaseOrders || []).reduce((sum, o) => sum + (o.remainingAmount || 0), 0);
 
             document.getElementById('totalReceivable').textContent = `¥${totalReceivable.toFixed(0)}`;
             document.getElementById('totalPayable').textContent = `¥${totalPayable.toFixed(0)}`;
@@ -4185,15 +4187,26 @@
                 }
             });
 
+            // 先统计订单金额
             data.salesOrders.forEach(order => {
                 const customer = data.customers.find(c => c.id === order.customerId);
                 if (customer && customerMap.has(customer.name)) {
                     const c = customerMap.get(customer.name);
                     c.totalAmount += order.totalAmount || 0;
-                    c.paidAmount += order.paidAmount || 0;
-                    c.remainingAmount += order.remainingAmount || 0;
                     c.orderCount += 1;
                 }
+            });
+
+            // 从收付款流水实时计算已付金额（与对账单保持一致）
+            customerMap.forEach(c => {
+                const allCustomerIds = data.customers
+                    .filter(cust => cust.name === c.name)
+                    .map(cust => cust.id);
+                const totalPayments = data.transactions
+                    .filter(t => allCustomerIds.includes(t.partyId) && t.type === 'income' && !t.isExpensePayment)
+                    .reduce((sum, t) => sum + (t.amount || 0), 0);
+                c.paidAmount = totalPayments;
+                c.remainingAmount = c.totalAmount - totalPayments;
             });
 
             const uniqueCustomers = Array.from(customerMap.values());
@@ -4259,15 +4272,26 @@
                 }
             });
 
+            // 先统计订单金额
             data.purchaseOrders.forEach(order => {
                 const supplier = data.suppliers.find(s => s.id === order.supplierId);
                 if (supplier && supplierMap.has(supplier.name)) {
                     const s = supplierMap.get(supplier.name);
                     s.totalAmount += order.totalAmount || 0;
-                    s.paidAmount += order.paidAmount || 0;
-                    s.remainingAmount += order.remainingAmount || 0;
                     s.orderCount += 1;
                 }
+            });
+
+            // 从收付款流水实时计算已付金额（与对账单保持一致）
+            supplierMap.forEach(s => {
+                const allSupplierIds = data.suppliers
+                    .filter(sup => sup.name === s.name)
+                    .map(sup => sup.id);
+                const totalPayments = data.transactions
+                    .filter(t => allSupplierIds.includes(t.partyId) && t.type === 'expense' && !t.isExpensePayment)
+                    .reduce((sum, t) => sum + (t.amount || 0), 0);
+                s.paidAmount = totalPayments;
+                s.remainingAmount = s.totalAmount - totalPayments;
             });
 
             const uniqueSuppliers = Array.from(supplierMap.values());
