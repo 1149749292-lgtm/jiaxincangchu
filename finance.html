@@ -22,6 +22,7 @@
         .status-paid { background: #d1fae5; color: #065f46; }
         .status-cancelled { background: #fee2e2; color: #991b1b; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
+        #salesReceiptModal { z-index: 2000; }
         .modal.active { display: flex; align-items: center; justify-content: center; }
         .modal-content { background: white; border-radius: 16px; max-width: 900px; width: 90%; max-height: 90vh; overflow-y: auto; }
 
@@ -162,7 +163,7 @@
         }
 
         /* 销售清单样式 */
-        .sales-list-wrapper { background: white; width: 1100px; margin: 0 auto; padding: 0; font-family: "SimSun", "宋体", serif; color: #000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); font-size: 13px; }
+        .sales-list-wrapper { background: white; width: 1100px; min-width: 1100px; margin: 0 auto; padding: 0; font-family: "SimSun", "宋体", serif; color: #000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); font-size: 13px; display: inline-block; text-align: left; }
         .sales-list-main-title { text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 12px; padding: 25px 0 20px 0; margin: 0 30px; border-bottom: 2px solid #000; }
         .sales-list-info-section { display: flex; justify-content: space-between; padding: 15px 30px; font-size: 13px; line-height: 1.8; }
         .sales-list-info-left { display: flex; flex-direction: column; flex: 1; }
@@ -203,9 +204,8 @@
             overflow-x: auto; 
             max-height: 70vh; 
             overflow-y: auto;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
+            -webkit-overflow-scrolling: touch;
+            text-align: center;
         }
         .btn-download { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 12px 24px; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; }
         .btn-close-modal { background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); color: #475569; border: none; padding: 12px 24px; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; }
@@ -4215,7 +4215,8 @@
                         totalAmount: 0,
                         paidAmount: 0,
                         remainingAmount: 0,
-                        orderCount: 0
+                        orderCount: 0,
+                        orders: []
                     });
                 }
             });
@@ -4227,6 +4228,7 @@
                     const c = customerMap.get(customer.name);
                     c.totalAmount += order.totalAmount || 0;
                     c.orderCount += 1;
+                    c.orders.push(order);
                 }
             });
 
@@ -4257,7 +4259,7 @@
                         <div class="text-sm font-medium text-gray-900">${c.name}</div>
                         ${c.phone ? `<div class="text-xs text-gray-500">📞 ${c.phone}</div>` : ''}
                         ${c.orderCount > 0 ? `<div class="text-xs text-blue-600 mt-1">📋 ${c.orderCount}单</div>` : ''}
-                        ${c.orders.length > 0 ? `<div class="text-xs mt-1" style="line-height: 1.8;">${c.orders.slice(0, 5).map(o => `<span onclick="viewSalesReceiptById('${o.id}')" class="cursor-pointer hover:underline" style="color: #2563eb; background: #dbeafe; padding: 1px 4px; border-radius: 3px; margin-right: 4px; font-size: 11px;">${o.docNumber || o.id.slice(-6)}</span>`).join('')}${c.orders.length > 5 ? `<span class="text-xs text-gray-400">+${c.orders.length - 5}</span>` : ''}</div>` : ''}
+
                     </td>
                     <td class="px-4 py-3">
                         ${c.totalAmount > 0 ? `
@@ -5471,7 +5473,7 @@ function renderTransactionList() {
                     <tr style="border-bottom: 1px solid #e5e7eb;">
                         <td style="padding: 12px 8px; text-align: center; color: #6b7280; font-size: 13px;">${index + 1}</td>
                         <td style="padding: 12px 8px; text-align: center; color: #111827; font-size: 13px; font-weight: 500;">${order.date}</td>
-                        <td style="padding: 12px 8px; text-align: center; color: #6b7280; font-size: 13px;">NO.${order.docNumber || order.id.slice(-6)}</td>
+                        <td style="padding: 12px 8px; text-align: center; font-size: 13px;"><span onclick="viewSalesReceiptById('${order.id}')" class="cursor-pointer hover:underline" style="color: #2563eb; background: #dbeafe; padding: 2px 6px; border-radius: 4px; font-weight: 500;">${order.docNumber || order.id.slice(-6)}</span></td>
                         <td style="padding: 12px 8px; text-align: center; color: #111827; font-size: 13px; font-weight: 600;">${order.totalQty || 0}件</td>
                         <td style="padding: 12px 8px; text-align: right; color: #dc2626; font-size: 13px; font-weight: 600;">¥${order.totalAmount.toFixed(2)}</td>
                     </tr>
@@ -6682,6 +6684,10 @@ function syncPaymentDataToOrders() {
             data.transactions = data.transactions.filter(t => 
                 !(t.isExpensePayment && t.partyId === expenseId)
             );
+            // 同步删除 expensePayments 中的关联记录
+            if (data.expensePayments) {
+                data.expensePayments = data.expensePayments.filter(p => p.expenseId !== expenseId);
+            }
 
             data.expenses = data.expenses.filter(e => e.id !== expenseId);
 
@@ -7159,15 +7165,24 @@ function syncPaymentDataToOrders() {
             const totalIncome = (data.transactions || []).filter(t => t.type === 'income' && !t.isExpensePayment).reduce((sum, t) => sum + (t.amount || 0), 0);
             // 供应商付款（收付款板块）
             const totalSupplierPayment = (data.transactions || []).filter(t => t.type === 'expense' && !t.isExpensePayment).reduce((sum, t) => sum + (t.amount || 0), 0);
-            // 费用支出（包含费用登记已付金额 + 付款流水）
-            const expensePaidFromRegistration = (data.expenses || []).reduce((sum, e) => sum + (e.paidAmount || 0), 0);
+            // 费用支出：付款流水 + 没有付款流水的费用登记已付金额（避免重复）
+            const expensesWithPayments = new Set();
+            (data.expensePayments || []).forEach(p => {
+                if (p.expenseId) expensesWithPayments.add(p.expenseId);
+            });
+            const expensePaidFromRegistration = (data.expenses || []).reduce((sum, e) => {
+                // 只累加没有付款流水的费用登记已付金额
+                return sum + ((e.paidAmount || 0) > 0 && !expensesWithPayments.has(e.id) ? e.paidAmount : 0);
+            }, 0);
             const expensePaidFromPayments = (data.expensePayments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
             const totalExpensePayment = expensePaidFromRegistration + expensePaidFromPayments;
 
             // 收集费用支出明细用于展示
             const expenseDetails = [];
+            // 复用上面已经创建的 expensesWithPayments，避免重复声明
+            // 只显示没有付款流水的费用登记已付金额（有付款流水的在下方详细显示）
             (data.expenses || []).forEach(e => {
-                if (e.paidAmount > 0) {
+                if (e.paidAmount > 0 && !expensesWithPayments.has(e.id)) {
                     expenseDetails.push({
                         date: e.date,
                         type: (EXPENSE_TYPES[e.type] || { name: e.type }).name,
@@ -7177,14 +7192,18 @@ function syncPaymentDataToOrders() {
                     });
                 }
             });
+            // 显示所有付款流水（关联费用必须仍然存在）
             (data.expensePayments || []).forEach(p => {
-                expenseDetails.push({
-                    date: p.date,
-                    type: (EXPENSE_TYPES[p.expenseType] || { name: p.expenseType }).name,
-                    amount: p.amount,
-                    source: '付款流水',
-                    remark: p.remark || (p.paymentMethod ? `支付方式: ${p.paymentMethod}` : '')
-                });
+                const parentExpense = (data.expenses || []).find(e => e.id === p.expenseId);
+                if (parentExpense) {
+                    expenseDetails.push({
+                        date: p.date,
+                        type: (EXPENSE_TYPES[p.expenseType] || { name: p.expenseType }).name,
+                        amount: p.amount,
+                        source: '付款流水',
+                        remark: p.remark || (p.paymentMethod ? `支付方式: ${p.paymentMethod}` : '')
+                    });
+                }
             });
             expenseDetails.sort((a, b) => new Date(b.date) - new Date(a.date));
 
