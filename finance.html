@@ -1745,14 +1745,23 @@
                     </button>
                 </div>
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-                    <div class="p-4 border-b border-gray-200 flex space-x-4">
-                        <input type="text" id="purchaseSearch" placeholder="搜索单号/供应商..." class="px-4 py-2 border rounded-lg flex-1" onkeyup="renderPurchaseList()">
+                    <div class="p-4 border-b border-gray-200 flex flex-wrap gap-4">
+                        <input type="text" id="purchaseSearch" placeholder="搜索单号/供应商..." class="px-4 py-2 border rounded-lg flex-1 min-w-[150px]" onkeyup="renderPurchaseList()">
                         <select id="purchaseStatusFilter" class="px-2 py-2 border rounded-lg text-sm" onchange="renderPurchaseList()">
                             <option value="">全部</option>
                             <option value="pending">待付</option>
                             <option value="partial">部分</option>
                             <option value="paid">已付</option>
                         </select>
+                        <div class="flex items-center gap-2">
+                            <label class="text-sm text-gray-600">日期:</label>
+                            <input type="date" id="purchaseStartDate" class="px-2 py-2 border rounded-lg text-sm" onchange="renderPurchaseList()">
+                            <span class="text-gray-400">~</span>
+                            <input type="date" id="purchaseEndDate" class="px-2 py-2 border rounded-lg text-sm" onchange="renderPurchaseList()">
+                        </div>
+                        <button onclick="resetPurchaseFilters()" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
+                            重置筛选
+                        </button>
                     </div>
                     <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                     <table class="w-full" style="min-width: 800px;">
@@ -1793,7 +1802,15 @@
                         <select id="salesCustomerFilter" class="px-4 py-2 border rounded-lg" onchange="renderSalesList()">
                             <option value="">全部客户</option>
                         </select>
-                        <input type="date" id="salesDateFilter" class="px-4 py-2 border rounded-lg" onchange="renderSalesList()">
+                        <div class="flex items-center gap-2">
+                            <label class="text-sm text-gray-600">日期:</label>
+                            <input type="date" id="salesStartDate" class="px-3 py-2 border rounded-lg text-sm" onchange="renderSalesList()">
+                            <span class="text-gray-400">~</span>
+                            <input type="date" id="salesEndDate" class="px-3 py-2 border rounded-lg text-sm" onchange="renderSalesList()">
+                        </div>
+                        <button onclick="resetSalesFilters()" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
+                            重置筛选
+                        </button>
                     </div>
                     <table class="w-full">
                         <thead class="bg-gray-50">
@@ -2089,8 +2106,10 @@
                         <input type="text" id="expenseSearch" placeholder="搜索报销人、用途..." class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none w-full" onkeyup="renderExpenseList()">
                     </div>
                     <div class="flex items-center gap-2">
-                        <label class="text-sm font-medium text-gray-600">日期：</label>
-                        <input type="date" id="expenseDateFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none" onchange="renderExpenseList()">
+                        <label class="text-sm font-medium text-gray-600">日期区间：</label>
+                        <input type="date" id="expenseStartDate" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none" onchange="renderExpenseList()">
+                        <span class="text-gray-400">~</span>
+                        <input type="date" id="expenseEndDate" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none" onchange="renderExpenseList()">
                     </div>
                     <div class="flex items-center gap-2">
                         <label class="text-sm font-medium text-gray-600">支付时间：</label>
@@ -4127,10 +4146,14 @@
         function renderPurchaseList() {
             const search = document.getElementById('purchaseSearch').value.toLowerCase();
             const statusFilter = document.getElementById('purchaseStatusFilter').value;
+            const startDate = document.getElementById('purchaseStartDate').value;
+            const endDate = document.getElementById('purchaseEndDate').value;
 
             let orders = data.purchaseOrders;
             if (search) orders = orders.filter(o => o.id.toLowerCase().includes(search) || o.supplierName.toLowerCase().includes(search));
             if (statusFilter) orders = orders.filter(o => o.paymentStatus === statusFilter);
+            if (startDate) orders = orders.filter(o => o.date >= startDate);
+            if (endDate) orders = orders.filter(o => o.date <= endDate);
 
             if (purchaseSortConfig.column) {
                 orders.sort((a, b) => {
@@ -4732,12 +4755,14 @@
         function renderSalesList() {
             const search = document.getElementById('salesSearch').value.toLowerCase();
             const customerFilter = document.getElementById('salesCustomerFilter').value;
-            const dateFilter = document.getElementById('salesDateFilter').value;
+            const startDate = document.getElementById('salesStartDate').value;
+            const endDate = document.getElementById('salesEndDate').value;
 
             let orders = [...data.salesOrders]; // 创建副本以便排序
             if (search) orders = orders.filter(o => o.id.toLowerCase().includes(search) || o.customerName.toLowerCase().includes(search));
             if (customerFilter) orders = orders.filter(o => o.customerId === customerFilter);
-            if (dateFilter) orders = orders.filter(o => o.date === dateFilter);
+            if (startDate) orders = orders.filter(o => o.date >= startDate);
+            if (endDate) orders = orders.filter(o => o.date <= endDate);
 
             // 应用排序
             if (salesSortConfig.column) {
@@ -6998,7 +7023,8 @@ function syncPaymentDataToOrders() {
 
         function renderExpenseList() {
             const typeFilter = document.getElementById('expenseTypeFilter').value;
-            const dateFilter = document.getElementById('expenseDateFilter').value;
+            const startDate = document.getElementById('expenseStartDate').value;
+            const endDate = document.getElementById('expenseEndDate').value;
             const paymentFilter = document.getElementById('expensePaymentFilter').value;
             const searchKeyword = document.getElementById('expenseSearch').value.toLowerCase().trim();
             const paymentDateFilter = document.getElementById('expensePaymentDateFilter').value;
@@ -7012,8 +7038,11 @@ function syncPaymentDataToOrders() {
             if (typeFilter) {
                 expenses = expenses.filter(e => e.type === typeFilter);
             }
-            if (dateFilter) {
-                expenses = expenses.filter(e => e.date === dateFilter);
+            if (startDate) {
+                expenses = expenses.filter(e => e.date >= startDate);
+            }
+            if (endDate) {
+                expenses = expenses.filter(e => e.date <= endDate);
             }
             // 支付状态筛选
             if (paymentFilter) {
@@ -7042,8 +7071,11 @@ function syncPaymentDataToOrders() {
             if (typeFilter) {
                 filteredPayments = filteredPayments.filter(p => p.expenseType === typeFilter);
             }
-            if (dateFilter) {
-                filteredPayments = filteredPayments.filter(p => p.date === dateFilter);
+            if (startDate) {
+                filteredPayments = filteredPayments.filter(p => p.date >= startDate);
+            }
+            if (endDate) {
+                filteredPayments = filteredPayments.filter(p => p.date <= endDate);
             }
             // 支付状态筛选：只根据费用登记记录的状态筛选
             // 已支付 = paidAmount >= totalAmount, 未支付 = paidAmount <= 0, 部分支付 = 其他
@@ -7524,9 +7556,26 @@ function syncPaymentDataToOrders() {
         }
         
 
+        function resetPurchaseFilters() {
+            document.getElementById('purchaseSearch').value = '';
+            document.getElementById('purchaseStatusFilter').value = '';
+            document.getElementById('purchaseStartDate').value = '';
+            document.getElementById('purchaseEndDate').value = '';
+            renderPurchaseList();
+        }
+
+        function resetSalesFilters() {
+            document.getElementById('salesSearch').value = '';
+            document.getElementById('salesCustomerFilter').value = '';
+            document.getElementById('salesStartDate').value = '';
+            document.getElementById('salesEndDate').value = '';
+            renderSalesList();
+        }
+
         function resetExpenseFilters() {
             document.getElementById('expenseTypeFilter').value = '';
-            document.getElementById('expenseDateFilter').value = '';
+            document.getElementById('expenseStartDate').value = '';
+            document.getElementById('expenseEndDate').value = '';
             document.getElementById('expensePaymentFilter').value = '';
             document.getElementById('expenseSearch').value = '';
             document.getElementById('expensePaymentDateFilter').value = '';
