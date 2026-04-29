@@ -376,6 +376,17 @@
                 padding-left: 8px !important;
                 padding-right: 8px !important;
             }
+            /* 销售清单预览手机端 - 保持原宽度1100px，支持左右拖拽 */
+            #salesReceiptModal .preview-modal-body {
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+                text-align: left !important;
+                padding: 10px !important;
+            }
+            #salesReceiptModal .preview-modal-content {
+                max-width: 100vw !important;
+                width: 100% !important;
+            }
         }
 
         /* 导航栏响应式 */
@@ -704,7 +715,8 @@
         }
 
         /* 销售单产品网格响应式 */
-                /* ==================== 对账单/预览模态框手机端适配 ==================== */
+        
+        /* ==================== 对账单/预览模态框手机端适配 ==================== */
         @media (max-width: 640px) {
             .preview-modal-content {
                 width: 100% !important;
@@ -829,7 +841,6 @@
             .statement-summary-card > div:last-child {
                 font-size: 18px !important;
             }
-
             /* 对账单表格手机端 */
             #customerStatementContent table,
             #supplierStatementContent table {
@@ -852,21 +863,6 @@
             #supplierStatementContent > div > table {
                 min-width: 500px;
             }
-
-            /* 剩余未支付金额 */
-            #customerStatementContent > div:last-child,
-            #supplierStatementContent > div:last-child {
-                padding: 12px !important;
-            }
-            #customerStatementContent > div:last-child > div:first-child,
-            #supplierStatementContent > div:last-child > div:first-child {
-                font-size: 13px !important;
-            }
-            #customerStatementContent > div:last-child > div:last-child,
-            #supplierStatementContent > div:last-child > div:last-child {
-                font-size: 22px !important;
-            }
-
             /* 图片预览手机端 */
             .image-viewer-container {
                 padding: 8px !important;
@@ -880,53 +876,6 @@
             .image-preview-item {
                 width: 70px !important;
                 height: 70px !important;
-            }
-
-            /* 销售清单手机端 */
-            .sales-list-wrapper {
-                width: 100% !important;
-                min-width: unset !important;
-                padding: 0 10px !important;
-            }
-            .sales-list-main-title {
-                font-size: 20px !important;
-                letter-spacing: 4px !important;
-                padding: 15px 0 !important;
-                margin: 0 10px !important;
-            }
-            .sales-list-info-section {
-                padding: 10px !important;
-                font-size: 12px !important;
-                flex-direction: column !important;
-            }
-            .sales-list-info-right {
-                padding-left: 0 !important;
-                margin-top: 8px;
-            }
-            .sales-list-main-table {
-                width: calc(100% - 20px) !important;
-                margin: 0 10px !important;
-                font-size: 11px !important;
-            }
-            .sales-list-main-table th,
-            .sales-list-main-table td {
-                padding: 4px 2px !important;
-                height: 24px !important;
-                font-size: 11px !important;
-            }
-            .sales-list-bottom-section {
-                width: calc(100% - 20px) !important;
-                margin: 0 10px 15px 10px !important;
-                flex-direction: column !important;
-            }
-            .sales-list-payment-area {
-                width: 100% !important;
-                border-right: none !important;
-                border-bottom: 1.5px solid #333 !important;
-            }
-            .sales-list-total-row td,
-            .sales-list-chinese-row td {
-                padding: 6px 2px !important;
             }
         }
 
@@ -990,7 +939,8 @@
             font-size: 14px;
         }
         @media (max-width: 640px) {
-                    /* ==================== 对账单/预览模态框手机端适配 ==================== */
+            
+        /* ==================== 对账单/预览模态框手机端适配 ==================== */
         @media (max-width: 640px) {
             .preview-modal-content {
                 width: 100% !important;
@@ -1115,7 +1065,6 @@
             .statement-summary-card > div:last-child {
                 font-size: 18px !important;
             }
-
             /* 对账单表格手机端 */
             #customerStatementContent table,
             #supplierStatementContent table {
@@ -1138,21 +1087,6 @@
             #supplierStatementContent > div > table {
                 min-width: 500px;
             }
-
-            /* 剩余未支付金额 */
-            #customerStatementContent > div:last-child,
-            #supplierStatementContent > div:last-child {
-                padding: 12px !important;
-            }
-            #customerStatementContent > div:last-child > div:first-child,
-            #supplierStatementContent > div:last-child > div:first-child {
-                font-size: 13px !important;
-            }
-            #customerStatementContent > div:last-child > div:last-child,
-            #supplierStatementContent > div:last-child > div:last-child {
-                font-size: 22px !important;
-            }
-
             /* 图片预览手机端 */
             .image-viewer-container {
                 padding: 8px !important;
@@ -1166,53 +1100,6 @@
             .image-preview-item {
                 width: 70px !important;
                 height: 70px !important;
-            }
-
-            /* 销售清单手机端 */
-            .sales-list-wrapper {
-                width: 100% !important;
-                min-width: unset !important;
-                padding: 0 10px !important;
-            }
-            .sales-list-main-title {
-                font-size: 20px !important;
-                letter-spacing: 4px !important;
-                padding: 15px 0 !important;
-                margin: 0 10px !important;
-            }
-            .sales-list-info-section {
-                padding: 10px !important;
-                font-size: 12px !important;
-                flex-direction: column !important;
-            }
-            .sales-list-info-right {
-                padding-left: 0 !important;
-                margin-top: 8px;
-            }
-            .sales-list-main-table {
-                width: calc(100% - 20px) !important;
-                margin: 0 10px !important;
-                font-size: 11px !important;
-            }
-            .sales-list-main-table th,
-            .sales-list-main-table td {
-                padding: 4px 2px !important;
-                height: 24px !important;
-                font-size: 11px !important;
-            }
-            .sales-list-bottom-section {
-                width: calc(100% - 20px) !important;
-                margin: 0 10px 15px 10px !important;
-                flex-direction: column !important;
-            }
-            .sales-list-payment-area {
-                width: 100% !important;
-                border-right: none !important;
-                border-bottom: 1.5px solid #333 !important;
-            }
-            .sales-list-total-row td,
-            .sales-list-chinese-row td {
-                padding: 6px 2px !important;
             }
         }
 
@@ -1303,7 +1190,8 @@
             }
         }
         @media (max-width: 380px) {
-                    /* ==================== 对账单/预览模态框手机端适配 ==================== */
+            
+        /* ==================== 对账单/预览模态框手机端适配 ==================== */
         @media (max-width: 640px) {
             .preview-modal-content {
                 width: 100% !important;
@@ -1428,7 +1316,6 @@
             .statement-summary-card > div:last-child {
                 font-size: 18px !important;
             }
-
             /* 对账单表格手机端 */
             #customerStatementContent table,
             #supplierStatementContent table {
@@ -1451,21 +1338,6 @@
             #supplierStatementContent > div > table {
                 min-width: 500px;
             }
-
-            /* 剩余未支付金额 */
-            #customerStatementContent > div:last-child,
-            #supplierStatementContent > div:last-child {
-                padding: 12px !important;
-            }
-            #customerStatementContent > div:last-child > div:first-child,
-            #supplierStatementContent > div:last-child > div:first-child {
-                font-size: 13px !important;
-            }
-            #customerStatementContent > div:last-child > div:last-child,
-            #supplierStatementContent > div:last-child > div:last-child {
-                font-size: 22px !important;
-            }
-
             /* 图片预览手机端 */
             .image-viewer-container {
                 padding: 8px !important;
@@ -1479,53 +1351,6 @@
             .image-preview-item {
                 width: 70px !important;
                 height: 70px !important;
-            }
-
-            /* 销售清单手机端 */
-            .sales-list-wrapper {
-                width: 100% !important;
-                min-width: unset !important;
-                padding: 0 10px !important;
-            }
-            .sales-list-main-title {
-                font-size: 20px !important;
-                letter-spacing: 4px !important;
-                padding: 15px 0 !important;
-                margin: 0 10px !important;
-            }
-            .sales-list-info-section {
-                padding: 10px !important;
-                font-size: 12px !important;
-                flex-direction: column !important;
-            }
-            .sales-list-info-right {
-                padding-left: 0 !important;
-                margin-top: 8px;
-            }
-            .sales-list-main-table {
-                width: calc(100% - 20px) !important;
-                margin: 0 10px !important;
-                font-size: 11px !important;
-            }
-            .sales-list-main-table th,
-            .sales-list-main-table td {
-                padding: 4px 2px !important;
-                height: 24px !important;
-                font-size: 11px !important;
-            }
-            .sales-list-bottom-section {
-                width: calc(100% - 20px) !important;
-                margin: 0 10px 15px 10px !important;
-                flex-direction: column !important;
-            }
-            .sales-list-payment-area {
-                width: 100% !important;
-                border-right: none !important;
-                border-bottom: 1.5px solid #333 !important;
-            }
-            .sales-list-total-row td,
-            .sales-list-chinese-row td {
-                padding: 6px 2px !important;
             }
         }
 
