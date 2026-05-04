@@ -3567,8 +3567,10 @@
             document.getElementById('todayIncome').textContent = `¥${todayIncome.toFixed(0)}`;
             document.getElementById('todayExpense').textContent = `¥${totalTodayExpense.toFixed(0)}`;
 
-            // 从销售订单实时计算客户欠款（与对账单一致）
-            const totalReceivable = (data.salesOrders || []).reduce((sum, o) => sum + (o.remainingAmount || 0), 0);
+            // 从销售订单实时计算客户欠款（与客户管理同步：订单总额 - 所有收款）
+            const totalSalesAmount = (data.salesOrders || []).reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+            const totalCustomerPayments = (data.transactions || []).filter(t => t.type === 'income' && !t.isExpensePayment).reduce((sum, t) => sum + (t.amount || 0), 0);
+            const totalReceivable = Math.max(0, totalSalesAmount - totalCustomerPayments);
             // 从采购订单实时计算供应商欠款
             const totalPayable = (data.purchaseOrders || []).reduce((sum, o) => sum + (o.remainingAmount || 0), 0);
 
@@ -7916,10 +7918,10 @@ function syncPaymentDataToOrders() {
                 return Math.max(0, total - paid);
             }).reduce((sum, val) => sum + val, 0);
 
-            // 客户欠款（从销售订单实时计算）
-            const customerReceivable = (data.salesOrders || []).reduce((sum, order) => {
-                return sum + (order.remainingAmount || 0);
-            }, 0);
+            // 客户欠款（与客户管理同步：订单总额 - 所有收款）
+            const totalSalesAmount = (data.salesOrders || []).reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+            const totalCustomerPayments = (data.transactions || []).filter(t => t.type === 'income' && !t.isExpensePayment).reduce((sum, t) => sum + (t.amount || 0), 0);
+            const customerReceivable = Math.max(0, totalSalesAmount - totalCustomerPayments);
 
             // 流动资金 = 股东出资 + 客户收款 - 所有费用支出
             const liquidity = totalInvestment + totalIncome - totalSupplierPayment - totalExpensePayment;
