@@ -1409,7 +1409,137 @@
             }
         }
 
-    </style>
+    
+        /* ==================== 月度报告样式 ==================== */
+        .month-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        .month-checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+            font-weight: 500;
+            color: #374151;
+            user-select: none;
+        }
+        .month-checkbox-item:hover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        .month-checkbox-item.active {
+            border-color: #3b82f6;
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            color: #1e40af;
+        }
+        .month-checkbox-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #3b82f6;
+            cursor: pointer;
+        }
+        .month-report-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        @media (min-width: 768px) {
+            .month-report-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        @media (min-width: 1024px) {
+            .month-report-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        .month-report-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+        .month-report-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+        }
+        .month-report-card .label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        .month-report-card .value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #111827;
+        }
+        .month-report-card .value.red { color: #dc2626; }
+        .month-report-card .value.green { color: #059669; }
+        .month-report-card .value.blue { color: #2563eb; }
+        .month-report-card .value.orange { color: #ea580c; }
+        .month-report-card .sub-value {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 4px;
+        }
+        .month-report-section {
+            margin-bottom: 24px;
+        }
+        .month-report-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 12px;
+            padding-left: 8px;
+            border-left: 3px solid #3b82f6;
+        }
+        .month-report-summary {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 2px solid #0ea5e9;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 24px;
+        }
+        .month-report-summary h4 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #0369a1;
+            margin-bottom: 12px;
+        }
+        .month-report-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        @media (max-width: 640px) {
+            .month-report-summary-grid {
+                grid-template-columns: 1fr;
+            }
+            .month-report-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .month-report-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: #9ca3af;
+        }
+        .month-report-empty .icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+</style>
 </head>
 <body class="bg-gray-50 min-h-screen">
     <!-- 密码验证层 -->
@@ -1529,6 +1659,8 @@
                     <button onclick="switchTab('expenses')" id="tab-expenses" class="tab-btn py-3 px-2 rounded-lg text-center text-sm font-medium transition-all hover:bg-blue-50 bg-white text-gray-600 border border-gray-200">📋 费用管理</button>
                     <button onclick="switchTab('shareholders')" id="tab-shareholders" class="tab-btn py-3 px-2 rounded-lg text-center text-sm font-medium transition-all hover:bg-blue-50 bg-white text-gray-600 border border-gray-200">👥 股东投资</button>
                     <button onclick="switchTab('capital')" id="tab-capital" class="tab-btn py-3 px-2 rounded-lg text-center text-sm font-medium transition-all hover:bg-blue-50 bg-white text-gray-600 border border-gray-200">💰 资金概况</button>
+                    <button onclick="switchTab('monthly')" id="tab-monthly" class="tab-btn py-3 px-2 rounded-lg text-center text-sm font-medium transition-all hover:bg-blue-50 bg-white text-gray-600 border border-gray-200">📅 月度报告</button>
+
                 </nav>
             </div>
         </div>
@@ -1826,9 +1958,6 @@
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none" onclick="sortSalesList('amount')">
                                     金额 <span id="sort-sales-amount" class="sort-arrow text-gray-400"></span>
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none" onclick="sortSalesList('status')">
-                                    状态 <span id="sort-sales-status" class="sort-arrow text-gray-400"></span>
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
                             </tr>
@@ -2142,7 +2271,49 @@
                 </div>
             </div>
         
-            </main>
+            
+
+            <!-- 月度报告 -->
+            <div id="view-monthly" class="view-section hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">月度报告</h2>
+                    <div class="flex space-x-3">
+                        <button onclick="exportMonthlyReport('image')" class="inventory-jump-btn" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); border: none; cursor: pointer;">
+                            <span class="btn-icon">📷</span>
+                            <span class="btn-text">导出图片</span>
+                        </button>
+                        <button onclick="exportMonthlyReport('excel')" class="inventory-jump-btn" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; cursor: pointer;">
+                            <span class="btn-icon">📊</span>
+                            <span class="btn-text">导出Excel</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 月份选择器 -->
+                <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-gray-800">📅 选择月份（可多选）</h3>
+                        <div class="flex gap-2">
+                            <button onclick="selectAllMonths()" class="px-3 py-1.5 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 font-medium">全选</button>
+                            <button onclick="clearMonthSelection()" class="px-3 py-1.5 text-sm bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 font-medium">清空</button>
+                        </div>
+                    </div>
+                    <div id="monthSelector" class="month-selector">
+                        <!-- 月份选项动态生成 -->
+                    </div>
+                    <div id="selectedMonthLabel" class="text-sm text-gray-500 mt-2"></div>
+                </div>
+
+                <!-- 报告内容区域 -->
+                <div id="monthlyReportContent">
+                    <div class="month-report-empty">
+                        <div class="icon">📅</div>
+                        <p>请选择月份以生成月度报告</p>
+                    </div>
+                </div>
+            </div>
+
+</main>
     </div>
 
     <!-- 采购单录入模态框 -->
@@ -2955,6 +3126,9 @@
             }
 
             initPurchaseTable();
+            // 初始化月度报告
+            initMonthSelector();
+            renderMonthlyReport();
             // 初始化费用类别（加载自定义类别）
             initExpenseTypes();
             // 更新费用类别下拉框
@@ -3010,6 +3184,7 @@
                     break;
                 case 'shareholders': renderShareholderList(); break;
                 case 'capital': updateCapitalOverview(); break;
+                case 'monthly': renderMonthlyReport(); break;
             }
         }
 
@@ -4810,17 +4985,13 @@
 
             const tbody = document.getElementById('salesList');
             let html = orders.map(order => {
-                const statusText = { unpaid: '未收款', paid: '已收款', partial: '部分收款' }[order.paymentStatus];
-                const statusClass = { unpaid: 'status-pending', paid: 'status-paid', partial: 'status-partial' }[order.paymentStatus];
                 return `<tr>
                     <td class="px-6 py-4 text-sm font-medium cursor-pointer text-blue-600 hover:text-blue-800 hover:underline" onclick="openEditSalesModal('${order.id}')" title="点击编辑">${(order.docNumber || order.id.slice(-6))}</td>
                     <td class="px-6 py-4 text-sm text-gray-500">${order.date}</td>
                     <td class="px-6 py-4 text-sm">${order.customerName}</td>
                     <td class="px-6 py-4 text-sm font-medium">¥${order.totalAmount.toFixed(2)}</td>
-                    <td class="px-6 py-4"><span class="status-badge ${statusClass}">${statusText}</span></td>
                     <td class="px-6 py-4 text-sm space-x-1">
                         <button onclick="viewSalesReceiptById('${order.id}')" class="text-blue-600 hover:underline">查看</button>
-                        ${order.paymentStatus !== 'paid' ? `<button onclick="addSalesPayment('${order.id}')" class="text-green-600 hover:underline">收款</button>` : ''}
                         <button onclick="showDeleteConfirm('sales', '${order.id}')" class="text-red-600 hover:underline">删除</button>
                     </td>
                 </tr>`;
@@ -4828,12 +4999,9 @@
 
             if (orders.length > 0) {
                 html += `<tr style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-top: 2px solid #f59e0b;">
-                    <td class="px-6 py-4 text-sm font-bold text-amber-800" colspan="3">合计（${orders.length}单）</td>
+                    <td class="px-6 py-4 text-sm font-bold text-amber-800" colspan="2">合计（${orders.length}单）</td>
                     <td class="px-6 py-4 text-sm font-bold text-amber-900">¥${totalAmount.toFixed(2)}</td>
-                    <td class="px-6 py-4 text-sm" colspan="2">
-                        <span class="text-green-700 font-medium">已收: ¥${totalPaid.toFixed(2)}</span> | 
-                        <span class="text-red-700 font-medium">未收: ¥${totalUnpaid.toFixed(2)}</span>
-                    </td>
+                    <td class="px-6 py-4" colspan="2"></td>
                 </tr>`;
             }
 
@@ -6907,7 +7075,7 @@ function syncPaymentDataToOrders() {
                     id: 'EXPPAY' + Date.now() + '_' + paidCount,
                     expenseId: expenseInfo.id,
                     expenseType: expenseRecord ? expenseRecord.type : '',
-                    date: expenseRecord ? expenseRecord.date : date,
+                    date: date,
                     amount: alloc,
                     paymentMethod: paymentMethod,
                     remark: remark,
@@ -6974,18 +7142,11 @@ function syncPaymentDataToOrders() {
                 stats[key] = { total: 0, paid: 0, unpaid: 0 };
             });
 
-            // 统计登记的总费用和已付金额（从expenses读取）
+            // 统计费用：直接用 paidAmount（付款登记已同步更新，无需再加流水）
             expenses.forEach(expense => {
                 if (stats[expense.type]) {
                     stats[expense.type].total += expense.totalAmount || 0;
-                    stats[expense.type].paid += expense.paidAmount || 0;  // 加上费用登记时填写的已付金额
-                }
-            });
-
-            // 再加上付款流水中的金额（付款登记）
-            expensePayments.forEach(payment => {
-                if (stats[payment.expenseType]) {
-                    stats[payment.expenseType].paid += payment.amount || 0;
+                    stats[expense.type].paid += expense.paidAmount || 0;
                 }
             });
 
@@ -7866,17 +8027,16 @@ function syncPaymentDataToOrders() {
             const totalIncome = (data.transactions || []).filter(t => t.type === 'income' && !t.isExpensePayment).reduce((sum, t) => sum + (t.amount || 0), 0);
             // 供应商付款（收付款板块）
             const totalSupplierPayment = (data.transactions || []).filter(t => t.type === 'expense' && !t.isExpensePayment).reduce((sum, t) => sum + (t.amount || 0), 0);
-            // 费用支出：付款流水 + 没有付款流水的费用登记已付金额（避免重复）
-            const expensesWithPayments = new Set();
-            (data.expensePayments || []).forEach(p => {
-                if (p.expenseId) expensesWithPayments.add(p.expenseId);
-            });
+            // 费用支出：直接用 expense.paidAmount（付款登记已同步更新）
+            const totalExpensePayment = (data.expenses || []).reduce((sum, e) => sum + (e.paidAmount || 0), 0);
+
+            // 获取费用付款记录，用于明细展示
+            const expensePayments = data.expensePayments || [];
+            const expensesWithPayments = new Set(expensePayments.map(p => p.expenseId).filter(Boolean));
             const expensePaidFromRegistration = (data.expenses || []).reduce((sum, e) => {
-                // 只累加没有付款流水的费用登记已付金额
-                return sum + ((e.paidAmount || 0) > 0 && !expensesWithPayments.has(e.id) ? e.paidAmount : 0);
+                return sum + (expensesWithPayments.has(e.id) ? 0 : (e.paidAmount || 0));
             }, 0);
-            const expensePaidFromPayments = (data.expensePayments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
-            const totalExpensePayment = expensePaidFromRegistration + expensePaidFromPayments;
+            const expensePaidFromPayments = expensePayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
             // 收集费用支出明细用于展示
             const expenseDetails = [];
@@ -8360,6 +8520,739 @@ function syncPaymentDataToOrders() {
                 }
             }, 5000);
         });
+
+
+        // ==================== 月度报告功能 ====================
+        let selectedMonths = [];
+
+        function initMonthSelector() {
+            const selector = document.getElementById('monthSelector');
+            if (!selector) return;
+
+            // 收集所有有数据的年月
+            const monthSet = new Set();
+
+            // 从销售订单
+            (data.salesOrders || []).forEach(o => {
+                if (o.date) monthSet.add(o.date.slice(0, 7));
+            });
+            // 从采购订单
+            (data.purchaseOrders || []).forEach(o => {
+                if (o.date) monthSet.add(o.date.slice(0, 7));
+            });
+            // 从费用
+            (data.expenses || []).forEach(e => {
+                if (e.date) monthSet.add(e.date.slice(0, 7));
+            });
+            // 从交易
+            (data.transactions || []).forEach(t => {
+                if (t.date) monthSet.add(t.date.slice(0, 7));
+            });
+
+            const months = Array.from(monthSet).sort().reverse();
+
+            if (months.length === 0) {
+                selector.innerHTML = '<span class="text-gray-400 text-sm">暂无数据</span>';
+                return;
+            }
+
+            selector.innerHTML = months.map(m => {
+                const [year, month] = m.split('-');
+                const label = `${year}年${parseInt(month)}月`;
+                const isSelected = selectedMonths.includes(m);
+                return `
+                    <label class="month-checkbox-item ${isSelected ? 'active' : ''}" data-month="${m}">
+                        <input type="checkbox" value="${m}" ${isSelected ? 'checked' : ''} onchange="toggleMonth('${m}')">
+                        <span>${label}</span>
+                    </label>
+                `;
+            }).join('');
+
+            updateSelectedMonthLabel();
+        }
+
+        function toggleMonth(month) {
+            const idx = selectedMonths.indexOf(month);
+            if (idx > -1) {
+                selectedMonths.splice(idx, 1);
+            } else {
+                selectedMonths.push(month);
+            }
+            selectedMonths.sort();
+
+            // 更新UI样式
+            document.querySelectorAll('.month-checkbox-item').forEach(el => {
+                const cb = el.querySelector('input[type="checkbox"]');
+                if (cb && cb.value === month) {
+                    el.classList.toggle('active', cb.checked);
+                }
+            });
+
+            updateSelectedMonthLabel();
+            if (selectedMonths.length > 0) {
+                renderMonthlyReport();
+            } else {
+                document.getElementById('monthlyReportContent').innerHTML = `
+                    <div class="month-report-empty">
+                        <div class="icon">📅</div>
+                        <p>请选择月份以生成月度报告</p>
+                    </div>
+                `;
+            }
+        }
+
+        function selectAllMonths() {
+            const checkboxes = document.querySelectorAll('#monthSelector input[type="checkbox"]');
+            selectedMonths = [];
+            checkboxes.forEach(cb => {
+                cb.checked = true;
+                selectedMonths.push(cb.value);
+            });
+            selectedMonths.sort();
+            document.querySelectorAll('.month-checkbox-item').forEach(el => el.classList.add('active'));
+            updateSelectedMonthLabel();
+            renderMonthlyReport();
+        }
+
+        function clearMonthSelection() {
+            selectedMonths = [];
+            document.querySelectorAll('#monthSelector input[type="checkbox"]').forEach(cb => cb.checked = false);
+            document.querySelectorAll('.month-checkbox-item').forEach(el => el.classList.remove('active'));
+            updateSelectedMonthLabel();
+            document.getElementById('monthlyReportContent').innerHTML = `
+                <div class="month-report-empty">
+                    <div class="icon">📅</div>
+                    <p>请选择月份以生成月度报告</p>
+                </div>
+            `;
+        }
+
+        function updateSelectedMonthLabel() {
+            const label = document.getElementById('selectedMonthLabel');
+            if (selectedMonths.length === 0) {
+                label.textContent = '';
+            } else {
+                const text = selectedMonths.map(m => {
+                    const [y, mo] = m.split('-');
+                    return `${y}年${parseInt(mo)}月`;
+                }).join('、');
+                label.textContent = `已选择：${text}（共${selectedMonths.length}个月）`;
+            }
+        }
+
+        function renderMonthlyReport() {
+            if (selectedMonths.length === 0) return;
+
+            const report = calculateMonthlyReport(selectedMonths);
+            const container = document.getElementById('monthlyReportContent');
+
+            container.innerHTML = `
+                <div id="monthlyReportWrapper">
+                    <!-- 基础信息 -->
+                    <div class="month-report-section">
+                        <div class="month-report-section-title">🏢 基础资金</div>
+                        <div class="month-report-grid">
+                            <div class="month-report-card">
+                                <div class="label">公司初始资金（股东投资）</div>
+                                <div class="value blue">¥${report.initialCapital.toFixed(2)}</div>
+                                <div class="sub-value">累计总投资额</div>
+                            </div>
+                            <div class="month-report-card">
+                                <div class="label">帐上现金结余</div>
+                                <div class="value ${report.cashBalance >= 0 ? 'green' : 'red'}">¥${report.cashBalance.toFixed(2)}</div>
+                                <div class="sub-value">投资+回款-支出</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 销售数据 -->
+                    <div class="month-report-section">
+                        <div class="month-report-section-title">📤 销售数据</div>
+                        <div class="month-report-grid">
+                            <div class="month-report-card">
+                                <div class="label">销售总额</div>
+                                <div class="value blue">¥${report.salesTotal.toFixed(2)}</div>
+                                <div class="sub-value">${report.salesOrderCount}笔订单</div>
+                            </div>
+                            <div class="month-report-card">
+                                <div class="label">已回款金额</div>
+                                <div class="value green">¥${report.salesReceived.toFixed(2)}</div>
+                                <div class="sub-value">${report.salesReceivedCount}笔收款</div>
+                            </div>
+                            <div class="month-report-card">
+                                <div class="label">客户欠款</div>
+                                <div class="value red">¥${report.customerDebt.toFixed(2)}</div>
+                                <div class="sub-value">未收余额</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 采购/原料数据 -->
+                    <div class="month-report-section">
+                        <div class="month-report-section-title">📥 原料采购</div>
+                        <div class="month-report-grid">
+                            <div class="month-report-card">
+                                <div class="label">收原料总金额</div>
+                                <div class="value orange">¥${report.purchaseTotal.toFixed(2)}</div>
+                                <div class="sub-value">${report.purchaseOrderCount}笔采购</div>
+                            </div>
+                            <div class="month-report-card">
+                                <div class="label">已付原料金额</div>
+                                <div class="value green">¥${report.purchasePaid.toFixed(2)}</div>
+                                <div class="sub-value">供应商付款</div>
+                            </div>
+                            <div class="month-report-card">
+                                <div class="label">未付原料金额</div>
+                                <div class="value red">¥${report.purchaseUnpaid.toFixed(2)}</div>
+                                <div class="sub-value">待付余额</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 费用数据 -->
+                    <div class="month-report-section">
+                        <div class="month-report-section-title">📋 费用支出</div>
+                        <div class="month-report-grid">
+                            <div class="month-report-card">
+                                <div class="label">月度支出总额</div>
+                                <div class="value red">¥${report.totalExpense.toFixed(2)}</div>
+                                <div class="sub-value">费用+供应商付款</div>
+                            </div>
+                            <div class="month-report-card">
+                                <div class="label">未付报销金额</div>
+                                <div class="value red">¥${report.unpaidExpense.toFixed(2)}</div>
+                                <div class="sub-value">费用未付余额</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 纸箱费用 -->
+                    <div class="month-report-section">
+                        <div class="month-report-section-title">📦 纸箱费用</div>
+                        <div class="month-report-grid">
+                            <div class="month-report-card">
+                                <div class="label">纸箱总货款</div>
+                                <div class="value orange">¥${report.cartonTotal.toFixed(2)}</div>
+                                <div class="sub-value">${report.cartonCount}笔登记</div>
+                            </div>
+                            <div class="month-report-card">
+                                <div class="label">已付纸箱金额</div>
+                                <div class="value green">¥${report.cartonPaid.toFixed(2)}</div>
+                                <div class="sub-value">含登记已付+付款流水</div>
+                            </div>
+                            <div class="month-report-card">
+                                <div class="label">未付纸箱金额</div>
+                                <div class="value red">¥${report.cartonUnpaid.toFixed(2)}</div>
+                                <div class="sub-value">待付余额</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 加工费用 -->
+                    <div class="month-report-section">
+                        <div class="month-report-section-title">🔧 加工费用</div>
+                        <div class="month-report-grid">
+                            <div class="month-report-card">
+                                <div class="label">加工费总额</div>
+                                <div class="value orange">¥${report.processingTotal.toFixed(2)}</div>
+                                <div class="sub-value">${report.processingCount}笔登记</div>
+                            </div>
+                            <div class="month-report-card">
+                                <div class="label">已付加工费</div>
+                                <div class="value green">¥${report.processingPaid.toFixed(2)}</div>
+                                <div class="sub-value">含登记已付+付款流水</div>
+                            </div>
+                            <div class="month-report-card">
+                                <div class="label">未付加工费</div>
+                                <div class="value red">¥${report.processingUnpaid.toFixed(2)}</div>
+                                <div class="sub-value">待付余额</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 总结 -->
+                    <div class="month-report-summary">
+                        <h4>📊 月度总结</h4>
+                        <div class="month-report-summary-grid">
+                            <div class="month-report-card" style="border: 1px solid #bfdbfe;">
+                                <div class="label">应收款（客户欠款）</div>
+                                <div class="value blue">¥${report.customerDebt.toFixed(2)}</div>
+                            </div>
+                            <div class="month-report-card" style="border: 1px solid #fecaca;">
+                                <div class="label">应付款（供应商+费用）</div>
+                                <div class="value red">¥${report.totalPayable.toFixed(2)}</div>
+                                <div class="sub-value">原料未付¥${report.purchaseUnpaid.toFixed(2)} + 费用未付¥${report.unpaidExpense.toFixed(2)}</div>
+                            </div>
+                            <div class="month-report-card" style="border: 1px solid #bbf7d0;">
+                                <div class="label">资金净流入</div>
+                                <div class="value ${report.netCashFlow >= 0 ? 'green' : 'red'}">¥${report.netCashFlow.toFixed(2)}</div>
+                                <div class="sub-value">回款¥${report.salesReceived.toFixed(2)} - 支出¥${report.totalExpense.toFixed(2)}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function calculateMonthlyReport(months) {
+            const monthSet = new Set(months);
+
+            // 判断是否匹配月份
+            const inMonths = (dateStr) => dateStr && monthSet.has(dateStr.slice(0, 7));
+
+            // 1. 公司初始资金（累计，不随月份变化）
+            const initialCapital = (data.shareholders || []).reduce((sum, s) => sum + (s.amount || 0), 0);
+
+            // 2. 销售数据（选中月份）
+            const salesOrders = (data.salesOrders || []).filter(o => inMonths(o.date));
+            const salesTotal = salesOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+            const salesOrderCount = salesOrders.length;
+            // 已回款金额：根据收付款板块同步（选中月份内的客户收款流水）
+            const salesReceived = (data.transactions || [])
+                .filter(t => t.type === 'income' && !t.isExpensePayment && inMonths(t.date))
+                .reduce((sum, t) => sum + (t.amount || 0), 0);
+            const salesReceivedCount = (data.transactions || []).filter(t => t.type === 'income' && !t.isExpensePayment && inMonths(t.date)).length;
+            // 客户欠款 = 销售总额 - 已回款金额（与收付款板块同步）
+            const customerDebt = Math.max(0, salesTotal - salesReceived);
+
+            // 3. 采购/原料数据（选中月份）
+            const purchaseOrders = (data.purchaseOrders || []).filter(o => inMonths(o.date));
+            const purchaseTotal = purchaseOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+            const purchasePaid = purchaseOrders.reduce((sum, o) => sum + (o.paidAmount || 0), 0);
+            const purchaseUnpaid = purchaseOrders.reduce((sum, o) => sum + (o.remainingAmount || 0), 0);
+            const purchaseOrderCount = purchaseOrders.length;
+
+            // 4. 费用数据（选中月份）
+            const expenses = (data.expenses || []).filter(e => inMonths(e.date));
+            const expensePayments = (data.expensePayments || []).filter(p => inMonths(p.date));
+
+            // 定义有付款流水的费用ID集合
+            const expensesWithPayments = new Set(expensePayments.map(p => p.expenseId).filter(Boolean));
+
+            // 费用总登记额
+            const expenseTotalRegistered = expenses.reduce((sum, e) => sum + (e.totalAmount || 0), 0);
+            // 费用登记时已付
+            const expensePaidFromRegistration = expenses.reduce((sum, e) => sum + (e.paidAmount || 0), 0);
+            // 费用付款流水
+            const expensePaidFromPayments = expensePayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+            // 费用总已付：直接用 expense.paidAmount（付款登记已同步更新）
+            let expenseTotalPaid = expenses.reduce((sum, e) => sum + (e.paidAmount || 0), 0);
+            const unpaidExpense = Math.max(0, expenseTotalRegistered - expenseTotalPaid);
+
+            // 5. 纸箱费用（选中月份）
+            const cartonExpenses = expenses.filter(e => e.type === 'carton');
+            const cartonTotal = cartonExpenses.reduce((sum, e) => sum + (e.totalAmount || 0), 0);
+            let cartonPaid = 0;
+            cartonExpenses.forEach(e => {
+                if (expensesWithPayments.has(e.id)) {
+                    cartonPaid += expensePayments.filter(p => p.expenseId === e.id).reduce((s, p) => s + (p.amount || 0), 0);
+                } else {
+                    cartonPaid += (e.paidAmount || 0);
+                }
+            });
+            const cartonUnpaid = Math.max(0, cartonTotal - cartonPaid);
+            const cartonCount = cartonExpenses.length;
+
+            // 6. 加工费用（选中月份）
+            const processingExpenses = expenses.filter(e => e.type === 'processing');
+            const processingTotal = processingExpenses.reduce((sum, e) => sum + (e.totalAmount || 0), 0);
+            let processingPaid = 0;
+            processingExpenses.forEach(e => {
+                if (expensesWithPayments.has(e.id)) {
+                    processingPaid += expensePayments.filter(p => p.expenseId === e.id).reduce((s, p) => s + (p.amount || 0), 0);
+                } else {
+                    processingPaid += (e.paidAmount || 0);
+                }
+            });
+            const processingUnpaid = Math.max(0, processingTotal - processingPaid);
+            const processingCount = processingExpenses.length;
+
+            // 7. 支出总额 = 供应商付款（选中月份交易）+ 费用支出（选中月份付款流水+无流水的登记已付）
+            const supplierPayments = (data.transactions || [])
+                .filter(t => t.type === 'expense' && !t.isExpensePayment && inMonths(t.date))
+                .reduce((sum, t) => sum + (t.amount || 0), 0);
+            const totalExpense = supplierPayments + expenseTotalPaid;
+
+            // 8. 帐上现金结余 = 初始资金 + 客户收款 - 供应商付款 - 费用支出
+            const customerIncome = (data.transactions || [])
+                .filter(t => t.type === 'income' && !t.isExpensePayment && inMonths(t.date))
+                .reduce((sum, t) => sum + (t.amount || 0), 0);
+
+            // 费用支出：直接用 expense.paidAmount（付款登记已同步更新）
+            const monthlyExpensePayment = (data.expenses || [])
+                .filter(e => inMonths(e.date))
+                .reduce((sum, e) => sum + (e.paidAmount || 0), 0);
+
+            const cashBalance = initialCapital + customerIncome - supplierPayments - monthlyExpensePayment;
+
+            // 9. 应付款 = 原料未付 + 费用未付
+            const totalPayable = purchaseUnpaid + unpaidExpense;
+
+            // 10. 资金净流入 = 回款 - 供应商付款 - 费用支出
+            const netCashFlow = customerIncome - supplierPayments - monthlyExpensePayment;
+
+            return {
+                initialCapital,
+                salesTotal,
+                salesReceived,
+                customerDebt,
+                salesOrderCount,
+                salesReceivedCount,
+                purchaseTotal,
+                purchasePaid,
+                purchaseUnpaid,
+                purchaseOrderCount,
+                expenseTotalRegistered,
+                expensePaidFromRegistration,
+                expensePaidFromPayments,
+                expenseTotalPaid,
+                unpaidExpense,
+                cartonTotal,
+                cartonPaid,
+                cartonUnpaid,
+                cartonCount,
+                processingTotal,
+                processingPaid,
+                processingUnpaid,
+                processingCount,
+                supplierPayments,
+                totalExpense,
+                customerIncome,
+                cashBalance,
+                totalPayable,
+                netCashFlow
+            };
+        }
+
+        
+        
+        function exportMonthlyReport(format) {
+            if (selectedMonths.length === 0) {
+                showToast('⚠️ 请先选择月份', 'warning');
+                return;
+            }
+
+            if (format === 'excel') {
+                const report = calculateMonthlyReport(selectedMonths);
+                const monthText = selectedMonths.length === 1 
+                    ? selectedMonths[0] 
+                    : selectedMonths[0] + '至' + selectedMonths[selectedMonths.length - 1];
+                const monthLabel = selectedMonths.map(m => {
+                    const [y, mo] = m.split('-');
+                    return y.slice(-2) + '-' + mo;
+                }).join('、');
+
+                // 创建工作簿
+                const wb = XLSX.utils.book_new();
+                const monthSet = new Set(selectedMonths);
+                const inMonths = (dateStr) => dateStr && monthSet.has(dateStr.slice(0, 7));
+
+                // ==================== 1. 主页（汇总表）====================
+                // 按用户Excel模板格式：A列标签，B列数值；C列标签，D列数值
+                const mainData = [
+                    ['佳信水产月度报告', '', '', ''],
+                    ['月份：' + monthLabel, '', '', ''],
+                    ['', '', '', ''],
+                    ['公司初始资金', report.initialCapital, '', ''],
+                    ['', '', '', ''],
+                    [monthLabel + '销售总额', report.salesTotal, monthLabel + '支出', report.totalExpense],
+                    [monthLabel + '销售已回款金额', report.salesReceived, '未付报销金额', report.unpaidExpense],
+                    [monthLabel + '客户欠款金额', report.customerDebt, '', ''],
+                    ['', '', '纸箱总货款', report.cartonTotal],
+                    ['', '', '已付纸箱金额', report.cartonPaid],
+                    ['', '', '未付纸箱金额', report.cartonUnpaid],
+                    [monthLabel + '月加工费总额', report.processingTotal, '', ''],
+                    ['已付加工费', report.processingPaid, '收原料总金额', report.purchaseTotal],
+                    ['未付加工费', report.processingUnpaid, '已付原料金额', report.purchasePaid],
+                    ['', '', '未付原料金额', report.purchaseUnpaid],
+                    ['', '', '', ''],
+                    ['总结：', '', '', ''],
+                    ['帐上现金结余', report.cashBalance, '', ''],
+                    ['应收款', report.customerDebt, '', ''],
+                    ['应付款', report.totalPayable, '', ''],
+                    ['公司资金结余', report.cashBalance - report.totalPayable + report.customerDebt, '', '']
+                ];
+                const mainWs = XLSX.utils.aoa_to_sheet(mainData);
+                mainWs['!cols'] = [
+                    { wch: 22 }, { wch: 16 }, { wch: 18 }, { wch: 16 }
+                ];
+                mainWs['!merges'] = [
+                    { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+                    { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } }
+                ];
+                // 设置数字格式
+                for (let r = 3; r < mainData.length; r++) {
+                    for (let c of [1, 3]) {
+                        const addr = XLSX.utils.encode_cell({ r: r, c: c });
+                        if (mainWs[addr] && typeof mainWs[addr].v === 'number') {
+                            mainWs[addr].z = '¥#,##0.00';
+                        }
+                    }
+                }
+                XLSX.utils.book_append_sheet(wb, mainWs, '主页');
+
+                // ==================== 2. 销售及欠款统计表 ====================
+                const salesOrders = (data.salesOrders || []).filter(o => inMonths(o.date)).sort((a, b) => new Date(b.date) - new Date(a.date));
+                const salesHeaders = ['日期', '单号', '客户名称', '总金额', '已收款', '未收款', '付款状态', '客户电话'];
+                const salesRows = salesOrders.map(o => [
+                    o.date,
+                    o.docNumber || o.id.slice(-6),
+                    o.customerName,
+                    o.totalAmount,
+                    o.paidAmount || 0,
+                    o.remainingAmount || 0,
+                    o.paymentStatus === 'paid' ? '已收款' : o.paymentStatus === 'partial' ? '部分收款' : '未收款',
+                    o.customerPhone || ''
+                ]);
+                salesRows.push([
+                    '合计', '', '',
+                    salesOrders.reduce((s, o) => s + (o.totalAmount || 0), 0),
+                    salesOrders.reduce((s, o) => s + (o.paidAmount || 0), 0),
+                    salesOrders.reduce((s, o) => s + (o.remainingAmount || 0), 0),
+                    '', ''
+                ]);
+                const salesWs = XLSX.utils.aoa_to_sheet([salesHeaders, ...salesRows]);
+                salesWs['!cols'] = [
+                    { wch: 12 }, { wch: 14 }, { wch: 16 }, { wch: 14 },
+                    { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 16 }
+                ];
+                // 数字格式
+                for (let r = 1; r <= salesRows.length; r++) {
+                    for (let c of [3, 4, 5]) {
+                        const addr = XLSX.utils.encode_cell({ r: r, c: c });
+                        if (salesWs[addr] && typeof salesWs[addr].v === 'number') {
+                            salesWs[addr].z = '¥#,##0.00';
+                        }
+                    }
+                }
+                XLSX.utils.book_append_sheet(wb, salesWs, '销售及欠款统计表');
+
+                // ==================== 3. 原料及已付未付统计表 ====================
+                const purchaseOrders = (data.purchaseOrders || []).filter(o => inMonths(o.date)).sort((a, b) => new Date(b.date) - new Date(a.date));
+                const purchaseHeaders = ['日期', '单号', '供应商', '品名', '总重量(斤)', '总金额', '已付款', '未付款', '付款状态', '备注'];
+                const purchaseRows = purchaseOrders.map(o => [
+                    o.date,
+                    o.docNumber || o.id,
+                    o.supplierName,
+                    o.product || '',
+                    o.totalWeight || 0,
+                    o.totalAmount,
+                    o.paidAmount || 0,
+                    o.remainingAmount || 0,
+                    o.paymentStatus === 'paid' ? '已付' : o.paymentStatus === 'partial' ? '部分' : '未付',
+                    ''
+                ]);
+                purchaseRows.push([
+                    '合计', '', '', '',
+                    purchaseOrders.reduce((s, o) => s + (o.totalWeight || 0), 0),
+                    purchaseOrders.reduce((s, o) => s + (o.totalAmount || 0), 0),
+                    purchaseOrders.reduce((s, o) => s + (o.paidAmount || 0), 0),
+                    purchaseOrders.reduce((s, o) => s + (o.remainingAmount || 0), 0),
+                    '', ''
+                ]);
+                const purchaseWs = XLSX.utils.aoa_to_sheet([purchaseHeaders, ...purchaseRows]);
+                purchaseWs['!cols'] = [
+                    { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 12 },
+                    { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 12 }
+                ];
+                for (let r = 1; r <= purchaseRows.length; r++) {
+                    for (let c of [4, 5, 6, 7]) {
+                        const addr = XLSX.utils.encode_cell({ r: r, c: c });
+                        if (purchaseWs[addr] && typeof purchaseWs[addr].v === 'number') {
+                            purchaseWs[addr].z = '¥#,##0.00';
+                        }
+                    }
+                }
+                XLSX.utils.book_append_sheet(wb, purchaseWs, '原料及已付未付统计表');
+
+                // ==================== 4. 纸箱来货及付款明细表 ====================
+                const expenses = (data.expenses || []).filter(e => inMonths(e.date)).sort((a, b) => new Date(b.date) - new Date(a.date));
+                const expensePayments = (data.expensePayments || []).filter(p => inMonths(p.date));
+                const expensesWithPayments = new Set(expensePayments.map(p => p.expenseId).filter(Boolean));
+
+                const cartonExpenses = expenses.filter(e => e.type === 'carton');
+                const cartonHeaders = ['日期', '费用类型', '总货款', '登记已付', '付款流水', '合计已付', '未付金额', '支付状态', '支付方式', '备注'];
+                const cartonRows = cartonExpenses.map(e => {
+                    let flowPaid = 0;
+                    if (expensesWithPayments.has(e.id)) {
+                        flowPaid = expensePayments.filter(p => p.expenseId === e.id).reduce((s, p) => s + (p.amount || 0), 0);
+                    }
+                    const regPaid = expensesWithPayments.has(e.id) ? 0 : (e.paidAmount || 0);
+                    const totalPaid = flowPaid + regPaid;
+                    const unpaid = Math.max(0, (e.totalAmount || 0) - totalPaid);
+                    return [
+                        e.date,
+                        '纸箱',
+                        e.totalAmount || 0,
+                        regPaid,
+                        flowPaid,
+                        totalPaid,
+                        unpaid,
+                        unpaid <= 0 ? '已付清' : totalPaid > 0 ? '部分' : '未付',
+                        e.lastPaymentMethod || '',
+                        e.remark || ''
+                    ];
+                });
+                if (cartonRows.length > 0) {
+                    cartonRows.push([
+                        '合计', '',
+                        cartonExpenses.reduce((s, e) => s + (e.totalAmount || 0), 0),
+                        '-', '-',
+                        report.cartonPaid,
+                        report.cartonUnpaid,
+                        '', '', ''
+                    ]);
+                }
+                const cartonWs = XLSX.utils.aoa_to_sheet([cartonHeaders, ...cartonRows]);
+                cartonWs['!cols'] = [
+                    { wch: 12 }, { wch: 10 }, { wch: 14 }, { wch: 12 }, { wch: 12 },
+                    { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 20 }
+                ];
+                for (let r = 1; r <= cartonRows.length; r++) {
+                    for (let c of [2, 3, 4, 5, 6]) {
+                        const addr = XLSX.utils.encode_cell({ r: r, c: c });
+                        if (cartonWs[addr] && typeof cartonWs[addr].v === 'number') {
+                            cartonWs[addr].z = '¥#,##0.00';
+                        }
+                    }
+                }
+                XLSX.utils.book_append_sheet(wb, cartonWs, '纸箱来货及付款明细表');
+
+                // ==================== 5. 所有开支记录明细 ====================
+                const allExpenseHeaders = ['日期', '费用类型', '总费用', '登记已付', '付款流水', '合计已付', '未付金额', '支付状态', '支付方式', '备注'];
+                const allExpenseRows = expenses.map(e => {
+                    let flowPaid = 0;
+                    if (expensesWithPayments.has(e.id)) {
+                        flowPaid = expensePayments.filter(p => p.expenseId === e.id).reduce((s, p) => s + (p.amount || 0), 0);
+                    }
+                    const regPaid = expensesWithPayments.has(e.id) ? 0 : (e.paidAmount || 0);
+                    const totalPaid = flowPaid + regPaid;
+                    const unpaid = Math.max(0, (e.totalAmount || 0) - totalPaid);
+                    const typeName = (EXPENSE_TYPES[e.type] || { name: e.type }).name;
+                    return [
+                        e.date,
+                        typeName,
+                        e.totalAmount || 0,
+                        regPaid,
+                        flowPaid,
+                        totalPaid,
+                        unpaid,
+                        unpaid <= 0 ? '已付清' : totalPaid > 0 ? '部分' : '未付',
+                        e.lastPaymentMethod || '',
+                        e.remark || ''
+                    ];
+                });
+                if (allExpenseRows.length > 0) {
+                    allExpenseRows.push([
+                        '合计', '',
+                        expenses.reduce((s, e) => s + (e.totalAmount || 0), 0),
+                        '-', '-',
+                        report.expenseTotalPaid,
+                        report.unpaidExpense,
+                        '', '', ''
+                    ]);
+                }
+                const expenseWs = XLSX.utils.aoa_to_sheet([allExpenseHeaders, ...allExpenseRows]);
+                expenseWs['!cols'] = [
+                    { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 12 },
+                    { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 20 }
+                ];
+                for (let r = 1; r <= allExpenseRows.length; r++) {
+                    for (let c of [2, 3, 4, 5, 6]) {
+                        const addr = XLSX.utils.encode_cell({ r: r, c: c });
+                        if (expenseWs[addr] && typeof expenseWs[addr].v === 'number') {
+                            expenseWs[addr].z = '¥#,##0.00';
+                        }
+                    }
+                }
+                XLSX.utils.book_append_sheet(wb, expenseWs, '所有开支记录明细');
+
+                // ==================== 6. 收付款流水明细 ====================
+                const transactions = (data.transactions || []).filter(t => inMonths(t.date)).sort((a, b) => new Date(b.date) - new Date(a.date));
+                const transHeaders = ['日期', '类型', '往来单位', '金额', '支付方式', '备注'];
+                const transRows = transactions.map(t => [
+                    t.date,
+                    t.type === 'income' ? '收款' : '付款',
+                    t.partyName,
+                    t.amount,
+                    t.paymentMethod || '',
+                    t.remark || ''
+                ]);
+                transRows.push([
+                    '合计', '', '',
+                    transactions.reduce((s, t) => s + (t.amount || 0), 0),
+                    '', ''
+                ]);
+                const transWs = XLSX.utils.aoa_to_sheet([transHeaders, ...transRows]);
+                transWs['!cols'] = [
+                    { wch: 12 }, { wch: 10 }, { wch: 16 }, { wch: 14 }, { wch: 12 }, { wch: 24 }
+                ];
+                for (let r = 1; r <= transRows.length; r++) {
+                    const addr = XLSX.utils.encode_cell({ r: r, c: 3 });
+                    if (transWs[addr] && typeof transWs[addr].v === 'number') {
+                        transWs[addr].z = '¥#,##0.00';
+                    }
+                }
+                XLSX.utils.book_append_sheet(wb, transWs, '收付款流水明细');
+
+                // 导出文件
+                XLSX.writeFile(wb, `月度报告_${monthText}.xlsx`);
+                showToast('✅ Excel导出成功！包含主页+5个子表明细');
+            } else {
+                const wrapper = document.getElementById('monthlyReportWrapper');
+                if (!wrapper) return;
+                document.getElementById('loading').classList.add('show');
+                html2canvas(wrapper, { scale: 2, backgroundColor: '#f8fafc' }).then(canvas => {
+                    const link = document.createElement('a');
+                    const monthText = selectedMonths.join('_');
+                    link.download = `月度报告_${monthText}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    document.getElementById('loading').classList.remove('show');
+                    showToast('✅ 图片导出成功');
+                });
+            }
+        }
+
+
+
+        // 在updateView中添加月度报告处理
+        const originalUpdateView = updateView;
+        updateView = function(viewName) {
+            if (viewName === 'monthly') {
+                initMonthSelector();
+                if (selectedMonths.length > 0) {
+                    renderMonthlyReport();
+                }
+            }
+            // 调用原始函数处理其他视图
+            // 注意：由于原始函数是switch语句，这里需要确保不会重复执行
+            // 实际上原始updateView中如果没有匹配到monthly，什么都不会做
+            // 所以我们安全地调用原始逻辑
+            switch(viewName) {
+                case 'dashboard': updateDashboard(); break;
+                case 'purchase': renderPurchaseList(); break;
+                case 'sales': renderSalesList(); break;
+                case 'products': renderProductList(); break;
+                case 'customers': renderCustomerList(); break;
+                case 'suppliers': renderSupplierList(); break;
+                case 'finance': 
+                    initTransactionFilters();
+                    renderTransactionList(); 
+                    break;
+                case 'expenses':
+                    renderExpenseList();
+                    updateExpenseStats();
+                    break;
+                case 'shareholders': renderShareholderList(); break;
+                case 'capital': updateCapitalOverview(); break;
+                case 'monthly': 
+                    initMonthSelector();
+                    if (selectedMonths.length > 0) renderMonthlyReport();
+                    break;
+            }
+        };
+
 </script>
 
     <!-- 客户对账单模态框 -->
