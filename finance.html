@@ -1719,6 +1719,9 @@
                     </div>
                 </div>
                 </div>
+                
+                <!-- 存储容量进度条 -->
+                <div id="storageProgressBar" style="margin-top: 20px;"></div>
             </div>
 
             <!-- 资金概况 -->
@@ -2394,19 +2397,7 @@
                     </div>
                 </div>
 
-                    <div style="margin-top: 16px; padding: 16px; background: #f8fafc; border-radius: 8px; border: 2px dashed #cbd5e1;">
-                        <div style="font-weight: bold; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2z"></path></svg>
-                            上传原始手写订单图片
-                        </div>
-                        <input type="file" id="purchaseImageInput" accept="image/*" multiple style="display: none;" onchange="handlePurchaseImages(this)">
-                        <div id="purchaseImagePreview" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;"></div>
-                        <button onclick="document.getElementById('purchaseImageInput').click()" style="background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; justify-content: center;">
-                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                            选择图片（可多选）
-                        </button>
-                        <p style="font-size: 12px; color: #64748b; margin-top: 8px; text-align: center;">支持 JPG、PNG 格式，最多上传 5 张</p>
-                    </div>
+
 <button onclick="savePurchaseOrder()" style="width: 100%; padding: 16px; background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; margin-top: 20px; cursor: pointer;">生成收购单</button>
             </div>
         </div>
@@ -2556,15 +2547,7 @@
                 </div>
             </div>
             <div class="preview-modal-body">
-                <div id="purchaseReceiptImages" style="margin-bottom: 20px; display: none;">
-                    <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
-                        <div style="font-weight: bold; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: #1e40af;">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2z"></path></svg>
-                            原始手写订单图片
-                        </div>
-                        <div id="purchaseReceiptImagesList" style="display: flex; flex-wrap: wrap; gap: 10px;"></div>
-                    </div>
-                </div>
+
                 <div id="purchaseReceipt" class="purchase-receipt-wrapper">
                     <div class="purchase-receipt-header">
                         <h2>佳信水产有限公司</h2>
@@ -2912,7 +2895,7 @@
 
         let purchaseRowCount = 0;
         let salesItemCount = 0;
-        let purchaseImages = [];
+        
         let currentEditingSalesItem = null;  // 当前正在编辑的销售行
         let selectedProductIds = [];  // 多选产品临时存储
 
@@ -2995,8 +2978,274 @@
             return result.record || {};
         }
 
-        async function saveData() {
-            localStorage.setItem('finance_data_cache', JSON.stringify(data));
+        
+        // ==================== 数据清理压缩功能 ====================
+        // 清理数据中的空值、undefined、空数组等，减小云端存储体积
+        function cleanDataForSave(inputData) {
+            if (inputData === null || inputData === undefined) {
+                return inputData;
+            }
+
+            if (typeof inputData === 'string') {
+                return inputData.trim() || undefined;
+            }
+
+            if (typeof inputData === 'number' || typeof inputData === 'boolean') {
+                return inputData;
+            }
+
+            if (Array.isArray(inputData)) {
+                const cleaned = inputData
+                    .map(item => cleanDataForSave(item))
+                    .filter(item => item !== undefined && item !== null);
+                return cleaned.length > 0 ? cleaned : undefined;
+            }
+
+            if (typeof inputData === 'object') {
+                const cleaned = {};
+                for (const [key, value] of Object.entries(inputData)) {
+                    // 跳过系统内部字段和空值
+                    if (key.startsWith('_') || key === '__proto__') continue;
+
+                    const cleanedValue = cleanDataForSave(value);
+                    if (cleanedValue !== undefined && cleanedValue !== null) {
+                        cleaned[key] = cleanedValue;
+                    }
+                }
+                return Object.keys(cleaned).length > 0 ? cleaned : undefined;
+            }
+
+            return inputData;
+        }
+
+        // 深度清理数据对象，移除所有空值和冗余
+        
+        // ==================== 数据存储容量监控 ====================
+        function calculateDataSize() {
+            try {
+                const json = JSON.stringify(data);
+                return {
+                    size: json.length,
+                    sizeKB: (json.length / 1024).toFixed(2),
+                    limit: 100 * 1024,  // 100KB
+                    limitKB: 100,
+                    percentage: Math.min(100, (json.length / (100 * 1024) * 100)).toFixed(1)
+                };
+            } catch (e) {
+                return { size: 0, sizeKB: '0.00', limit: 100 * 1024, limitKB: 100, percentage: '0.0' };
+            }
+        }
+
+        function getDataBreakdown() {
+            const breakdown = {};
+            const keys = ['suppliers', 'customers', 'products', 'purchaseOrders', 'salesOrders', 'transactions', 'expenses', 'expensePayments', 'shareholders'];
+            keys.forEach(key => {
+                try {
+                    const arr = data[key] || [];
+                    const json = JSON.stringify(arr);
+                    breakdown[key] = {
+                        count: arr.length,
+                        size: json.length,
+                        sizeKB: (json.length / 1024).toFixed(2)
+                    };
+                } catch (e) {
+                    breakdown[key] = { count: 0, size: 0, sizeKB: '0.00' };
+                }
+            });
+            return breakdown;
+        }
+
+        function renderStorageProgressBar() {
+            const info = calculateDataSize();
+            const breakdown = getDataBreakdown();
+            const pct = parseFloat(info.percentage);
+
+            let colorClass = 'bg-green-500';
+            let textColor = 'text-green-700';
+            let bgColor = 'bg-green-50';
+            let borderColor = 'border-green-200';
+            let statusText = '存储空间充足';
+
+            if (pct >= 90) {
+                colorClass = 'bg-red-500';
+                textColor = 'text-red-700';
+                bgColor = 'bg-red-50';
+                borderColor = 'border-red-200';
+                statusText = '⚠️ 存储空间即将耗尽，请清理旧数据或升级';
+            } else if (pct >= 70) {
+                colorClass = 'bg-yellow-500';
+                textColor = 'text-yellow-700';
+                bgColor = 'bg-yellow-50';
+                borderColor = 'border-yellow-200';
+                statusText = '存储空间紧张，建议清理';
+            }
+
+            let detailRows = '';
+            const keyNames = {
+                suppliers: '供应商', customers: '客户', products: '产品库',
+                purchaseOrders: '采购订单', salesOrders: '销售订单',
+                transactions: '收付款记录', expenses: '费用记录',
+                expensePayments: '费用付款流水', shareholders: '股东投资'
+            };
+
+            Object.entries(breakdown).sort((a, b) => b[1].size - a[1].size).forEach(([key, val]) => {
+                const barWidth = Math.min(100, (val.size / info.limit * 100)).toFixed(1);
+                detailRows += `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #f3f4f6;">
+                        <div style="flex:1;">
+                            <div style="font-size:13px; color:#374151; font-weight:500;">${keyNames[key] || key}</div>
+                            <div style="font-size:11px; color:#9ca3af;">${val.count}条 · ${val.sizeKB}KB</div>
+                        </div>
+                        <div style="width:120px; margin-left:12px;">
+                            <div style="height:6px; background:#e5e7eb; border-radius:3px; overflow:hidden;">
+                                <div style="height:100%; width:${barWidth}%; background:#6b7280; border-radius:3px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            const html = `
+                <div style="background:${bgColor}; border:2px solid ${borderColor.replace('border-', '').replace('-200', '')}; border-radius:12px; padding:16px; margin-bottom:20px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <div>
+                            <div style="font-size:16px; font-weight:700; color:#1f2937;">💾 云端存储容量</div>
+                            <div style="font-size:12px; ${textColor}; margin-top:4px;">${statusText}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:22px; font-weight:800; ${textColor};">${info.sizeKB}KB</div>
+                            <div style="font-size:11px; color:#6b7280;">/ ${info.limitKB}KB 上限</div>
+                        </div>
+                    </div>
+                    <div style="height:12px; background:#e5e7eb; border-radius:6px; overflow:hidden; margin-bottom:8px;">
+                        <div style="height:100%; width:${info.percentage}%; ${colorClass.replace('bg-', 'background:') === 'background:green-500' ? 'background:#22c55e;' : colorClass.replace('bg-', 'background:') === 'background:yellow-500' ? 'background:#eab308;' : 'background:#ef4444;'} border-radius:6px; transition:width 0.5s ease;"></div>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:12px; color:#6b7280;">
+                        <span>已用 ${info.percentage}%</span>
+                        <span>剩余 ${Math.max(0, (info.limitKB - info.sizeKB)).toFixed(2)}KB</span>
+                    </div>
+
+                    <details style="margin-top:12px;">
+                        <summary style="font-size:13px; color:#3b82f6; cursor:pointer; font-weight:500;">📊 查看数据组成详情</summary>
+                        <div style="margin-top:8px; background:white; border-radius:8px; padding:12px;">
+                            ${detailRows}
+                        </div>
+                    </details>
+
+                    ${pct >= 90 ? `
+                    <div style="margin-top:12px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:12px;">
+                        <div style="font-size:13px; color:#991b1b; font-weight:600; margin-bottom:8px;">🚨 存储空间不足解决方案</div>
+                        <div style="font-size:12px; color:#b91c1c; line-height:1.8;">
+                            1. <strong>导出备份</strong>：点击上方"导出数据"按钮，将数据备份到本地<br>
+                            2. <strong>清理旧数据</strong>：删除半年前的已完成订单（采购/销售）<br>
+                            3. <strong>升级存储</strong>：访问 jsonbin.io/pricing 升级 Pro 计划（$15/月，10MB上限）<br>
+                            4. <strong>清理费用流水</strong>：删除旧的 expensePayments 付款记录
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+
+            const container = document.getElementById('storageProgressBar');
+            if (container) {
+                container.innerHTML = html;
+            }
+        }
+function deepCleanData(dataObj) {
+            const result = {};
+            for (const [key, value] of Object.entries(dataObj)) {
+                if (value === null || value === undefined) continue;
+                if (typeof value === 'string' && value.trim() === '') continue;
+                if (Array.isArray(value) && value.length === 0) continue;
+                if (typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0) continue;
+
+                if (Array.isArray(value)) {
+                    result[key] = value.map(item => {
+                        if (typeof item === 'object' && item !== null) {
+                            return deepCleanData(item);
+                        }
+                        return item;
+                    }).filter(item => item !== undefined && item !== null);
+                } else if (typeof value === 'object') {
+                    result[key] = deepCleanData(value);
+                } else {
+                    result[key] = value;
+                }
+            }
+            return result;
+        }
+async function saveData() {
+            // 先尝试序列化数据，检查是否有循环引用等问题
+            let jsonString;
+            try {
+                jsonString = JSON.stringify(data);
+            } catch (serializeErr) {
+                console.error('数据序列化失败:', serializeErr);
+                showToast('❌ 数据序列化失败: ' + serializeErr.message, 'error');
+                alert('保存失败：数据无法序列化，可能存在循环引用。错误：' + serializeErr.message);
+                throw serializeErr;
+            }
+
+            // 检查数据大小
+            const rawSizeKB = (jsonString.length / 1024).toFixed(2);
+            console.log('原始数据大小:', rawSizeKB, 'KB');
+
+            // 如果数据超过 70KB，自动清理压缩
+            if (jsonString.length > 70000) {
+                showToast('⚠️ 数据较大 (' + rawSizeKB + 'KB)，正在自动压缩...', 'warning');
+                const cleanedData = cleanDataForSave(data);
+                try {
+                    jsonString = JSON.stringify(cleanedData);
+                } catch (e) {
+                    console.error('压缩后序列化失败:', e);
+                }
+                const cleanedSizeKB = (jsonString.length / 1024).toFixed(2);
+                console.log('压缩后数据大小:', cleanedSizeKB, 'KB');
+                showToast('✅ 数据已压缩: ' + rawSizeKB + 'KB → ' + cleanedSizeKB + 'KB', 'success');
+            }
+
+            if (jsonString.length > 100000) {
+                showToast('⚠️ 数据过大 (' + (jsonString.length/1024).toFixed(2) + 'KB)，接近云端限制', 'warning');
+            }
+
+            // 如果压缩后仍然超过 95KB，尝试更激进的清理
+            if (jsonString.length > 95000) {
+                showToast('🚨 数据仍超 95KB，尝试深度清理...', 'warning');
+                const aggressiveClean = deepCleanData(data);
+                try {
+                    const aggressiveJson = JSON.stringify(aggressiveClean);
+                    if (aggressiveJson.length < jsonString.length) {
+                        jsonString = aggressiveJson;
+                        const newSizeKB = (jsonString.length / 1024).toFixed(2);
+                        showToast('✅ 深度清理后: ' + newSizeKB + 'KB', 'success');
+                    }
+                } catch (e) {
+                    console.error('深度清理失败:', e);
+                }
+            }
+
+            // 如果仍然超过 100KB，阻止同步并提示用户
+            if (jsonString.length > 100000) {
+                const finalSizeKB = (jsonString.length / 1024).toFixed(2);
+                showToast('❌ 数据 ' + finalSizeKB + 'KB 超过 100KB 上限，无法同步', 'error');
+                alert('保存失败：数据大小 ' + finalSizeKB + 'KB 已超过 JSONBin.io 免费版 100KB 上限。\n\n解决方案：\n1. 导出数据备份（点击"导出数据"）\n2. 删除旧订单、旧费用记录减小数据量\n3. 或升级 JSONBin.io Pro 计划（$15/月，10MB上限）\n\n数据已保存到浏览器本地，刷新不会丢失。');
+                updateSyncStatus('error', '数据超限: ' + finalSizeKB + 'KB/100KB');
+                throw new Error('Data size ' + finalSizeKB + 'KB exceeds 100KB limit');
+            }
+
+            // 保存到本地缓存
+            try {
+                localStorage.setItem('finance_data_cache', jsonString);
+            } catch (storageErr) {
+                console.error('本地缓存失败:', storageErr);
+                if (storageErr.name === 'QuotaExceededError') {
+                    showToast('❌ 浏览器存储已满，请导出数据备份后清理', 'error');
+                    alert('保存失败：浏览器本地存储已满（' + rawSizeKB + 'KB）。请导出数据备份，然后清理历史记录。');
+                } else {
+                    showToast('❌ 本地缓存失败: ' + storageErr.message, 'error');
+                }
+                // 即使本地缓存失败，仍尝试云端同步
+            }
 
             if (!isOnline) { 
                 console.log('离线模式，数据已保存到本地');
@@ -3004,7 +3253,7 @@
                 return; 
             }
 
-            updateSyncStatus('syncing', '正在同步到云端...');
+            updateSyncStatus('syncing', '正在同步到云端... (' + rawSizeKB + 'KB)');
 
             try {
                 const timestamp = new Date().getTime();
@@ -3015,19 +3264,22 @@
                         'X-Master-Key': CONFIG.API_KEY
                     },
                     cache: 'no-store',
-                    body: JSON.stringify(data)
+                    body: jsonString
                 });
 
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    const errorText = await response.text().catch(() => '无法读取错误详情');
+                    throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
                 }
 
                 updateSyncStatus('synced', '已同步到云端');
-                showToast('✅ 数据已保存到云端');
+                showToast('✅ 数据已保存到云端 (' + rawSizeKB + 'KB)');
             } catch (error) {
-                console.error('同步失败:', error);
-                updateSyncStatus('error', '同步失败，已保存本地');
-                localStorage.setItem('finance_data_cache', JSON.stringify(data));
+                console.error('云端同步失败:', error);
+                const errMsg = error.message || '未知错误';
+                updateSyncStatus('error', '同步失败: ' + errMsg.substring(0, 30));
+                showToast('❌ 云端同步失败: ' + errMsg, 'error');
+                alert('云端保存失败，请检查网络或数据大小。错误详情：' + errMsg + '\n数据大小：' + rawSizeKB + 'KB\n数据已保存到浏览器本地缓存，刷新页面后数据不会丢失。');
                 throw error;
             }
         }
@@ -3055,8 +3307,23 @@
             if (savedPassword === CONFIG.PASSWORD) {
                 document.getElementById('passwordLayer').style.display = 'none';
                 document.getElementById('app').classList.remove('hidden');
-                initApp();
+                initApp().catch(err => {
+                    console.error('initApp 初始化失败:', err);
+                    showToast('❌ 系统初始化失败: ' + err.message, 'error');
+                    alert('系统初始化失败，请刷新页面重试。错误：' + err.message);
+                });
             }
+        });
+
+        // 全局未处理 Promise 错误捕获
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('未处理的 Promise 错误:', event.reason);
+            // 不阻止默认处理，只记录日志
+        });
+
+        // 全局 JS 错误捕获
+        window.addEventListener('error', function(event) {
+            console.error('全局 JS 错误:', event.error);
         });
 
         function checkPassword() {
@@ -3065,7 +3332,11 @@
                 localStorage.setItem('finance_password', input);
                 document.getElementById('passwordLayer').style.display = 'none';
                 document.getElementById('app').classList.remove('hidden');
-                initApp();
+                initApp().catch(err => {
+                    console.error('initApp 初始化失败:', err);
+                    showToast('❌ 系统初始化失败: ' + err.message, 'error');
+                    alert('系统初始化失败，请刷新页面重试。错误：' + err.message);
+                });
             } else {
                 alert('密码错误');
             }
@@ -3112,12 +3383,15 @@
                         data.salesOrders = parsed.salesOrders || [];
                         data.transactions = parsed.transactions || [];
                         data.lastPurchaseDocNumber = parsed.lastPurchaseDocNumber || 0;
-                        data.lastSalesDocNumbers = parsed.lastSalesDocNumbers || {};  // 加载销售单号计数器
+                        data.lastSalesDocNumbers = parsed.lastSalesDocNumbers || {};
                         data.expenses = parsed.expenses || [];
+                        data.expensePayments = parsed.expensePayments || [];
+                        data.expenseTypes = parsed.expenseTypes || {};
                         data.shareholders = parsed.shareholders || [];
                         showToast('⚠️ 离线模式，使用本地数据', 'warning');
                     } catch(e) {
-                        showToast('❌ 加载失败', 'error');
+                        console.error('本地缓存解析失败:', e);
+                        showToast('❌ 本地缓存加载失败: ' + e.message, 'error');
                     }
                 }
 
@@ -3126,18 +3400,38 @@
             }
 
             initPurchaseTable();
-            // 初始化月度报告
-            initMonthSelector();
-            renderMonthlyReport();
-            // 初始化费用类别（加载自定义类别）
-            initExpenseTypes();
-            // 更新费用类别下拉框
-            updateExpenseTypeFilter();
-            updateExpenseTypeSelectors();
+
+            // 安全初始化各模块（防止单个模块失败影响整体）
+            try {
+                initMonthSelector();
+            } catch (e) { console.error('initMonthSelector 失败:', e); }
+
+            try {
+                renderMonthlyReport();
+            } catch (e) { console.error('renderMonthlyReport 失败:', e); }
+
+            try {
+                initExpenseTypes();
+            } catch (e) { console.error('initExpenseTypes 失败:', e); }
+
+            try {
+                updateExpenseTypeFilter();
+            } catch (e) { console.error('updateExpenseTypeFilter 失败:', e); }
+
+            try {
+                updateExpenseTypeSelectors();
+            } catch (e) { console.error('updateExpenseTypeSelectors 失败:', e); }
 
             updateAllViews();
             updateProductBrandFilter();
             initSalesCustomerFilter();
+
+            // 初始渲染存储进度条
+            try {
+                renderStorageProgressBar();
+            } catch (e) {
+                console.error('初始存储进度条渲染失败:', e);
+            }
         }
 
         // ==================== Toast提示 ====================
@@ -3376,6 +3670,8 @@
                 showToast('✅ 保存成功');
             } catch (err) {
                 console.error('保存失败:', err);
+                const errMsg = err && err.message ? err.message : '未知错误';
+                showToast('❌ 保存失败: ' + errMsg, 'error');
             }
         }
 
@@ -3933,7 +4229,6 @@
 
             initPurchaseTable();
             calculatePurchase();
-            clearPurchaseImages();
 
             document.querySelector('#purchaseModal h3').textContent = '新增采购单（收购单）';
             const saveBtn = document.querySelector('#purchaseModal button[onclick^="savePurchaseOrder"], #purchaseModal button[onclick^="saveEditPurchaseOrder"]');
@@ -4008,9 +4303,6 @@
                 document.getElementById('purchasePaidAmount').value = order.paidAmount || 0;
                 document.getElementById('purchaseRemainingAmount').value = order.remainingAmount || 0;
             }
-
-            purchaseImages = order.images ? [...order.images] : [];
-            renderPurchaseImagePreview();
 
             document.querySelector('#purchaseModal h3').textContent = '编辑采购单（收购单）';
             const saveBtn = document.querySelector('#purchaseModal button[onclick^="savePurchaseOrder"]');
@@ -4098,8 +4390,6 @@
             order.paymentStatus = paymentStatus;
             order.paidAmount = paidAmount;
             order.remainingAmount = remainingAmount;
-            order.images = purchaseImages.length > 0 ? [...purchaseImages] : [];
-
             const orderIndex = data.purchaseOrders.findIndex(o => o.id === editingPurchaseOrderId);
             if (orderIndex !== -1) {
                 data.purchaseOrders[orderIndex] = order;
@@ -4110,6 +4400,8 @@
                 showToast('✅ 订单修改成功');
             } catch (err) {
                 console.error('同步失败:', err);
+                const errMsg = err && err.message ? err.message : '未知错误';
+                showToast('❌ 同步失败: ' + errMsg, 'error');
             }
 
             editingPurchaseOrderId = null;
@@ -4124,7 +4416,6 @@
             closeModal('purchaseModal');
             renderPurchaseList();
             updateDashboard();
-            clearPurchaseImages();
         }
 
         async function savePurchaseOrder() {
@@ -4135,7 +4426,6 @@
 
             const supplier = data.suppliers.find(s => s.id === supplierId);
             const items = [];
-            const images = purchaseImages.length > 0 ? [...purchaseImages] : [];
 
             document.querySelectorAll('.purchase-input').forEach(input => {
                 const value = input.value.trim();
@@ -4191,8 +4481,7 @@
                 col1Price, col2Price, col3Price,
                 totalAmount,
                 paymentStatus, paidAmount,
-                remainingAmount: totalAmount - paidAmount,
-                images: images
+                remainingAmount: totalAmount - paidAmount
             };
 
             data.purchaseOrders.unshift(order);
@@ -4206,12 +4495,13 @@
                 await saveData();
             } catch (err) {
                 console.error('同步失败:', err);
+                const errMsg = err && err.message ? err.message : '未知错误';
+                showToast('❌ 同步失败: ' + errMsg, 'error');
             }
 
             showPurchaseReceipt(order);
             closeModal('purchaseModal');
             renderPurchaseList();
-            clearPurchaseImages();
         }
 
         function showPurchaseReceipt(order) {
@@ -4239,20 +4529,6 @@
             document.getElementById('receiptCol1Amount').textContent = col1Amount > 0 ? '¥' + col1Amount.toFixed(0) : '-';
             document.getElementById('receiptCol2Amount').textContent = col2Amount > 0 ? '¥' + col2Amount.toFixed(0) : '-';
             document.getElementById('receiptCol3Amount').textContent = col3Amount > 0 ? '¥' + col3Amount.toFixed(0) : '-';
-
-            const imagesContainer = document.getElementById('purchaseReceiptImages');
-            const imagesList = document.getElementById('purchaseReceiptImagesList');
-            if (order.images && order.images.length > 0) {
-                imagesContainer.style.display = 'block';
-                imagesList.innerHTML = order.images.map((img, idx) => `
-                    <div style="width: 120px; height: 120px; border-radius: 8px; overflow: hidden; border: 2px solid #e2e8f0; cursor: pointer;" onclick="viewOrderImages('${order.id}', 'purchase')">
-                        <img src="${img.data}" style="width: 100%; height: 100%; object-fit: cover;">
-                    </div>
-                `).join('');
-            } else {
-                imagesContainer.style.display = 'none';
-                imagesList.innerHTML = '';
-            }
 
             const maxRow = order.items.reduce((max, item) => Math.max(max, item.row || 0), 0);
             const rowCount = Math.max(maxRow, 3);
@@ -4361,7 +4637,6 @@
             let html = orders.map(order => {
                 const statusText = { unpaid: '未付', paid: '已付', partial: '部分' }[order.paymentStatus];
                 const statusClass = { unpaid: 'status-pending', paid: 'status-paid', partial: 'status-partial' }[order.paymentStatus];
-                const hasImages = order.images && order.images.length > 0;
                 const docNum = order.docNumber || '无单号';
                 return `<tr>
                     <td class="px-2 py-3 text-xs font-medium cursor-pointer text-blue-600 hover:text-blue-800 hover:underline whitespace-nowrap" onclick="openEditPurchaseModal('${order.id}')" title="点击编辑">${docNum}</td>
@@ -4373,7 +4648,6 @@
                     <td class="px-2 py-3 whitespace-nowrap"><span class="status-badge ${statusClass}" style="font-size: 10px; padding: 2px 6px;">${statusText}</span></td>
                     <td class="px-2 py-3 text-xs space-x-1 whitespace-nowrap">
                         <button onclick="viewPurchaseReceiptById('${order.id}')" class="text-blue-600 hover:underline">查看</button>
-                        ${hasImages ? `<button onclick="viewOrderImages('${order.id}', 'purchase')" class="text-purple-600 hover:underline">图</button>` : ''}
                         ${order.paymentStatus !== 'paid' ? `<button onclick="addPurchasePayment('${order.id}')" class="text-green-600 hover:underline">付</button>` : ''}
                         <button onclick="showDeleteConfirm('purchase', '${order.id}')" class="text-red-600 hover:underline">删</button>
                     </td>
@@ -4427,6 +4701,8 @@
                 await saveData();
             } catch (err) {
                 console.error('同步失败:', err);
+                const errMsg = err && err.message ? err.message : '未知错误';
+                showToast('❌ 同步失败: ' + errMsg, 'error');
             }
 
             renderPurchaseList();
@@ -4753,6 +5029,8 @@
                 showToast('✅ 订单修改成功');
             } catch (err) {
                 console.error('同步失败:', err);
+                const errMsg = err && err.message ? err.message : '未知错误';
+                showToast('❌ 同步失败: ' + errMsg, 'error');
             }
 
             editingSalesOrderId = null;
@@ -4841,6 +5119,8 @@
                 await saveData();
             } catch (err) {
                 console.error('同步失败:', err);
+                const errMsg = err && err.message ? err.message : '未知错误';
+                showToast('❌ 同步失败: ' + errMsg, 'error');
             }
 
             showSalesReceipt(order);
@@ -5039,6 +5319,8 @@
                 await saveData();
             } catch (err) {
                 console.error('同步失败:', err);
+                const errMsg = err && err.message ? err.message : '未知错误';
+                showToast('❌ 同步失败: ' + errMsg, 'error');
             }
 
             renderSalesList();
@@ -5273,6 +5555,8 @@
                 showToast('✅ 收款成功');
             } catch (err) {
                 console.error('同步失败:', err);
+                const errMsg = err && err.message ? err.message : '未知错误';
+                showToast('❌ 同步失败: ' + errMsg, 'error');
             }
         }
 
@@ -5325,6 +5609,8 @@
                 showToast('✅ 付款成功');
             } catch (err) {
                 console.error('同步失败:', err);
+                const errMsg = err && err.message ? err.message : '未知错误';
+                showToast('❌ 同步失败: ' + errMsg, 'error');
             }
         }
 
@@ -5396,6 +5682,8 @@
                 await saveData();
             } catch (err) {
                 console.error('同步失败:', err);
+                const errMsg = err && err.message ? err.message : '未知错误';
+                showToast('❌ 同步失败: ' + errMsg, 'error');
             }
 
             closeModal('partyModal');
@@ -5947,82 +6235,15 @@ function renderTransactionList() {
         }
 
         // ==================== 图片处理 ====================
-        function handlePurchaseImages(input) {
-            const files = Array.from(input.files);
-            const maxFiles = 5;
 
-            if (purchaseImages.length + files.length > maxFiles) {
-                showToast('⚠️ 最多只能上传5张图片', 'warning');
-                return;
-            }
 
-            files.forEach(file => {
-                if (!file.type.startsWith('image/')) {
-                    showToast('⚠️ 请上传图片文件', 'warning');
-                    return;
-                }
 
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    purchaseImages.push({
-                        name: file.name,
-                        data: e.target.result,
-                        size: file.size
-                    });
-                    renderPurchaseImagePreview();
-                };
-                reader.readAsDataURL(file);
-            });
 
-            input.value = '';
-        }
 
-        function renderPurchaseImagePreview() {
-            const container = document.getElementById('purchaseImagePreview');
-            container.innerHTML = purchaseImages.map((img, index) => `
-                <div class="image-preview-item">
-                    <img src="${img.data}" alt="预览">
-                    <button class="remove-btn" onclick="removePurchaseImage(${index})">×</button>
-                </div>
-            `).join('');
-        }
 
-        function removePurchaseImage(index) {
-            purchaseImages.splice(index, 1);
-            renderPurchaseImagePreview();
-        }
 
-        function clearPurchaseImages() {
-            purchaseImages = [];
-            renderPurchaseImagePreview();
-        }
 
-        function viewOrderImages(orderId, type) {
-            const order = type === 'purchase' 
-                ? data.purchaseOrders.find(o => o.id === orderId)
-                : data.salesOrders.find(o => o.id === orderId);
 
-            if (!order || !order.images || order.images.length === 0) {
-                showToast('⚠️ 该订单没有上传图片', 'warning');
-                return;
-            }
-
-            const modal = document.createElement('div');
-            modal.className = 'modal image-viewer-modal active';
-            modal.innerHTML = `
-                <div class="modal-content" style="max-width: 95vw; max-height: 95vh; background: transparent; box-shadow: none;">
-                    <div class="image-viewer-container">
-                        ${order.images.map(img => `
-                            <img src="${img.data}" class="${order.images.length === 1 ? 'image-viewer-single' : 'image-viewer-item'}" style="max-width: ${order.images.length === 1 ? '90vw' : '45%'}; max-height: 85vh; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);" onclick="this.closest('.modal').remove()">
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-            modal.addEventListener('click', function(e) {
-                if (e.target === this) this.remove();
-            });
-        }
 
         // ==================== 删除功能 ====================
         function showDeleteConfirm(type, orderId) {
@@ -6100,6 +6321,8 @@ function renderTransactionList() {
                 showToast('✅ 删除成功');
             } catch (err) {
                 console.error('同步失败:', err);
+                const errMsg = err && err.message ? err.message : '未知错误';
+                showToast('❌ 同步失败: ' + errMsg, 'error');
             }
         }
 
@@ -6134,6 +6357,8 @@ function renderTransactionList() {
                 showToast('✅ 删除成功');
             } catch (err) {
                 console.error('同步失败:', err);
+                const errMsg = err && err.message ? err.message : '未知错误';
+                showToast('❌ 同步失败: ' + errMsg, 'error');
             }
         }
 
@@ -7100,7 +7325,9 @@ function syncPaymentDataToOrders() {
                 }
             } catch (err) {
                 console.error('保存失败:', err);
-                showToast('❌ 保存失败', 'error');
+                const errMsg = err && err.message ? err.message : '未知错误';
+                showToast('❌ 保存失败: ' + errMsg, 'error');
+                alert('保存失败，错误详情：' + errMsg + '\n\n请截图此错误信息反馈给开发者。');
             }
         }
 
@@ -7446,6 +7673,8 @@ function syncPaymentDataToOrders() {
                 showToast('✅ 保存成功');
             } catch (err) {
                 console.error('保存失败:', err);
+                const errMsg = err && err.message ? err.message : '未知错误';
+                showToast('❌ 保存失败: ' + errMsg, 'error');
             }
         }
 
@@ -8118,6 +8347,9 @@ function syncPaymentDataToOrders() {
                 customerReceivable,
                 netWorth
             });
+
+            // 渲染存储容量进度条
+            renderStorageProgressBar();
         }
 
         // ==================== 数据备份与导出功能 ====================
