@@ -2871,7 +2871,7 @@
             GITHUB_OWNER: '1149749292-lgtm',
             GITHUB_REPO: 'jiaxincangchu',
             GITHUB_PATH: 'data.json',
-            GITHUB_TOKEN: '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',
+            GITHUB_TOKEN: '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',
             PASSWORD: 'jiaxin123',
             DELETE_PASSWORD: '0326'
         };
@@ -2962,18 +2962,45 @@
 
         // ==================== 云端同步核心 ====================
         async function fetchData() {
-            const response = await fetch(`https://api.github.com/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/contents/${CONFIG.GITHUB_PATH}`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/vnd.github+json',
-                    'Authorization': `Bearer ${CONFIG.GITHUB_TOKEN}`,
-                    'X-GitHub-Api-Version': '2022-11-28'
-                },
-                cache: 'no-store'
-            });
+            let response;
+            let usedToken = true;
+
+            // 第 1 次尝试：带 Token（认证用户，速率限制更高）
+            try {
+                response = await fetch(`https://api.github.com/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/contents/${CONFIG.GITHUB_PATH}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/vnd.github+json',
+                        'Authorization': `Bearer ${CONFIG.GITHUB_TOKEN}`,
+                        'X-GitHub-Api-Version': '2022-11-28'
+                    },
+                    cache: 'no-store'
+                });
+            } catch (e) {
+                // 网络错误，继续尝试不带 token
+                response = null;
+            }
+
+            // 如果带 token 失败（401/403），尝试不带 token（public repo 公开可读）
+            if (!response || response.status === 401 || response.status === 403) {
+                usedToken = false;
+                try {
+                    response = await fetch(`https://api.github.com/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/contents/${CONFIG.GITHUB_PATH}`, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/vnd.github+json',
+                            'X-GitHub-Api-Version': '2022-11-28'
+                        },
+                        cache: 'no-store'
+                    });
+                } catch (e) {
+                    throw new Error('网络请求失败，无法连接到 GitHub API');
+                }
+            }
 
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                const errText = await response.text().catch(() => response.statusText);
+                throw new Error(`HTTP ${response.status}: ${errText}`);
             }
 
             const result = await response.json();
@@ -3311,7 +3338,7 @@ async function saveData() {
             } catch (error) {
                 console.error('GitHub 同步失败:', error);
                 const errMsg = error.message || '未知错误';
-                updateSyncStatus('error', '同步失败: ' + errMsg.substring(0, 30));
+                updateSyncStatus('error', '同步失败: ' + errMsg.substring(0, 50));
                 showToast('❌ GitHub 同步失败: ' + errMsg, 'error');
                 alert('GitHub 保存失败，请检查网络或数据大小。错误详情：' + errMsg + '\n数据大小：' + rawSizeKB + 'KB\n数据已保存到浏览器本地缓存，刷新页面后数据不会丢失。');
                 throw error;
