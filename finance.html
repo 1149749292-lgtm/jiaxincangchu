@@ -3083,8 +3083,8 @@
                 return {
                     size: json.length,
                     sizeKB: (json.length / 1024).toFixed(2),
-                    limit: 100 * 1024,  // 100KB
-                    limitKB: 100,
+                    limit: 1024 * 1024,  // 1MB (Gist 单文件上限)
+                    limitKB: 1024,
                     percentage: Math.min(100, (json.length / (100 * 1024) * 100)).toFixed(1)
                 };
             } catch (e) {
@@ -3127,13 +3127,13 @@
                 textColor = 'text-red-700';
                 bgColor = 'bg-red-50';
                 borderColor = 'border-red-200';
-                statusText = '⚠️ 存储空间即将耗尽，请清理旧数据或升级';
+                statusText = '⚠️ 存储空间紧张，请清理旧数据或升级';
             } else if (pct >= 70) {
                 colorClass = 'bg-yellow-500';
                 textColor = 'text-yellow-700';
                 bgColor = 'bg-yellow-50';
                 borderColor = 'border-yellow-200';
-                statusText = '存储空间紧张，建议清理';
+                statusText = '存储空间紧张，建议导出备份';
             }
 
             let detailRows = '';
@@ -3194,7 +3194,7 @@
                         <div style="font-size:12px; color:#b91c1c; line-height:1.8;">
                             1. <strong>导出备份</strong>：点击上方"导出数据"按钮，将数据备份到本地<br>
                             2. <strong>清理旧数据</strong>：删除半年前的已完成订单（采购/销售）<br>
-                            3. <strong>升级存储</strong>：GitHub 免费空间充足（100MB），如仍不足可清理旧数据<br>
+                            3. <strong>Gist 空间充足</strong>：单文件上限 1MB，当前空间充足<br>
                             4. <strong>清理费用流水</strong>：删除旧的 expensePayments 付款记录
                         </div>
                     </div>
@@ -3247,7 +3247,7 @@ async function saveData() {
             console.log('原始数据大小:', rawSizeKB, 'KB');
 
             // 如果数据超过 70KB，自动清理压缩
-            if (jsonString.length > 70000) {
+            if (jsonString.length > 700000) {
                 showToast('⚠️ 数据较大 (' + rawSizeKB + 'KB)，正在自动压缩...', 'warning');
                 const cleanedData = cleanDataForSave(data);
                 try {
@@ -3260,13 +3260,13 @@ async function saveData() {
                 showToast('✅ 数据已压缩: ' + rawSizeKB + 'KB → ' + cleanedSizeKB + 'KB', 'success');
             }
 
-            if (jsonString.length > 100000) {
+            if (jsonString.length > 1048576) {
                 showToast('⚠️ 数据过大 (' + (jsonString.length/1024).toFixed(2) + 'KB)，接近云端限制', 'warning');
             }
 
-            // 如果压缩后仍然超过 95KB，尝试更激进的清理
-            if (jsonString.length > 95000) {
-                showToast('🚨 数据仍超 95KB，尝试深度清理...', 'warning');
+            // 如果压缩后仍然超过 1000KB，尝试更激进的清理
+            if (jsonString.length > 1000000) {
+                showToast('🚨 数据仍超 1000KB，尝试深度清理...', 'warning');
                 const aggressiveClean = deepCleanData(data);
                 try {
                     const aggressiveJson = JSON.stringify(aggressiveClean);
@@ -3281,9 +3281,9 @@ async function saveData() {
             }
 
             // 如果仍然超过 100KB，阻止同步并提示用户
-            if (jsonString.length > 100000) {
+            if (jsonString.length > 1048576) {
                 const finalSizeKB = (jsonString.length / 1024).toFixed(2);
-                showToast('❌ 数据 ' + finalSizeKB + 'KB 超过 100KB 上限，无法同步', 'error');
+                showToast('❌ 数据 ' + finalSizeKB + 'KB 超过 1MB 上限，无法同步', 'error');
                 alert('保存失败：GitHub 同步出错。\n\n解决方案：\n1. 检查网络连接\n2. 确认 GitHub Token 是否过期\n3. 导出数据备份（点击"导出数据"）\n\n数据已保存到浏览器本地，刷新不会丢失。');
                 updateSyncStatus('error', '数据超限: ' + finalSizeKB + 'KB/100KB');
                 throw new Error('Data size ' + finalSizeKB + 'KB exceeds 100KB limit');
