@@ -2959,9 +2959,13 @@
 
         // ==================== 云端同步核心 ====================
         async function fetchData() {
-            const rawUrl = `https://raw.githubusercontent.com/${CONFIG.REPO_OWNER}/${CONFIG.REPO_NAME}/main/${CONFIG.REPO_FILENAME}`;
-            const response = await fetch(rawUrl + '?t=' + Date.now(), {
+            const apiUrl = `https://api.github.com/repos/${CONFIG.REPO_OWNER}/${CONFIG.REPO_NAME}/contents/${CONFIG.REPO_FILENAME}`;
+            const response = await fetch(apiUrl, {
                 method: 'GET',
+                headers: {
+                    'Authorization': `token ${CONFIG.GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                },
                 cache: 'no-store'
             });
 
@@ -2974,17 +2978,20 @@
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
-            const text = await response.text();
-            if (!text || text.trim() === '') {
-                return {};
+            const result = await response.json();
+            if (result.content) {
+                try {
+                    const text = decodeURIComponent(escape(atob(result.content)));
+                    if (!text || text.trim() === '') {
+                        return {};
+                    }
+                    return JSON.parse(text) || {};
+                } catch (e) {
+                    console.error('仓库文件解析失败:', e);
+                    return {};
+                }
             }
-
-            try {
-                return JSON.parse(text) || {};
-            } catch (e) {
-                console.error('仓库文件解析失败:', e);
-                return {};
-            }
+            return {};
         }
 
         async function saveData() {
@@ -3018,7 +3025,9 @@
                 showToast('✅ 数据已保存到云端');
             } catch (error) {
                 console.error('同步失败:', error);
-                updateSyncStatus('error', '同步失败，已保存本地');
+                const errMsg = error && error.message ? error.message : '未知错误';
+                updateSyncStatus('error', '同步失败: ' + errMsg.substring(0, 30));
+                showToast('❌ GitHub同步失败: ' + errMsg, 'error');
                 localStorage.setItem('finance_data_cache', JSON.stringify(data));
                 throw error;
             }
