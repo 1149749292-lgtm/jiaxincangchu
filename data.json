@@ -1,1 +1,1 @@
-{}
+{"suppliers":[],"customers":[],"products":[],"purchaseOrders":[],"salesOrders":[],"transactions":[],"lastPurchaseDocNumber":0,"expenses":[{"id":"EXP1778394036240","type":"other","date":"2026-05-10","totalAmount":1,"paidAmount":0,"remainingAmount":1,"remark":"","lastUpdated":1778394036240}],"shareholders":[],"lastSalesDocNumbers":{},"expensePayments":[],"expenseTypes":{}}
