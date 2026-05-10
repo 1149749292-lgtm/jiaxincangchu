@@ -2871,10 +2871,31 @@
             GITHUB_OWNER: '1149749292-lgtm',
             GITHUB_REPO: 'jiaxincangchu',
             GITHUB_PATH: 'data.json',
-            GITHUB_TOKEN: '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',
+            GITHUB_TOKEN: '', // Token 不再硬编码，首次使用时会提示输入
             PASSWORD: 'jiaxin123',
             DELETE_PASSWORD: '0326'
         };
+
+        // 获取 GitHub Token（优先从 localStorage 读取，避免暴露在公开仓库代码中）
+        function getGitHubToken() {
+            return localStorage.getItem('github_token') || '';
+        }
+
+        // 初始化 GitHub Token（首次打开时提示输入）
+        function initGitHubToken() {
+            const token = getGitHubToken();
+            if (!token) {
+                const input = prompt('🔑 首次使用 GitHub 存储\n\n请输入你的 GitHub Personal Access Token（需勾选 repo 权限）：\n\nToken 只会保存在当前浏览器，不会上传到仓库。');
+                if (input && input.startsWith('ghp_')) {
+                    localStorage.setItem('github_token', input);
+                    showToast('✅ Token 已保存到当前浏览器');
+                    return input;
+                } else if (input) {
+                    showToast('⚠️ Token 格式不正确，应以 ghp_ 开头', 'warning');
+                }
+            }
+            return token;
+        }
 
         // 删除操作相关变量
         let deleteTarget = { type: '', orderId: '' };
@@ -2971,7 +2992,7 @@
                     method: 'GET',
                     headers: {
                         'Accept': 'application/vnd.github+json',
-                        'Authorization': `Bearer ${CONFIG.GITHUB_TOKEN}`,
+                        'Authorization': `Bearer ${getGitHubToken()}`,
                         'X-GitHub-Api-Version': '2022-11-28'
                     },
                     cache: 'no-store'
@@ -3298,7 +3319,7 @@ async function saveData() {
                         method: 'GET',
                         headers: {
                             'Accept': 'application/vnd.github+json',
-                            'Authorization': `Bearer ${CONFIG.GITHUB_TOKEN}`,
+                            'Authorization': `Bearer ${getGitHubToken()}`,
                             'X-GitHub-Api-Version': '2022-11-28'
                         },
                         cache: 'no-store'
@@ -3316,7 +3337,7 @@ async function saveData() {
                     method: 'PUT',
                     headers: {
                         'Accept': 'application/vnd.github+json',
-                        'Authorization': `Bearer ${CONFIG.GITHUB_TOKEN}`,
+                        'Authorization': `Bearer ${getGitHubToken()}`,
                         'X-GitHub-Api-Version': '2022-11-28',
                         'Content-Type': 'application/json'
                     },
@@ -3404,6 +3425,9 @@ async function saveData() {
         }
 
         async function initApp() {
+            // 初始化 GitHub Token（首次使用提示输入）
+            initGitHubToken();
+
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('purchaseDate').value = today;
             document.getElementById('salesDate').value = today;
@@ -6401,6 +6425,18 @@ function renderTransactionList() {
 
 
         // ==================== 删除功能 ====================
+        function resetGitHubToken() {
+            if (!confirm('确定要重置 GitHub Token 吗？\n\n重置后需要重新输入新的 Token。')) return;
+            localStorage.removeItem('github_token');
+            const newToken = prompt('请输入新的 GitHub Personal Access Token（需勾选 repo 权限）：');
+            if (newToken && newToken.startsWith('ghp_')) {
+                localStorage.setItem('github_token', newToken);
+                showToast('✅ Token 已更新，请刷新页面');
+            } else {
+                showToast('⚠️ 未输入有效 Token', 'warning');
+            }
+        }
+
         function showDeleteConfirm(type, orderId) {
             // 先检查编辑权限
             if (!checkEditPermission()) return;
