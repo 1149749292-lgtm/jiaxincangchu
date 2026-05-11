@@ -2482,7 +2482,75 @@
         </div>
     </div>
 
-    <!-- 产品管理模态框 -->
+        <!-- 销售退货模态框 -->
+    <div id="returnModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-red-600">销售退货处理</h3>
+                <button onclick="closeModal('returnModal')" class="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+            <div class="p-6">
+                <input type="hidden" id="returnOrderId">
+                <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13px; color: #991b1b;">
+                        <div>客户：<span id="returnCustomerName" class="font-bold">-</span></div>
+                        <div>原单号：<span id="returnDocNumber" class="font-bold">-</span></div>
+                        <div>原日期：<span id="returnOrderDate">-</span></div>
+                        <div>原金额：<span id="returnOriginalAmount" class="font-bold">-</span></div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+                    <span class="font-bold text-gray-700">退货产品明细</span>
+                    <button onclick="selectAllReturnItems()" style="font-size: 12px; color: #3b82f6; background: none; border: none; cursor: pointer;">全选/取消</button>
+                </div>
+
+                <div style="max-height: 300px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 16px;">
+                    <table class="w-full" style="font-size: 13px;">
+                        <thead style="background: #f9fafb; position: sticky; top: 0;">
+                            <tr>
+                                <th style="padding: 8px; width: 40px;"><input type="checkbox" id="returnSelectAll" onclick="toggleAllReturnItems(this)"></th>
+                                <th style="padding: 8px; text-align: left;">品名</th>
+                                <th style="padding: 8px; text-align: left;">规格</th>
+                                <th style="padding: 8px; text-align: center;">原数量</th>
+                                <th style="padding: 8px; text-align: center;">退货数量</th>
+                                <th style="padding: 8px; text-align: center;">单价</th>
+                                <th style="padding: 8px; text-align: right;">退货金额</th>
+                            </tr>
+                        </thead>
+                        <tbody id="returnItemsBody"></tbody>
+                    </table>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">退货日期 *</label>
+                        <input type="date" id="returnDate" class="w-full px-3 py-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">退货金额合计</label>
+                        <input type="text" id="returnTotalAmount" class="w-full px-3 py-2 border rounded-lg bg-red-50 text-red-700 font-bold" readonly value="¥0.00">
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">退货原因</label>
+                    <input type="text" id="returnReason" class="w-full px-3 py-2 border rounded-lg" placeholder="例如：质量问题、客户取消订单等">
+                </div>
+
+                <div style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 13px; color: #9a3412;">
+                    <div style="font-weight: 600; margin-bottom: 4px;">💡 退货说明：</div>
+                    <div>• 全部退货：勾选所有产品，退货数量等于原数量</div>
+                    <div>• 部分退货：勾选部分产品，可修改退货数量（不能超过原数量）</div>
+                    <div>• 退货后客户欠款将自动减少，如已付款超过退货后金额，将生成退款记录</div>
+                </div>
+
+                <button onclick="processReturn()" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer;">确认退货</button>
+            </div>
+        </div>
+    </div>
+
+<!-- 产品管理模态框 -->
     <div id="productModal" class="modal">
         <div class="modal-content" style="max-width: 500px;">
             <div class="p-6 border-b border-gray-200 flex justify-between items-center">
@@ -5084,6 +5152,11 @@ async function saveData() {
             const order = data.salesOrders.find(o => o.id === orderId);
             if (!order) { showToast('❌ 订单不存在', 'error'); return; }
 
+            if (order.isReturned) {
+                showToast('⚠️ 已退货的订单不允许编辑，如需修改请先删除重新录入', 'warning');
+                return;
+            }
+
             editingSalesOrderId = orderId;
 
             const select = document.getElementById('salesCustomer');
@@ -5287,7 +5360,14 @@ async function saveData() {
                 docNumber: docNumber,
                 date, customerId: customerSelect.value, customerName, customerPhone: phone, customerAddress: address,
                 items, totalQty, totalAmount, chineseAmount: numberToChinese(totalAmount),
-                paymentStatus: 'unpaid', paidAmount: 0, remainingAmount: totalAmount
+                paymentStatus: 'unpaid', paidAmount: 0, remainingAmount: totalAmount,
+                originalTotalAmount: totalAmount,
+                isReturned: false,
+                returnType: null,
+                returnAmount: 0,
+                returnDate: null,
+                returnReason: '',
+                returnItems: []
             };
 
             data.salesOrders.unshift(order);
@@ -5309,10 +5389,19 @@ async function saveData() {
 
         function showSalesReceipt(order) {
             let tableRows = '';
-            for (let i = 1; i <= 10; i++) {
+            for (let i = 1; i <= 11; i++) {
                 const item = order.items.find(it => it.seq === i);
                 if (item) {
-                    tableRows += `<tr><td class="td-seq">${item.seq}</td><td class="td-product">${item.name}</td><td class="td-spec">${item.spec}</td><td class="td-brand">${item.brand}</td><td class="td-qty">${item.qty}</td><td class="td-weight">${formatWeight(item.weight)}</td><td class="td-price">${item.price}</td><td class="td-amount" style="color: #c00; font-weight: bold;">${item.total}</td><td class="td-remark">${item.remark}</td></tr>`;
+                    const isReturnedItem = order.isReturned && order.returnItems && order.returnItems.some(ri => ri.seq === item.seq);
+                    const returnItem = isReturnedItem ? order.returnItems.find(ri => ri.seq === item.seq) : null;
+                    const returnQty = returnItem ? returnItem.qty : 0;
+                    const rowStyle = isReturnedItem ? 'background: #fef2f2;' : '';
+                    const cellStyle = isReturnedItem ? 'text-decoration: line-through; color: #9ca3af;' : '';
+                    const qtyDisplay = isReturnedItem ? `<span style="text-decoration: line-through; color: #9ca3af;">${item.qty}</span> <span style="color: #dc2626; font-weight: bold;">(退${returnQty})</span>` : item.qty;
+                    const amountDisplay = isReturnedItem ? `<span style="text-decoration: line-through; color: #9ca3af;">${item.total}</span> <span style="color: #dc2626; font-weight: bold;">已退</span>` : `<span style="color: #c00; font-weight: bold;">${item.total}</span>`;
+                    const remarkDisplay = isReturnedItem ? `<span style="color: #dc2626;">【已退】${item.remark || ''}</span>` : (item.remark || '');
+
+                    tableRows += `<tr style="${rowStyle}"><td class="td-seq" style="${cellStyle}">${item.seq}</td><td class="td-product" style="${cellStyle}">${item.name}</td><td class="td-spec" style="${cellStyle}">${item.spec}</td><td class="td-brand" style="${cellStyle}">${item.brand}</td><td class="td-qty">${qtyDisplay}</td><td class="td-weight" style="${cellStyle}">${formatWeight(item.weight)}</td><td class="td-price" style="${cellStyle}">${item.price}</td><td class="td-amount">${amountDisplay}</td><td class="td-remark">${remarkDisplay}</td></tr>`;
                 } else {
                     tableRows += `<tr><td class="td-seq">${i}</td><td class="td-product"></td><td class="td-spec"></td><td class="td-brand"></td><td class="td-qty"></td><td class="td-weight"></td><td class="td-price"></td><td class="td-amount"></td><td class="td-remark"></td></tr>`;
                 }
@@ -5327,7 +5416,10 @@ async function saveData() {
             document.getElementById('salesReceipt').innerHTML = `
                 <div class="sales-list-wrapper">
                     <div style="position: relative; display: flex; justify-content: space-between; align-items: center; margin: 0 30px; padding: 25px 0 20px 0; border-bottom: 2px solid #000;">
-                        <div style="flex: 1; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 12px;">佳信水产销售清单</div>
+                        <div style="flex: 1; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 12px;">
+                            佳信水产销售清单
+                            ${order.isReturned ? `<div style="font-size: 16px; color: #dc2626; margin-top: 6px; font-weight: 700;">【已退货】退货金额：¥${order.returnAmount.toFixed(2)} ${order.returnReason ? '| ' + order.returnReason : ''}</div>` : ''}
+                        </div>
                         <div style="position: absolute; right: 0; top: 50%; transform: translateY(-50%); font-size: 14px; font-weight: bold; color: #1e40af; border: 1px solid #1e40af; padding: 4px 8px; border-radius: 4px; background: #dbeafe;">
                             单号: ${order.docNumber || order.id.slice(-6)}
                         </div>
@@ -5376,7 +5468,194 @@ async function saveData() {
             document.getElementById('salesReceiptModal').classList.add('active');
         }
 
-        function downloadSalesReceipt() {
+        
+        // ==================== 销售退货功能 ====================
+
+        function openReturnModal(orderId) {
+            const order = data.salesOrders.find(o => o.id === orderId);
+            if (!order) return;
+
+            if (order.isReturned) {
+                showToast('⚠️ 该订单已处理过退货', 'warning');
+                return;
+            }
+
+            document.getElementById('returnOrderId').value = orderId;
+            document.getElementById('returnCustomerName').textContent = order.customerName;
+            document.getElementById('returnDocNumber').textContent = order.docNumber || order.id.slice(-6);
+            document.getElementById('returnOrderDate').textContent = order.date;
+            document.getElementById('returnOriginalAmount').textContent = '¥' + (order.totalAmount || 0).toFixed(2);
+            document.getElementById('returnDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('returnReason').value = '';
+            document.getElementById('returnTotalAmount').value = '¥0.00';
+            document.getElementById('returnSelectAll').checked = false;
+
+            const tbody = document.getElementById('returnItemsBody');
+            tbody.innerHTML = order.items.map(item => `
+                <tr style="border-bottom: 1px solid #f3f4f6;" class="return-item-row" data-seq="${item.seq}">
+                    <td style="padding: 8px; text-align: center;">
+                        <input type="checkbox" class="return-item-check" onchange="calculateReturnTotal()">
+                    </td>
+                    <td style="padding: 8px;">${item.name}</td>
+                    <td style="padding: 8px;">${item.spec}</td>
+                    <td style="padding: 8px; text-align: center;">${item.qty}</td>
+                    <td style="padding: 8px; text-align: center;">
+                        <input type="number" class="return-qty" value="${item.qty}" min="0" max="${item.qty}" step="1" 
+                            style="width: 60px; text-align: center; border: 1px solid #ddd; border-radius: 4px; padding: 4px;"
+                            oninput="calculateReturnTotal()">
+                    </td>
+                    <td style="padding: 8px; text-align: center;">
+                        <input type="number" class="return-price" value="${item.price}" step="0.01"
+                            style="width: 70px; text-align: center; border: 1px solid #ddd; border-radius: 4px; padding: 4px;"
+                            oninput="calculateReturnTotal()">
+                    </td>
+                    <td style="padding: 8px; text-align: right; font-weight: 600; color: #dc2626;" class="return-item-total">¥0.00</td>
+                </tr>
+            `).join('');
+
+            document.getElementById('returnModal').classList.add('active');
+        }
+
+        function toggleAllReturnItems(checkbox) {
+            document.querySelectorAll('.return-item-check').forEach(cb => cb.checked = checkbox.checked);
+            calculateReturnTotal();
+        }
+
+        function selectAllReturnItems() {
+            const allChecked = Array.from(document.querySelectorAll('.return-item-check')).every(cb => cb.checked);
+            document.querySelectorAll('.return-item-check').forEach(cb => cb.checked = !allChecked);
+            document.getElementById('returnSelectAll').checked = !allChecked;
+            calculateReturnTotal();
+        }
+
+        function calculateReturnTotal() {
+            let total = 0;
+            document.querySelectorAll('.return-item-row').forEach(row => {
+                const checkbox = row.querySelector('.return-item-check');
+                const qty = parseFloat(row.querySelector('.return-qty').value) || 0;
+                const price = parseFloat(row.querySelector('.return-price').value) || 0;
+                const itemTotal = qty * price;
+
+                row.querySelector('.return-item-total').textContent = '¥' + itemTotal.toFixed(2);
+
+                if (checkbox && checkbox.checked) {
+                    total += itemTotal;
+                }
+            });
+            document.getElementById('returnTotalAmount').value = '¥' + total.toFixed(2);
+        }
+
+        async function processReturn() {
+            if (!checkEditPermission()) return;
+
+            const orderId = document.getElementById('returnOrderId').value;
+            const order = data.salesOrders.find(o => o.id === orderId);
+            if (!order) return;
+
+            const returnDate = document.getElementById('returnDate').value;
+            const returnReason = document.getElementById('returnReason').value.trim();
+            const returnTotalText = document.getElementById('returnTotalAmount').value;
+            const returnAmount = parseFloat(returnTotalText.replace('¥', '')) || 0;
+
+            if (!returnDate) {
+                showToast('⚠️ 请选择退货日期', 'warning');
+                return;
+            }
+            if (returnAmount <= 0) {
+                showToast('⚠️ 请选择至少一项退货产品', 'warning');
+                return;
+            }
+
+            const returnItems = [];
+            document.querySelectorAll('.return-item-row').forEach(row => {
+                const checkbox = row.querySelector('.return-item-check');
+                if (checkbox && checkbox.checked) {
+                    const seq = parseInt(row.dataset.seq);
+                    const originalItem = order.items.find(i => i.seq === seq);
+                    const returnQty = parseFloat(row.querySelector('.return-qty').value) || 0;
+                    const returnPrice = parseFloat(row.querySelector('.return-price').value) || 0;
+
+                    if (returnQty > 0 && originalItem) {
+                        returnItems.push({
+                            seq: originalItem.seq,
+                            name: originalItem.name,
+                            spec: originalItem.spec,
+                            brand: originalItem.brand,
+                            qty: returnQty,
+                            weight: originalItem.weight,
+                            price: returnPrice,
+                            total: (returnQty * returnPrice).toFixed(2),
+                            remark: '退货'
+                        });
+                    }
+                }
+            });
+
+            if (!order.originalTotalAmount) {
+                order.originalTotalAmount = order.totalAmount;
+            }
+
+            order.isReturned = true;
+            order.returnType = returnAmount >= order.originalTotalAmount ? 'full' : 'partial';
+            order.returnAmount = returnAmount;
+            order.returnDate = returnDate;
+            order.returnReason = returnReason;
+            order.returnItems = returnItems;
+
+            const newTotalAmount = order.originalTotalAmount - returnAmount;
+            order.totalAmount = newTotalAmount;
+            order.chineseAmount = numberToChinese(newTotalAmount);
+
+            if (order.paidAmount >= newTotalAmount) {
+                const refundAmount = order.paidAmount - newTotalAmount;
+                order.remainingAmount = 0;
+                order.paymentStatus = 'paid';
+
+                if (refundAmount > 0) {
+                    data.transactions.push({
+                        id: 'TRX' + Date.now(),
+                        date: returnDate,
+                        type: 'expense',
+                        partyId: order.customerId,
+                        partyName: order.customerName,
+                        amount: refundAmount,
+                        paymentMethod: '退货退款',
+                        remark: `销售单${order.docNumber || order.id.slice(-6)}退货退款：${returnReason || '无原因'}`
+                    });
+                }
+            } else {
+                order.remainingAmount = newTotalAmount - order.paidAmount;
+                order.paymentStatus = order.paidAmount > 0 ? 'partial' : 'unpaid';
+            }
+
+            const customer = data.customers.find(c => c.id === order.customerId);
+            if (customer) {
+                const customerOrders = data.salesOrders.filter(o => o.customerId === order.customerId);
+                const totalSales = customerOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+                const totalPayments = data.transactions
+                    .filter(t => t.partyId === order.customerId && t.type === 'income' && !t.isExpensePayment)
+                    .reduce((sum, t) => sum + (t.amount || 0), 0);
+                const totalRefunds = data.transactions
+                    .filter(t => t.partyId === order.customerId && t.type === 'expense' && t.paymentMethod === '退货退款')
+                    .reduce((sum, t) => sum + (t.amount || 0), 0);
+                customer.balance = Math.max(0, totalSales - totalPayments + totalRefunds);
+            }
+
+            try {
+                await saveData();
+                closeModal('returnModal');
+                renderSalesList();
+                renderCustomerList();
+                updateDashboard();
+                updateCapitalOverview();
+                showToast(`✅ 退货处理成功，退货金额 ¥${returnAmount.toFixed(2)}`);
+            } catch (err) {
+                console.error('退货处理失败:', err);
+                showToast('❌ 退货处理失败: ' + (err.message || '未知错误'), 'error');
+            }
+        }
+
+function downloadSalesReceipt() {
             document.getElementById('loading').classList.add('show');
             const element = document.querySelector('.sales-list-wrapper');
             html2canvas(element, { scale: 2, backgroundColor: '#ffffff', width: 1100, height: element.offsetHeight }).then(canvas => {
@@ -5444,13 +5723,22 @@ async function saveData() {
 
             const tbody = document.getElementById('salesList');
             let html = orders.map(order => {
-                return `<tr>
-                    <td class="px-6 py-4 text-sm font-medium cursor-pointer text-blue-600 hover:text-blue-800 hover:underline" onclick="openEditSalesModal('${order.id}')" title="点击编辑">${(order.docNumber || order.id.slice(-6))}</td>
+                const returnBadge = order.isReturned 
+                    ? `<span class="status-badge ${order.returnType === 'full' ? 'status-cancelled' : 'status-partial'}" style="margin-left: 6px; font-size: 10px;">${order.returnType === 'full' ? '已全退' : '部分退'}</span>` 
+                    : '';
+                const amountDisplay = order.isReturned 
+                    ? `<span style="text-decoration: line-through; color: #9ca3af; font-size: 11px; margin-right: 4px;">¥${(order.originalTotalAmount || order.totalAmount).toFixed(2)}</span><span class="text-red-600 font-bold">¥${order.totalAmount.toFixed(2)}</span>`
+                    : `¥${order.totalAmount.toFixed(2)}`;
+                const rowStyle = order.isReturned ? 'background: #fef2f2;' : '';
+
+                return `<tr style="${rowStyle}">
+                    <td class="px-6 py-4 text-sm font-medium cursor-pointer text-blue-600 hover:text-blue-800 hover:underline" onclick="openEditSalesModal('${order.id}')" title="点击编辑">${(order.docNumber || order.id.slice(-6))}${returnBadge}</td>
                     <td class="px-6 py-4 text-sm text-gray-500">${order.date}</td>
                     <td class="px-6 py-4 text-sm">${order.customerName}</td>
-                    <td class="px-6 py-4 text-sm font-medium">¥${order.totalAmount.toFixed(2)}</td>
+                    <td class="px-6 py-4 text-sm font-medium">${amountDisplay}</td>
                     <td class="px-6 py-4 text-sm space-x-1">
                         <button onclick="viewSalesReceiptById('${order.id}')" class="text-blue-600 hover:underline">查看</button>
+                        ${!order.isReturned ? `<button onclick="openReturnModal('${order.id}')" class="text-orange-600 hover:underline">退货</button>` : '<span class="text-gray-400 text-xs">已退</span>'}
                         <button onclick="showDeleteConfirm('sales', '${order.id}')" class="text-red-600 hover:underline">删除</button>
                     </td>
                 </tr>`;
