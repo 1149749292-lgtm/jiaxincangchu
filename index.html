@@ -765,6 +765,8 @@
               <th style="padding: 12px; text-align: center; font-weight: 600; font-size: 13px; border-bottom: 2px solid var(--border);">净重</th>
               <th style="padding: 12px; text-align: center; font-weight: 600; font-size: 13px; border-bottom: 2px solid var(--border);">毛重</th>
               <th style="padding: 12px; text-align: center; font-weight: 600; font-size: 13px; border-bottom: 2px solid var(--border);">售价(元)</th>
+              <th style="padding: 12px; text-align: center; font-weight: 600; font-size: 13px; border-bottom: 2px solid var(--border);">加工费<br><span style="font-size:10px;color:var(--text-tertiary)">元/吨</span></th>
+              <th style="padding: 12px; text-align: center; font-weight: 600; font-size: 13px; border-bottom: 2px solid var(--border);">包装费<br><span style="font-size:10px;color:var(--text-tertiary)">元/件</span></th>
               <th style="padding: 12px; text-align: center; font-weight: 600; font-size: 13px; border-bottom: 2px solid var(--border);">备注</th>
               <th style="padding: 12px; text-align: center; font-weight: 600; font-size: 13px; border-bottom: 2px solid var(--border); width: 120px;">操作</th>
             </tr>
@@ -848,6 +850,24 @@
             <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">单位</label>
             <input type="text" id="productUnit" placeholder="默认：件" value="件"
                    style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px;">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">
+                加工费 <span style="font-size: 11px; color: var(--text-tertiary);">(元/吨)</span>
+              </label>
+              <input type="number" id="productProcessFee" placeholder="如：3300" step="100" min="0"
+                     style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px;">
+              <p style="font-size: 11px; color: var(--text-tertiary); margin-top: 4px; margin-bottom: 0;">留空则使用系统默认值</p>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">
+                包装费 <span style="font-size: 11px; color: var(--text-tertiary);">(元/件)</span>
+              </label>
+              <input type="number" id="productPackCost" placeholder="如：0.6" step="0.1" min="0"
+                     style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px;">
+              <p style="font-size: 11px; color: var(--text-tertiary); margin-top: 4px; margin-bottom: 0;">留空则使用系统默认值</p>
+            </div>
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
             <div class="form-group" style="margin-bottom: 0;">
@@ -1103,10 +1123,9 @@
         </div>
       </div>
     </div>
-  </div>
+  
 
-
-    <!-- 待扣减入库记录 -->
+<!-- 待扣减入库记录 -->
     <div class="card" style="margin-top: 20px; border: 2px solid #f59e0b;">
       <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; color: #d97706; cursor: pointer;" onclick="togglePendingDeduct()">
         <span>⚠️ 待扣减入库记录</span>
@@ -1140,6 +1159,10 @@
         </div>
       </div>
     </div>
+
+    
+</div>
+
 
     <div class="nav-bar">
     <div class="nav-item active" data-page="stock" onclick="switchPage('stock')"><span class="icon">📊</span><span>库存</span></div>
@@ -3889,6 +3912,8 @@ function exportAllData() {
             <td style="padding: 12px; text-align: center; font-size: 13px; color: var(--text-secondary);">${p.net || 0} kg</td>
             <td style="padding: 12px; text-align: center; font-size: 13px; color: var(--text-secondary);">${p.gross || 0} kg</td>
             <td style="padding: 12px; text-align: center; font-weight: 600; color: var(--primary);">${price > 0 ? '¥' + price : '-'}</td>
+            <td style="padding: 12px; text-align: center; font-size: 13px; color: var(--text-secondary);">${p.processFee > 0 ? p.processFee : '<span style="color:var(--text-tertiary)">-</span>'}</td>
+            <td style="padding: 12px; text-align: center; font-size: 13px; color: var(--text-secondary);">${p.packCost > 0 ? '¥' + p.packCost : '<span style="color:var(--text-tertiary)">-</span>'}</td>
             <td style="padding: 12px; text-align: center; font-size: 13px; color: var(--text-tertiary);">${p.remark || '-'}</td>
             <td style="padding: 12px; text-align: center;">
               <div style="display: flex; gap: 6px; justify-content: center;">
@@ -3926,6 +3951,8 @@ function exportAllData() {
       document.getElementById('productNet').value = '';
       document.getElementById('productGross').value = '';
       document.getElementById('productUnit').value = '件';
+      document.getElementById('productProcessFee').value = '';
+      document.getElementById('productPackCost').value = '';
       document.getElementById('productIsBLevel').checked = false;
       document.getElementById('productEditWarning').style.display = 'none';
 
@@ -3947,6 +3974,8 @@ function exportAllData() {
       document.getElementById('productGross').value = p.gross || '';
       document.getElementById('productUnit').value = p.unit || '件';
       document.getElementById('productPrice').value = p.price || '';
+      document.getElementById('productProcessFee').value = p.processFee || '';
+      document.getElementById('productPackCost').value = p.packCost || '';
       document.getElementById('productRemark').value = p.remark || '';
       document.getElementById('productIsBLevel').checked = p.isBLevel || false;
       document.getElementById('productEditWarning').style.display = 'block';
@@ -3970,6 +3999,8 @@ function exportAllData() {
       const gross = parseFloat(document.getElementById('productGross').value) || 0;
       const unit = document.getElementById('productUnit').value.trim() || '件';
       const price = parseFloat(document.getElementById('productPrice').value) || 0;
+      const processFee = parseFloat(document.getElementById('productProcessFee').value);
+      const packCost = parseFloat(document.getElementById('productPackCost').value);
       const remark = document.getElementById('productRemark').value.trim();
       const isBLevel = document.getElementById('productIsBLevel').checked;
 
@@ -3994,6 +4025,10 @@ function exportAllData() {
           p.gross = gross;
           p.unit = unit;
           p.price = price;
+          if (!isNaN(processFee)) p.processFee = processFee;
+          else delete p.processFee;
+          if (!isNaN(packCost)) p.packCost = packCost;
+          else delete p.packCost;
           p.remark = remark;
           p.isBLevel = isBLevel;
 
@@ -4038,6 +4073,8 @@ function exportAllData() {
           remark: remark,
           isBLevel: isBLevel
         };
+        if (!isNaN(processFee)) newProduct.processFee = processFee;
+        if (!isNaN(packCost)) newProduct.packCost = packCost;
         products.push(newProduct);
 
         // 初始化库存为0
@@ -4986,51 +5023,199 @@ function showLoading(text) {
 // 利润系统内置产品数据（38种）
 const PROFIT_PRODUCTS = [
     // 大富肴 - 白灼（干冰类）
-    { id: 'p1', name: "白灼黑虎熟虾", spec: "21-25", pack: "大富肴", weight: 2.5, price: 174, boxCost: 2.35, packCost: 0.6, processFee: 3300, freight: 3, isBLevel: false, isPricePerKg: false },
-    { id: 'p2', name: "白灼黑虎熟虾", spec: "26-30", pack: "大富肴", weight: 2.5, price: 169, boxCost: 2.35, packCost: 0.6, processFee: 3300, freight: 3, isBLevel: false, isPricePerKg: false },
-    { id: 'p3', name: "白灼黑虎熟虾", spec: "30-40", pack: "大富肴", weight: 2.5, price: 164, boxCost: 2.35, packCost: 0.6, processFee: 3300, freight: 3, isBLevel: false, isPricePerKg: false },
-    { id: 'p4', name: "白灼黑虎熟虾", spec: "40-50", pack: "大富肴", weight: 2.5, price: 154, boxCost: 2.35, packCost: 0.6, processFee: 3300, freight: 3, isBLevel: false, isPricePerKg: false },
-    { id: 'p5', name: "白灼黑虎熟虾", spec: "50-60", pack: "大富肴", weight: 2.5, price: 124, boxCost: 2.35, packCost: 0.6, processFee: 3300, freight: 3, isBLevel: false, isPricePerKg: false },
+    { id: 'p1', name: "白灼黑虎熟虾", spec: "21-25", pack: "大富肴", weight: 2.5, price: 174, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p2', name: "白灼黑虎熟虾", spec: "26-30", pack: "大富肴", weight: 2.5, price: 169, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p3', name: "白灼黑虎熟虾", spec: "30-40", pack: "大富肴", weight: 2.5, price: 164, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p4', name: "白灼黑虎熟虾", spec: "40-50", pack: "大富肴", weight: 2.5, price: 154, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p5', name: "白灼黑虎熟虾", spec: "50-60", pack: "大富肴", weight: 2.5, price: 124, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: false },
     // 大富肴 - 盒冻
-    { id: 'p6', name: "盒冻熟虾", spec: "30-40", pack: "大富肴", weight: 2.9, price: 142, boxCost: 7, packCost: 0.3, processFee: 4200, freight: 3, isBLevel: false, isPricePerKg: false },
-    { id: 'p7', name: "盒冻熟虾", spec: "40-50", pack: "大富肴", weight: 2.9, price: 132, boxCost: 7, packCost: 0.3, processFee: 4200, freight: 3, isBLevel: false, isPricePerKg: false },
-    { id: 'p8', name: "盒冻熟虾", spec: "50-60", pack: "大富肴", weight: 2.9, price: 122, boxCost: 7, packCost: 0.3, processFee: 4200, freight: 3, isBLevel: false, isPricePerKg: false },
+    { id: 'p6', name: "盒冻熟虾", spec: "30-40", pack: "大富肴", weight: 2.9, price: 142, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p7', name: "盒冻熟虾", spec: "40-50", pack: "大富肴", weight: 2.9, price: 132, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p8', name: "盒冻熟虾", spec: "50-60", pack: "大富肴", weight: 2.9, price: 122, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: false },
     // 大富肴 - B级
-    { id: 'p9', name: "B级黑虎熟虾", spec: "B级21-25", pack: "大富肴", weight: 2.5, price: 134, boxCost: 3.45, packCost: 0.3, processFee: 3300, freight: 3, isBLevel: true, isPricePerKg: false },
-    { id: 'p10', name: "B级黑虎熟虾", spec: "B级26-30", pack: "大富肴", weight: 2.5, price: 129, boxCost: 3.45, packCost: 0.3, processFee: 3300, freight: 3, isBLevel: true, isPricePerKg: false },
-    { id: 'p11', name: "B级黑虎熟虾", spec: "B级30-40", pack: "大富肴", weight: 2.5, price: 124, boxCost: 3.45, packCost: 0.3, processFee: 3300, freight: 3, isBLevel: true, isPricePerKg: false },
-    { id: 'p12', name: "B级黑虎熟虾", spec: "B级40-50", pack: "大富肴", weight: 2.5, price: 114, boxCost: 3.45, packCost: 0.3, processFee: 3300, freight: 3, isBLevel: true, isPricePerKg: false },
+    { id: 'p9', name: "B级黑虎熟虾", spec: "B级21-25", pack: "大富肴", weight: 2.5, price: 134, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: true, isPricePerKg: false },
+    { id: 'p10', name: "B级黑虎熟虾", spec: "B级26-30", pack: "大富肴", weight: 2.5, price: 129, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: true, isPricePerKg: false },
+    { id: 'p11', name: "B级黑虎熟虾", spec: "B级30-40", pack: "大富肴", weight: 2.5, price: 124, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: true, isPricePerKg: false },
+    { id: 'p12', name: "B级黑虎熟虾", spec: "B级40-50", pack: "大富肴", weight: 2.5, price: 114, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: true, isPricePerKg: false },
     // 豪杰 - 干冰
-    { id: 'p13', name: "干冰熟虾", spec: "2-4", pack: "豪杰", weight: 2.5, price: 95, boxCost: 2.35, packCost: 0.6, processFee: 3300, freight: 0, isBLevel: false, isPricePerKg: false },
-    { id: 'p14', name: "干冰熟虾", spec: "4-6", pack: "豪杰", weight: 2.5, price: 87, boxCost: 2.35, packCost: 0.6, processFee: 3300, freight: 0, isBLevel: false, isPricePerKg: false },
-    { id: 'p15', name: "干冰熟虾", spec: "6-8", pack: "豪杰", weight: 2.5, price: 83, boxCost: 2.35, packCost: 0.6, processFee: 3300, freight: 0, isBLevel: false, isPricePerKg: false },
-    { id: 'p16', name: "干冰熟虾", spec: "8-12", pack: "豪杰", weight: 2.5, price: 78, boxCost: 2.35, packCost: 0.6, processFee: 3300, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p13', name: "干冰熟虾", spec: "2-4", pack: "豪杰", weight: 2.5, price: 95, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p14', name: "干冰熟虾", spec: "4-6", pack: "豪杰", weight: 2.5, price: 87, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p15', name: "干冰熟虾", spec: "6-8", pack: "豪杰", weight: 2.5, price: 83, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p16', name: "干冰熟虾", spec: "8-12", pack: "豪杰", weight: 2.5, price: 78, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: false },
     // 佳信 - 干冰
-    { id: 'p17', name: "干冰熟虾", spec: "1-2", pack: "佳信", weight: 2.5, price: 103, boxCost: 2.35, packCost: 0.6, processFee: 3900, freight: 0, isBLevel: false, isPricePerKg: false },
-    { id: 'p18', name: "干冰熟虾", spec: "2-4", pack: "佳信", weight: 2.5, price: 95, boxCost: 2.35, packCost: 0.6, processFee: 3900, freight: 0, isBLevel: false, isPricePerKg: false },
-    { id: 'p19', name: "干冰熟虾", spec: "4-6", pack: "佳信", weight: 2.5, price: 87, boxCost: 2.35, packCost: 0.6, processFee: 3900, freight: 0, isBLevel: false, isPricePerKg: false },
-    { id: 'p20', name: "干冰熟虾", spec: "6-8", pack: "佳信", weight: 2.5, price: 83, boxCost: 2.35, packCost: 0.6, processFee: 3900, freight: 0, isBLevel: false, isPricePerKg: false },
-    { id: 'p21', name: "干冰熟虾", spec: "8-12", pack: "佳信", weight: 2.5, price: 78, boxCost: 2.35, packCost: 0.6, processFee: 3900, freight: 0, isBLevel: false, isPricePerKg: false },
-    { id: 'p22', name: "干冰熟虾", spec: "特大A", pack: "佳信", weight: 2.5, price: 120, boxCost: 2.35, packCost: 0.6, processFee: 3900, freight: 0, isBLevel: false, isPricePerKg: false },
-    { id: 'p23', name: "干冰熟虾", spec: "特大", pack: "佳信", weight: 2.5, price: 112, boxCost: 2.35, packCost: 0.6, processFee: 3900, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p17', name: "干冰熟虾", spec: "1-2", pack: "佳信", weight: 2.5, price: 103, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p18', name: "干冰熟虾", spec: "2-4", pack: "佳信", weight: 2.5, price: 95, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p19', name: "干冰熟虾", spec: "4-6", pack: "佳信", weight: 2.5, price: 87, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p20', name: "干冰熟虾", spec: "6-8", pack: "佳信", weight: 2.5, price: 83, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p21', name: "干冰熟虾", spec: "8-12", pack: "佳信", weight: 2.5, price: 78, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p22', name: "干冰熟虾", spec: "特大A", pack: "佳信", weight: 2.5, price: 120, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p23', name: "干冰熟虾", spec: "特大", pack: "佳信", weight: 2.5, price: 112, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: false },
     // 佳信 - B级
-    { id: 'p24', name: "干冰B级熟虾", spec: "B级2-4", pack: "佳信", weight: 6.25, price: 137.5, boxCost: 3.45, packCost: 0.3, processFee: 3900, freight: 0, isBLevel: true, isPricePerKg: false },
-    { id: 'p25', name: "干冰B级熟虾", spec: "B级4-6", pack: "佳信", weight: 6.25, price: 112.5, boxCost: 3.45, packCost: 0.3, processFee: 3900, freight: 0, isBLevel: true, isPricePerKg: false },
-    { id: 'p26', name: "干冰B级熟虾", spec: "B级特大", pack: "佳信", weight: 6.25, price: 162.5, boxCost: 3.45, packCost: 0.3, processFee: 3900, freight: 0, isBLevel: true, isPricePerKg: false },
+    { id: 'p24', name: "干冰B级熟虾", spec: "B级2-4", pack: "佳信", weight: 6.25, price: 137.5, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: true, isPricePerKg: false },
+    { id: 'p25', name: "干冰B级熟虾", spec: "B级4-6", pack: "佳信", weight: 6.25, price: 112.5, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: true, isPricePerKg: false },
+    { id: 'p26', name: "干冰B级熟虾", spec: "B级特大", pack: "佳信", weight: 6.25, price: 162.5, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: true, isPricePerKg: false },
     // 佳信 - 盒冻
-    { id: 'p27', name: "盒冻熟虾", spec: "13-15", pack: "佳信", weight: 3.2, price: 190, boxCost: 7, packCost: 0.3, processFee: 3900, freight: 0, isBLevel: false, isPricePerKg: false },
-    { id: 'p28', name: "盒冻熟虾", spec: "16-20", pack: "佳信", weight: 3.2, price: 185, boxCost: 7, packCost: 0.3, processFee: 3900, freight: 0, isBLevel: false, isPricePerKg: false },
-    { id: 'p29', name: "盒冻熟虾", spec: "21-25", pack: "佳信", weight: 3.2, price: 175, boxCost: 7, packCost: 0.3, processFee: 3900, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p27', name: "盒冻熟虾", spec: "13-15", pack: "佳信", weight: 3.2, price: 190, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p28', name: "盒冻熟虾", spec: "16-20", pack: "佳信", weight: 3.2, price: 185, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: false },
+    { id: 'p29', name: "盒冻熟虾", spec: "21-25", pack: "佳信", weight: 3.2, price: 175, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: false },
     // 佳信 - 黑虎B级
-    { id: 'p30', name: "黑虎B级熟虾", spec: "B级2-4", pack: "佳信", weight: 6.25, price: 137.5, boxCost: 3.45, packCost: 0.3, processFee: 3900, freight: 0, isBLevel: true, isPricePerKg: false },
-    { id: 'p31', name: "黑虎B级熟虾", spec: "B级4-6", pack: "佳信", weight: 6.25, price: 112.5, boxCost: 3.45, packCost: 0.3, processFee: 3900, freight: 0, isBLevel: true, isPricePerKg: false },
-    { id: 'p32', name: "软虾", spec: "软虾", pack: "佳信", weight: 8.5, price: 340, boxCost: 3.45, packCost: 0.3, processFee: 3900, freight: 0, isBLevel: true, isPricePerKg: false },
+    { id: 'p30', name: "黑虎B级熟虾", spec: "B级2-4", pack: "佳信", weight: 6.25, price: 137.5, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: true, isPricePerKg: false },
+    { id: 'p31', name: "黑虎B级熟虾", spec: "B级4-6", pack: "佳信", weight: 6.25, price: 112.5, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: true, isPricePerKg: false },
+    { id: 'p32', name: "软虾", spec: "软虾", pack: "佳信", weight: 8.5, price: 340, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: true, isPricePerKg: false },
     // 蓝琼
-    { id: 'p33', name: "白灼黑虎熟虾", spec: "6-8", pack: "蓝琼", weight: 6.3, price: 65.5, boxCost: 2.35, packCost: 0.6, processFee: 3700, freight: 0, isBLevel: false, isPricePerKg: true },
-    { id: 'p34', name: "白灼黑虎熟虾", spec: "8-10", pack: "蓝琼", weight: 2.8, price: 64.5, boxCost: 2.35, packCost: 0.6, processFee: 4200, freight: 0, isBLevel: false, isPricePerKg: true },
-    { id: 'p35', name: "白灼黑虎熟虾", spec: "10-15", pack: "蓝琼", weight: 2.8, price: 63, boxCost: 2.35, packCost: 0.6, processFee: 4200, freight: 0, isBLevel: false, isPricePerKg: true },
-    { id: 'p36', name: "白灼黑虎熟虾", spec: "16-20", pack: "蓝琼", weight: 6.3, price: 61.5, boxCost: 2.35, packCost: 0.6, processFee: 3700, freight: 0, isBLevel: false, isPricePerKg: true }
+    { id: 'p33', name: "白灼黑虎熟虾", spec: "6-8", pack: "蓝琼", weight: 6.3, price: 65.5, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: true },
+    { id: 'p34', name: "白灼黑虎熟虾", spec: "8-10", pack: "蓝琼", weight: 2.8, price: 64.5, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: true },
+    { id: 'p35', name: "白灼黑虎熟虾", spec: "10-15", pack: "蓝琼", weight: 2.8, price: 63, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: true },
+    { id: 'p36', name: "白灼黑虎熟虾", spec: "16-20", pack: "蓝琼", weight: 6.3, price: 61.5, boxCost: 0, packCost: 0, processFee: 0, freight: 0, isBLevel: false, isPricePerKg: true }
 ];
+
+// ==================== 加工费 & 包装费 默认配置（基于汇总表v5） ====================
+
+// 加工费映射表（元/吨）
+const DEFAULT_PROCESS_FEE_MAP = {
+    // 众信
+    "众信|盒冻白灼虾|16-20": 3900,
+    // 佳信 - 条冻熟虾（对应系统"干冰熟虾"）
+    "佳信|条冻熟虾|1-2": 3300, "佳信|条冻熟虾|2-4": 3300, "佳信|条冻熟虾|4-6": 3300,
+    "佳信|条冻熟虾|6-8": 3300, "佳信|条冻熟虾|8-12": 3300, "佳信|条冻熟虾|13-15": 3300,
+    "佳信|条冻熟虾|16-20": 3300, "佳信|条冻熟虾|21-25": 3300, "佳信|条冻熟虾|26-30": 3300,
+    "佳信|条冻熟虾|特大": 3300, "佳信|条冻熟虾|特大A": 3300,
+    // 佳信 - 条冻软熟虾（对应系统"软虾"）
+    "佳信|条冻软熟虾|绿封": 3300,
+    // 佳信 - 条冻黑头类（对应系统"干冰B级熟虾""黑虎B级熟虾"）
+    "佳信|条冻黑头熟虾|B级2-4": 3300, "佳信|条冻黑头熟虾|B级4-6": 3300, "佳信|条冻黑头熟虾|B级特大": 3300,
+    "佳信|条冻黑头黑虎虾|B级2-4": 3300, "佳信|条冻黑头黑虎虾|B级4-6": 3300, "佳信|条冻黑头黑虎虾|B级特大": 3300,
+    "佳信|条冻黑虎熟虾|B级2-4": 3300, "佳信|条冻黑虎熟虾|B级4-6": 3300,
+    // 佳信 - 盒冻白灼虾（对应系统"盒冻熟虾"）
+    "佳信|盒冻白灼虾|13-15": 3900, "佳信|盒冻白灼虾|16-20": 3900,
+    "佳信|盒冻白灼虾|21-25": 3900, "佳信|盒冻白灼虾|26-30": 3900,
+    // 大富肴 - 盒冻白灼虾
+    "大富肴|盒冻白灼虾|26-30": 4300, "大富肴|盒冻白灼虾|30-40": 4200,
+    "大富肴|盒冻白灼虾|40-50": 4200, "大富肴|盒冻白灼虾|50-60": 4200,
+    // 大富肴 - 盒冻白灼虾-B级
+    "大富肴|盒冻白灼虾-B级|16-20": 3900, "大富肴|盒冻白灼虾-B级|21-25": 4300,
+    "大富肴|盒冻白灼虾-B级|26-30": 4300, "大富肴|盒冻白灼虾-B级|30-40": 4300,
+    "大富肴|盒冻白灼虾-B级|40-50": 4300,
+    // 大富肴 - 盒冻白灼黑虎虾（对应系统"白灼黑虎熟虾"）
+    "大富肴|盒冻白灼黑虎虾|21-25": 4300, "大富肴|盒冻白灼黑虎虾|26-30": 4300,
+    "大富肴|盒冻白灼黑虎虾|30-40": 4300, "大富肴|盒冻白灼黑虎虾|40-50": 4300,
+    "大富肴|盒冻白灼黑虎虾|50-60": 4300,
+    // 大富肴 - 盒冻白灼黑虎虾B级（对应系统"B级黑虎熟虾"）
+    "大富肴|盒冻白灼黑虎虾B级|21-25": 4300, "大富肴|盒冻白灼黑虎虾B级|26-30": 4300,
+    "大富肴|盒冻白灼黑虎虾B级|30-40": 4300, "大富肴|盒冻白灼黑虎虾B级|40-50": 4300,
+    // 大富肴 - 盒冻黑虎虾
+    "大富肴|盒冻黑虎虾|13-15": 3900, "大富肴|盒冻黑虎虾|21-25": 4300,
+    "大富肴|盒冻黑虎虾|26-30": 4300, "大富肴|盒冻黑虎虾|30-40": 4300,
+    "大富肴|盒冻黑虎虾|40-50": 4300, "大富肴|盒冻黑虎虾|50-60": 4300,
+    // 壹统海洋
+    "壹统海洋|盒冻白灼虾|16-20": 3900, "壹统海洋|盒冻白灼虾|21-25": 3900,
+    "壹统海洋|盒冻白灼虾|26-30": 3900, "壹统海洋|盒冻白灼虾|31-35": 3900,
+    // 水鱼情深
+    "水鱼情深|盒冻白灼虾|10-15": 3900,
+    // 汉潮
+    "汉潮|盒冻黑虎虾|6-8": 3900, "汉潮|盒冻黑虎虾|8-12": 3900, "汉潮|盒冻黑虎虾|13-15": 3900,
+    // 湛优
+    "湛优|条冻黑头熟虾|B级2-4": 3300, "湛优|条冻黑头熟虾|B级特大": 3300,
+    // 肥佬郑
+    "肥佬郑|盒冻白灼虾|13-15": 3900, "肥佬郑|盒冻白灼虾|16-20": 3900, "肥佬郑|盒冻白灼虾|21-25": 3900,
+    "肥佬郑|盒冻黑虎虾|13-15": 3900,
+    // 蓝琼
+    "蓝琼|盒冻白灼虾|6-8": 3700, "蓝琼|盒冻白灼虾|8-10": 3700, "蓝琼|盒冻白灼虾|10-15": 3700,
+    "蓝琼|盒冻白灼黑虎虾|10-15": 4200, "蓝琼|盒冻白灼黑虎虾|6-8": 3700, "蓝琼|盒冻白灼黑虎虾|8-10": 4200,
+    "蓝琼|盒冻白灼黑虎虾（大）|10-15": 3700, "蓝琼|盒冻白灼黑虎虾（大）|16-20": 3700,
+    "蓝琼|盒冻白灼黑虎虾（大）|6-8": 3700, "蓝琼|盒冻白灼黑虎虾（大）|8-10": 3700,
+    "蓝琼|盒冻黑虎虾|10-15": 3700, "蓝琼|盒冻黑虎虾|6-8": 3700, "蓝琼|盒冻黑虎虾|8-10": 3700,
+    // 豪杰
+    "豪杰|条冻熟虾|2-4": 3300, "豪杰|条冻熟虾|4-6": 3300,
+    "豪杰|条冻熟虾|6-8": 3300, "豪杰|条冻熟虾|8-12": 3300,
+    // 贵箱
+    "贵箱|条冻黑头熟虾|B级特大": 3300,
+    // 黄皮箱
+    "黄皮箱|条冻软熟虾|绿封": 3300,
+};
+
+// 品名别名映射：系统名称 -> 汇总表名称列表
+const FEE_NAME_ALIASES = {
+    "干冰熟虾": ["条冻熟虾"],
+    "盒冻熟虾": ["盒冻白灼虾"],
+    "白灼黑虎熟虾": ["盒冻白灼黑虎虾", "盒冻黑虎虾"],
+    "B级黑虎熟虾": ["盒冻白灼黑虎虾B级", "盒冻白灼虾-B级"],
+    "干冰B级熟虾": ["条冻黑头熟虾", "条冻黑头黑虎虾", "条冻黑虎熟虾"],
+    "黑虎B级熟虾": ["条冻黑头黑虎虾", "条冻黑虎熟虾"],
+    "软虾": ["条冻软熟虾"]
+};
+
+// 根据汇总表获取默认加工费（元/吨）
+function getDefaultProcessFee(brand, name, spec) {
+    if (!brand || !spec) return 0;
+
+    // 1. 直接匹配系统里的名称
+    let key = brand + "|" + name + "|" + spec;
+    if (DEFAULT_PROCESS_FEE_MAP[key]) return DEFAULT_PROCESS_FEE_MAP[key];
+
+    // 2. 尝试汇总表别名
+    for (let [sysName, aliases] of Object.entries(FEE_NAME_ALIASES)) {
+        if (name.includes(sysName)) {
+            for (let alias of aliases) {
+                key = brand + "|" + alias + "|" + spec;
+                if (DEFAULT_PROCESS_FEE_MAP[key]) return DEFAULT_PROCESS_FEE_MAP[key];
+            }
+        }
+    }
+
+    // 3. 按品牌+规格回退匹配
+    for (let mapKey in DEFAULT_PROCESS_FEE_MAP) {
+        const parts = mapKey.split("|");
+        if (parts[0] === brand && parts[2] === spec) {
+            return DEFAULT_PROCESS_FEE_MAP[mapKey];
+        }
+    }
+
+    return 0;
+}
+
+// 根据汇总表v5获取默认包装费（元/件）
+// v5规则：包装费 = 包装带 + 胶袋，不同产品组合不同
+function getDefaultPackCost(brand, name, spec, isBLevel) {
+    if (!brand) return 0;
+
+    const isBoxFrozen = name && name.includes('盒冻');
+    const isTiaoFrozen = name && (name.includes('条冻') || name.includes('干冰'));
+    const isSoft = name && name.includes('软');
+
+    // ===== 包装带费用 =====
+    let tapeCost = 0;
+
+    // 有包装带0.3元的产品：
+    // 1. 标准条冻熟虾（佳信、豪杰的非B级条冻）
+    if (isTiaoFrozen && !isBLevel && !isSoft && 
+        (brand === '佳信' || brand === '豪杰')) {
+        tapeCost = 0.3;
+    }
+    // 2. 普通盒冻类（非B级、非汉潮）
+    else if (isBoxFrozen && !isBLevel && brand !== '汉潮') {
+        tapeCost = 0.3;
+    }
+    // 其余情况 tapeCost = 0（B级条冻、大富肴B级、汉潮等）
+
+    // ===== 胶袋费用 =====
+    let bagCost = 0;
+
+    // 有胶袋0.3元的产品：所有条冻类（包括B级、软虾）
+    if (isTiaoFrozen || (name && (name.includes('软虾') || name.includes('黑头')))) {
+        bagCost = 0.3;
+    }
+    // 盒冻类没有胶袋（bagCost = 0）
+
+    // 特殊修正：汇总表中部分产品没有胶袋
+    // 汉潮盒冻黑虎虾：汇总表显示包装带0 + 胶袋0 = 0
+    if (brand === '汉潮' && isBoxFrozen) {
+        tapeCost = 0;
+        bagCost = 0;
+    }
+
+    return tapeCost + bagCost;
+}
 
 // 将仓库产品库转换为利润计算格式（联动仓库系统产品库）
 function getProfitProduct(productId) {
@@ -5055,10 +5240,10 @@ function getProfitProduct(productId) {
       pack: brand,
       weight: parseFloat(p.net) || 0,
       price: currentPrice,
-      boxCost: isBoxFrozen ? 7 : (isBLevel ? 3.45 : 2.35),
-      packCost: (isBLevel || isBoxFrozen) ? 0.3 : 0.6,
-      processFee: isBoxFrozen ? 4200 : (brand === '佳信' ? 3900 : (brand === '蓝琼' ? 3700 : 3300)),
-      freight: brand === '大富肴' ? 3 : 0,
+      boxCost: parseFloat(p.boxCost) || 0,
+      packCost: parseFloat(p.packCost) || getDefaultPackCost(brand, p.name, p.sku, p.isBLevel),
+      processFee: parseFloat(p.processFee) || getDefaultProcessFee(brand, p.name, p.sku, p.net),
+      freight: parseFloat(p.freight) || 0,
       isBLevel: isBLevel,
       isPricePerKg: brand === '蓝琼'
     };
@@ -5163,7 +5348,7 @@ function renderProfitBatchList(batchList) {
     // 计算批次净利润（实时计算确保准确）
     const batchProfit = batch.items ? batch.items.reduce((sum, item) => {
       const p = getProfitProduct(item.productId);
-      const packCost = item.packCost !== undefined ? item.packCost : (item.pieces * (p?.packCost || 0.6));
+      const packCost = item.packCost !== undefined ? item.packCost : (item.pieces * (p?.packCost || 0));
       return sum + (item.sales - (item.materialCost || 0) - (item.boxCost || 0) - packCost - (item.freightCost || 0) - (item.processCost || 0));
     }, 0) : (batch.profit || 0);
 
@@ -5227,7 +5412,7 @@ function renderProfitBatchList(batchList) {
                 <tbody>
                   ${(batch.items || []).map(item => {
                     const p = getProfitProduct(item.productId);
-                    const packCost = item.packCost !== undefined ? item.packCost : (item.pieces * (p?.packCost || 0.6));
+                    const packCost = item.packCost !== undefined ? item.packCost : (item.pieces * (p?.packCost || 0));
                     const netProfit = item.sales - (item.materialCost || 0) - (item.boxCost || 0) - packCost - (item.freightCost || 0) - (item.processCost || 0);
                     const isItemProfit = netProfit >= 0;
                     return `
@@ -5504,9 +5689,9 @@ function quickAddProfitBatchProduct() {
   profitBatchItems.push({
     productId: p.id,
     pieces: 0,
-    boxPerPiece: p.boxCost !== undefined ? p.boxCost : (p.isBLevel ? 0.3 : (p.name.includes('盒冻') ? 7 : 0.6)),
-    freightPerPiece: p.freight !== undefined ? p.freight : (p.pack === '大富肴' ? 3 : 0),
-    processPerTon: p.processFee !== undefined ? p.processFee : (p.name.includes('盒冻') ? 4200 : 3300),
+    boxPerPiece: p.boxCost !== undefined ? p.boxCost : 0,
+    freightPerPiece: p.freight !== undefined ? p.freight : 0,
+    processPerTon: p.processFee !== undefined ? p.processFee : getDefaultProcessFee(p.pack, p.name, p.spec),
     price: p.price,
     productName: p.name,
     productSpec: p.spec,
@@ -5525,9 +5710,9 @@ function addProfitBatchItem() {
   profitBatchItems.push({
     productId: p.id,
     pieces: 0,
-    boxPerPiece: p.boxCost !== undefined ? p.boxCost : 0.6,
+    boxPerPiece: p.boxCost !== undefined ? p.boxCost : 0,
     freightPerPiece: p.freight !== undefined ? p.freight : 0,
-    processPerTon: p.processFee !== undefined ? p.processFee : 3300,
+    processPerTon: p.processFee !== undefined ? p.processFee : getDefaultProcessFee(p.pack, p.name, p.spec),
     price: p.price,
     productName: p.name,
     productSpec: p.spec,
@@ -5577,7 +5762,7 @@ function renderProfitBatchItems() {
 
     const materialCost = netWeight * allocationRate;
     const boxCostTotal = item.pieces * item.boxPerPiece;
-    const packCostTotal = item.pieces * (p.packCost || 0.6);
+    const packCostTotal = item.pieces * (p.packCost || 0);
     const freightCostTotal = item.pieces * item.freightPerPiece;
     const processCostTotal = (netWeight / 1000) * item.processPerTon;
     const netProfit = sales - materialCost - boxCostTotal - packCostTotal - freightCostTotal - processCostTotal;
@@ -5623,7 +5808,7 @@ function renderProfitBatchItems() {
         <td colspan="8" style="padding: 8px 12px; background: #f8fafc;">
           <div style="display: flex; flex-wrap: wrap; gap: 8px; font-size: 11px; color: #64748b;">
             <span>📦纸箱: <input type="number" value="${item.boxPerPiece}" step="0.01" style="width: 50px; padding: 2px 4px; border: 1px solid #e2e8f0; border-radius: 4px; text-align: right;" onchange="updateProfitBatchItem(${idx}, 'boxPerPiece', this.value)">×${item.pieces}=<strong style="color: #2563eb;">¥${boxCostTotal.toFixed(2)}</strong></span>
-            <span>🎁包装: ¥${(p.packCost || 0.6).toFixed(2)}×${item.pieces}=<strong style="color: #2563eb;">¥${packCostTotal.toFixed(2)}</strong></span>
+            <span>🎁包装: ¥${(p.packCost || 0).toFixed(2)}×${item.pieces}=<strong style="color: #2563eb;">¥${packCostTotal.toFixed(2)}</strong></span>
             <span>🚚运费: <input type="number" value="${item.freightPerPiece}" step="0.1" style="width: 50px; padding: 2px 4px; border: 1px solid #e2e8f0; border-radius: 4px; text-align: right;" onchange="updateProfitBatchItem(${idx}, 'freightPerPiece', this.value)">×${item.pieces}=<strong style="color: #2563eb;">¥${freightCostTotal.toFixed(2)}</strong></span>
             <span>⚙️加工: <input type="number" value="${item.processPerTon}" step="100" style="width: 55px; padding: 2px 4px; border: 1px solid #e2e8f0; border-radius: 4px; text-align: right;" onchange="updateProfitBatchItem(${idx}, 'processPerTon', this.value)">元/吨×${netWeight.toFixed(2)}kg=<strong style="color: #2563eb;">¥${processCostTotal.toFixed(2)}</strong></span>
             <span style="margin-left: auto; background: #fff7ed; padding: 2px 8px; border-radius: 6px; border: 1px solid #fed7aa;">原料分摊: <strong style="color: #ea580c;">¥${materialCost.toFixed(2)}</strong></span>
@@ -5696,7 +5881,7 @@ function updateProfitBatchPreview() {
     else totalSales += item.pieces * item.price;
 
     totalBoxCost += item.pieces * item.boxPerPiece;
-    totalPackCost += item.pieces * (p.packCost || 0.6);
+    totalPackCost += item.pieces * (p.packCost || 0);
     totalFreight += item.pieces * item.freightPerPiece;
     totalProcess += (netWeight / 1000) * item.processPerTon;
     totalPieces += item.pieces;
@@ -5769,7 +5954,7 @@ async function saveProfitBatch() {
 
     const materialCost = netWeight * materialRate;
     const boxCost = item.pieces * item.boxPerPiece;
-    const packCost = item.pieces * (p.packCost || 0.6);
+    const packCost = item.pieces * (p.packCost || 0);
     const freightCost = item.pieces * item.freightPerPiece;
     const processCost = (netWeight / 1000) * item.processPerTon;
 
@@ -5992,7 +6177,7 @@ async function exportBatchImage(batchId) {
             let totalBoxCost = 0, totalPackCost = 0, totalFreight = 0, totalProcess = 0;
             batch.items.forEach(item => {
                 totalBoxCost += (item.boxCost || 0);
-                totalPackCost += (item.packCost || item.pieces * 0.6);
+                totalPackCost += (item.packCost || 0);
                 totalFreight += (item.freightCost || 0);
                 totalProcess += (item.processCost || 0);
             });
@@ -6002,11 +6187,11 @@ async function exportBatchImage(batchId) {
             batch.items.forEach((item, idx) => {
                 const product = getProfitProduct(item.productId);
                 const boxPerPiece = item.boxCost && item.pieces ? (item.boxCost / item.pieces).toFixed(2) : (product?.boxCost || 0).toFixed(2);
-                const packPerPiece = (product?.packCost || 0.6).toFixed(2);
+                const packPerPiece = (product?.packCost || getDefaultPackCost(product?.pack, product?.name, product?.spec, product?.isBLevel)).toFixed(2);
                 const freightPerPiece = item.freightCost && item.pieces ? (item.freightCost / item.pieces).toFixed(2) : (product?.freight || 0).toFixed(2);
                 const processPerTon = item.processCost && item.netWeight ? (item.processCost / item.netWeight * 1000).toFixed(0) : (product?.processFee || 3300);
 
-                const netProfit = item.sales - (item.materialCost || 0) - (item.boxCost || 0) - (item.packCost || item.pieces * 0.6) - (item.freightCost || 0) - (item.processCost || 0);
+                const netProfit = item.sales - (item.materialCost || 0) - (item.boxCost || 0) - (item.packCost || 0) - (item.freightCost || 0) - (item.processCost || 0);
                 const isProfit = netProfit >= 0;
 
                 rowsHtml += `
@@ -6026,7 +6211,7 @@ async function exportBatchImage(batchId) {
                         <td style="padding: 10px 6px; text-align: right; font-size: 11px; color: #6b7280; border-right: 1px solid #f3f4f6; background: #f9fafb;">¥${boxPerPiece}</td>
                         <td style="padding: 10px 8px; text-align: right; font-size: 12px; color: #2563eb; font-weight: 600; border-right: 1px solid #e5e7eb;">¥${(item.boxCost || 0).toFixed(2)}</td>
                         <td style="padding: 10px 6px; text-align: right; font-size: 11px; color: #6b7280; border-right: 1px solid #f3f4f6; background: #f9fafb;">¥${packPerPiece}</td>
-                        <td style="padding: 10px 8px; text-align: right; font-size: 12px; color: #2563eb; font-weight: 600; border-right: 1px solid #e5e7eb;">¥${(item.packCost || item.pieces * 0.6).toFixed(2)}</td>
+                        <td style="padding: 10px 8px; text-align: right; font-size: 12px; color: #2563eb; font-weight: 600; border-right: 1px solid #e5e7eb;">¥${(item.packCost || 0).toFixed(2)}</td>
                         <td style="padding: 10px 6px; text-align: right; font-size: 11px; color: #6b7280; border-right: 1px solid #f3f4f6; background: #f9fafb;">¥${freightPerPiece}</td>
                         <td style="padding: 10px 8px; text-align: right; font-size: 12px; color: #2563eb; font-weight: 600; border-right: 1px solid #e5e7eb;">¥${(item.freightCost || 0).toFixed(2)}</td>
                         <td style="padding: 10px 6px; text-align: right; font-size: 11px; color: #6b7280; border-right: 1px solid #f3f4f6; background: #f9fafb;">¥${processPerTon}</td>
@@ -6211,7 +6396,7 @@ async function exportCurrentBatchImage() {
 
                 const materialCost = netWeight * materialRate;
                 const boxCost = item.pieces * item.boxPerPiece;
-                const packCost = item.pieces * (product?.packCost || 0.6);
+                const packCost = item.pieces * (product?.packCost || getDefaultPackCost(product?.pack, product?.name, product?.spec, product?.isBLevel));
                 const freightCost = item.pieces * item.freightPerPiece;
                 const processCost = (netWeight / 1000) * item.processPerTon;
 
@@ -6243,7 +6428,7 @@ async function exportCurrentBatchImage() {
                         <td style="padding: 10px 8px; text-align: right; font-size: 13px; color: #dc2626; border-right: 1px solid #e5e7eb;">¥${materialCost.toFixed(2)}</td>
                         <td style="padding: 10px 6px; text-align: right; font-size: 11px; color: #6b7280; border-right: 1px solid #f3f4f6; background: #f9fafb;">¥${item.boxPerPiece.toFixed(2)}</td>
                         <td style="padding: 10px 8px; text-align: right; font-size: 12px; color: #2563eb; font-weight: 600; border-right: 1px solid #e5e7eb;">¥${boxCost.toFixed(2)}</td>
-                        <td style="padding: 10px 6px; text-align: right; font-size: 11px; color: #6b7280; border-right: 1px solid #f3f4f6; background: #f9fafb;">¥${(product?.packCost || 0.6).toFixed(2)}</td>
+                        <td style="padding: 10px 6px; text-align: right; font-size: 11px; color: #6b7280; border-right: 1px solid #f3f4f6; background: #f9fafb;">¥${(product?.packCost || getDefaultPackCost(product?.pack, product?.name, product?.spec, product?.isBLevel)).toFixed(2)}</td>
                         <td style="padding: 10px 8px; text-align: right; font-size: 12px; color: #2563eb; font-weight: 600; border-right: 1px solid #e5e7eb;">¥${packCost.toFixed(2)}</td>
                         <td style="padding: 10px 6px; text-align: right; font-size: 11px; color: #6b7280; border-right: 1px solid #f3f4f6; background: #f9fafb;">¥${item.freightPerPiece.toFixed(2)}</td>
                         <td style="padding: 10px 8px; text-align: right; font-size: 12px; color: #2563eb; font-weight: 600; border-right: 1px solid #e5e7eb;">¥${freightCost.toFixed(2)}</td>
@@ -6490,7 +6675,7 @@ async function exportCurrentBatchImage() {
                             weight: parseFloat(p.weight) || 0,
                             price: parseFloat(p.price) || 0,
                             boxCost: parseFloat(p.boxCost) || 0,
-                            packCost: parseFloat(p.packCost) || (p.isBLevel || (p.name && p.name.includes('盒冻')) ? 0.3 : 0.6),
+                            packCost: parseFloat(p.packCost) || getDefaultPackCost(brand, p.name, p.sku, p.isBLevel),
                             processFee: parseFloat(p.processFee) || 3300,
                             freight: parseFloat(p.freight) || 0,
                             isBLevel: !!p.isBLevel,
@@ -8019,7 +8204,7 @@ function saveCartonDataLocal() {
                   productId: item.productId,
                   pieces: qty,
                   boxPerPiece: p.boxCost !== undefined ? p.boxCost : (p.isBLevel ? 0.3 : (p.name && p.name.includes('盒冻') ? 7 : 0.6)),
-                  freightPerPiece: p.freight !== undefined ? p.freight : (p.pack === '大富肴' ? 3 : 0),
+                  freightPerPiece: p.freight !== undefined ? p.freight : 0,
                   processPerTon: p.processFee !== undefined ? p.processFee : (p.name && p.name.includes('盒冻') ? 4200 : 3300),
                   price: p.price,
                   productName: p.name,
