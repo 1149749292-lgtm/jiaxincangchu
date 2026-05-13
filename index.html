@@ -2894,6 +2894,19 @@ async function init() {
   }
 
   closeConfirmModal();
+
+  // 纸箱预检
+  const cartonShortage = checkCartonBeforeImport(currentPreview.items.filter(i => i.type === 'in'));
+  if (cartonShortage.length > 0) {
+    showCartonCheckModal(cartonShortage, async () => {
+      await doExecuteImport();
+    }, () => {
+      // 取消操作，恢复预览状态
+      showToast('已取消入库，请先补货纸箱', 'warning');
+    });
+    return;
+  }
+
   await doExecuteImport();
 }
 
@@ -3785,7 +3798,88 @@ function exportAllData() {
     // ==================== 工具函数 ====================
 
     
-    // ==================== 产品管理模块 ====================
+    // ==================== 纸箱入库预检模块 ====================
+
+let pendingCartonCheckCallback = null;
+
+// 检查入库所需纸箱库存，返回缺货列表
+function checkCartonBeforeImport(batchItems) {
+  const shortageList = [];
+  const checkedCartons = new Set();
+
+  batchItems.forEach(item => {
+    const product = products.find(p => p.id === item.productId);
+    if (!product) return;
+    const config = getProductCartonConfig(product);
+    if (!config) return;
+
+    if (config.carton1 && !checkedCartons.has(config.carton1)) {
+      const current = cartonStockData[config.carton1] || 0;
+      const needQty = item.qty * config.ratio1;
+      if (current < needQty) {
+        const carton = CARTON_TYPES.find(c => c.id === config.carton1);
+        shortageList.push({
+          cartonId: config.carton1,
+          cartonName: carton ? carton.name : config.carton1,
+          current: current,
+          need: needQty,
+          shortage: needQty - current
+        });
+      }
+      checkedCartons.add(config.carton1);
+    }
+
+    if (config.carton2 && config.ratio2 > 0 && !checkedCartons.has(config.carton2)) {
+      const current = cartonStockData[config.carton2] || 0;
+      const needQty = item.qty * config.ratio2;
+      if (current < needQty) {
+        const carton = CARTON_TYPES.find(c => c.id === config.carton2);
+        shortageList.push({
+          cartonId: config.carton2,
+          cartonName: carton ? carton.name : config.carton2,
+          current: current,
+          need: needQty,
+          shortage: needQty - current
+        });
+      }
+      checkedCartons.add(config.carton2);
+    }
+  });
+
+  return shortageList;
+}
+
+function showCartonCheckModal(shortageList, onConfirm, onCancel) {
+  pendingCartonCheckCallback = onConfirm;
+  const listDiv = document.getElementById('cartonCheckList');
+  listDiv.innerHTML = shortageList.map(s => `
+    <div style="padding: 12px; background: #fef2f2; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #ef4444;">
+      <div style="font-weight: 600; color: #dc2626; margin-bottom: 4px;">📦 ${escapeHtml(s.cartonName)}</div>
+      <div style="font-size: 13px; color: #64748b;">
+        当前库存: <strong style="color: #dc2626;">${s.current}</strong> · 
+        需要扣减: <strong>${s.need}</strong> · 
+        缺口: <strong style="color: #dc2626;">${s.shortage}</strong>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('cartonCheckModal').classList.add('show');
+}
+
+function closeCartonCheckModal() {
+  document.getElementById('cartonCheckModal').classList.remove('show');
+  pendingCartonCheckCallback = null;
+}
+
+function confirmCartonCheckContinue() {
+  document.getElementById('cartonCheckModal').classList.remove('show');
+  if (pendingCartonCheckCallback) {
+    const cb = pendingCartonCheckCallback;
+    pendingCartonCheckCallback = null;
+    cb();
+  }
+}
+
+// ==================== 产品管理模块 ====================
 
     let pendingDeleteProductId = null;
     let filteredProductList = []; // 当前筛选后的产品列表
@@ -4769,6 +4863,24 @@ function showLoading(text) {
         return;
       }
 
+      // 纸箱预检
+      const cartonShortage = checkCartonBeforeImport(currentBatch.map(item => ({
+        productId: item.product.id,
+        qty: item.qty
+      })));
+      if (cartonShortage.length > 0) {
+        showCartonCheckModal(cartonShortage, async () => {
+          await doBatchInExecute();
+        }, () => {
+          showToast('已取消入库，请先补货纸箱', 'warning');
+        });
+        return;
+      }
+
+      await doBatchInExecute();
+    }
+
+    async function doBatchInExecute() {
       showLoading('正在处理入库...');
 
       try {
@@ -6809,6 +6921,7 @@ function saveCartonDataLocal() {
     async function deductCartonStockOnImport(batchItems, batchDate, batchId) {
         let deducted = false;
         const deductedCartons = [];
+        const shortageCartons = [];
         batchItems.forEach(item => {
             const product = products.find(p => p.id === item.productId);
             if (!product) return;
@@ -6818,24 +6931,40 @@ function saveCartonDataLocal() {
             if (config.carton1) {
                 const current = cartonStockData[config.carton1] || 0;
                 const deductQty = item.qty * config.ratio1;
-                cartonStockData[config.carton1] = Math.max(0, current - deductQty);
+                cartonStockData[config.carton1] = current - deductQty;
                 deductedCartons.push({
                     cartonId: config.carton1,
                     qty: deductQty,
                     productName: product.name,
                     productSku: product.sku
                 });
+                if (cartonStockData[config.carton1] < 0) {
+                    shortageCartons.push({
+                        cartonId: config.carton1,
+                        shortageQty: Math.abs(cartonStockData[config.carton1]),
+                        productName: product.name,
+                        productSku: product.sku
+                    });
+                }
             }
             if (config.carton2 && config.ratio2 > 0) {
                 const current = cartonStockData[config.carton2] || 0;
                 const deductQty = item.qty * config.ratio2;
-                cartonStockData[config.carton2] = Math.max(0, current - deductQty);
+                cartonStockData[config.carton2] = current - deductQty;
                 deductedCartons.push({
                     cartonId: config.carton2,
                     qty: deductQty,
                     productName: product.name,
                     productSku: product.sku
                 });
+                if (cartonStockData[config.carton2] < 0) {
+                    shortageCartons.push({
+                        cartonId: config.carton2,
+                        shortageQty: Math.abs(cartonStockData[config.carton2]),
+                        productName: product.name,
+                        productSku: product.sku
+                    });
+                }
             }
         });
         if (deducted) {
@@ -6843,6 +6972,7 @@ function saveCartonDataLocal() {
             const timestamp = new Date().toISOString();
             deductedCartons.forEach(d => {
                 const carton = CARTON_TYPES.find(c => c.id === d.cartonId);
+                const afterStock = cartonStockData[d.cartonId] || 0;
                 cartonHistory.unshift({
                     id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
                     type: 'auto_deduct',
@@ -6853,10 +6983,29 @@ function saveCartonDataLocal() {
                     productSku: d.productSku,
                     date: batchDate || timestamp.split('T')[0],
                     timestamp: timestamp,
-                    remark: '入库自动扣减',
-                    afterStock: cartonStockData[d.cartonId] || 0
+                    remark: afterStock < 0 ? '入库自动扣减（库存不足，已记欠货）' : '入库自动扣减',
+                    afterStock: afterStock
                 });
             });
+            // 记录欠货
+            if (shortageCartons.length > 0) {
+                shortageCartons.forEach(s => {
+                    const carton = CARTON_TYPES.find(c => c.id === s.cartonId);
+                    cartonHistory.unshift({
+                        id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+                        type: 'shortage',
+                        cartonId: s.cartonId,
+                        cartonName: carton ? carton.name : s.cartonId,
+                        qty: s.shortageQty,
+                        productName: s.productName,
+                        productSku: s.productSku,
+                        date: batchDate || timestamp.split('T')[0],
+                        timestamp: timestamp,
+                        remark: '纸箱库存不足，自动标记欠货',
+                        afterStock: cartonStockData[s.cartonId] || 0
+                    });
+                });
+            }
             // 限制历史数量
             if (cartonHistory.length > 200) cartonHistory = cartonHistory.slice(0, 200);
 
@@ -6879,7 +7028,11 @@ function saveCartonDataLocal() {
                 renderCartonHistory();
                 renderPendingDeductBatches();
             }
-            showToast('📦 纸箱库存已自动扣减');
+            if (shortageCartons.length > 0) {
+                showToast('⚠️ 纸箱库存不足，已扣减至负数并记录欠货', 'warning');
+            } else {
+                showToast('📦 纸箱库存已自动扣减');
+            }
         }
     }
 
@@ -6892,10 +7045,15 @@ function saveCartonDataLocal() {
             const stock = cartonStockData[carton.id] || 0;
             const isWarning = stock > 0 && stock <= cartonAlertThreshold;
             const isDanger = stock === 0;
+            const isNegative = stock < 0;
             let statusBadge = '<span class="stock-badge ok">充足</span>';
             let stockStyle = 'color: #059669;';
             let rowStyle = '';
-            if (isDanger) {
+            if (isNegative) {
+                statusBadge = '<span class="stock-badge empty">欠货</span>';
+                stockStyle = 'color: #dc2626;';
+                rowStyle = 'background: #fef2f2;';
+            } else if (isDanger) {
                 statusBadge = '<span class="stock-badge empty">缺货</span>';
                 stockStyle = 'color: #dc2626;';
                 rowStyle = 'background: #fef2f2;';
@@ -7179,16 +7337,28 @@ function saveCartonDataLocal() {
     // 检查预警
     function checkCartonAlerts() {
         const alerts = [];
+        const negativeAlerts = [];
         CARTON_TYPES.forEach(carton => {
             const stock = cartonStockData[carton.id] || 0;
             if (stock > 0 && stock <= cartonAlertThreshold) alerts.push({...carton, stock});
+            if (stock < 0) negativeAlerts.push({...carton, stock});
         });
         const banner = document.getElementById('cartonAlertBanner');
         const list = document.getElementById('cartonAlertList');
         if (banner && list) {
-            if (alerts.length > 0) {
+            if (alerts.length > 0 || negativeAlerts.length > 0) {
                 banner.style.display = 'block';
-                list.innerHTML = alerts.map(a => `<span style="display: inline-flex; align-items: center; padding: 6px 12px; background: white; border-radius: 20px; font-size: 13px; font-weight: 600; color: #92400e; border: 1px solid #fbbf24;">${a.name}: ${a.stock}${a.unit}</span>`).join('');
+                let html = '';
+                if (negativeAlerts.length > 0) {
+                    html += '<div style="margin-bottom: 8px; font-size: 13px; font-weight: 600; color: #dc2626;">❌ 以下纸箱库存为负（欠货），请立即补货：</div>';
+                    html += negativeAlerts.map(a => `<span style="display: inline-flex; align-items: center; padding: 6px 12px; background: #fef2f2; border-radius: 20px; font-size: 13px; font-weight: 600; color: #dc2626; border: 1px solid #ef4444; margin-bottom: 6px;">${a.name}: <strong>${a.stock}</strong>${a.unit} <button onclick="showCartonAddModal('${a.id}')" style="margin-left: 6px; padding: 2px 8px; background: #dc2626; color: white; border: none; border-radius: 10px; font-size: 11px; cursor: pointer;">补货</button></span>`).join('');
+                }
+                if (alerts.length > 0) {
+                    if (negativeAlerts.length > 0) html += '<div style="margin: 8px 0; border-top: 1px dashed #fbbf24;"></div>';
+                    html += '<div style="margin-bottom: 8px; font-size: 13px; font-weight: 600; color: #92400e;">⚠️ 以下纸箱库存偏低：</div>';
+                    html += alerts.map(a => `<span style="display: inline-flex; align-items: center; padding: 6px 12px; background: white; border-radius: 20px; font-size: 13px; font-weight: 600; color: #92400e; border: 1px solid #fbbf24; margin-bottom: 6px;">${a.name}: ${a.stock}${a.unit} <button onclick="showCartonAddModal('${a.id}')" style="margin-left: 6px; padding: 2px 8px; background: #f59e0b; color: white; border: none; border-radius: 10px; font-size: 11px; cursor: pointer;">补货</button></span>`).join('');
+                }
+                list.innerHTML = html;
             } else {
                 banner.style.display = 'none';
             }
@@ -8456,6 +8626,32 @@ function saveCartonDataLocal() {
     </div>
   </div>
 
+
+  <!-- 纸箱预检弹窗 -->
+  <div class="modal-overlay" id="cartonCheckModal">
+    <div class="modal-content" style="max-width: 480px;">
+      <div class="modal-header">
+        <div class="modal-icon warning">⚠️</div>
+        <div class="modal-title">纸箱库存预检</div>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom: 16px; color: var(--text-secondary); font-size: 14px;">
+          本次入库将扣减以下纸箱，库存不足：
+        </p>
+        <div id="cartonCheckList" style="max-height: 240px; overflow-y: auto; margin-bottom: 16px;">
+          <!-- 动态生成 -->
+        </div>
+        <div style="background: var(--warning-light); padding: 12px; border-radius: var(--radius); border-left: 3px solid var(--warning);">
+          <p style="font-size: 13px; color: var(--warning); margin: 0; font-weight: 600;">💡 提示</p>
+          <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">选择"仍要入库"将扣减至负数并记录欠货；选择"先去补货"可取消操作。</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-secondary" onclick="closeCartonCheckModal()">先去补货</button>
+        <button class="modal-btn modal-btn-primary" onclick="confirmCartonCheckContinue()">仍要入库</button>
+      </div>
+    </div>
+  </div>
 
 </body>
 </html>
