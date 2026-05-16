@@ -1569,7 +1569,7 @@
                         </div>
                         <div>
                             <h1 class="text-xl font-bold text-gray-800">佳信水产财务系统</h1>
-                            <p class="text-xs text-gray-500">v5.0 | 完整</p>
+                            <p class="text-xs text-gray-500">v5.1 | 防覆盖版</p>
                         </div>
                     </div>
                     <div class="flex items-center space-x-3">
@@ -1624,7 +1624,7 @@
                             </div>
                             <div>
                                 <h1 class="text-lg font-bold text-gray-800">佳信水产财务</h1>
-                                <p class="text-xs text-gray-500">v5.0 | 完整版</p>
+                                <p class="text-xs text-gray-500">v5.1 | 防覆盖版版</p>
                             </div>
                         </div>
                         <div class="sync-status" id="syncStatusMobile">
@@ -2970,6 +2970,8 @@
 
         // ==================== 数据存储 ====================
         let data = {
+            _lastModified: 0,
+            _deviceId: '',
             suppliers: [],
             customers: [],
             products: [],  // 新增：产品库
@@ -3299,6 +3301,45 @@ function deepCleanData(dataObj) {
             return result;
         }
 async function saveData() {
+            // ===== 多设备冲突检测 =====
+            // 保存前先拉取云端最新数据，对比时间戳，防止覆盖其他设备的新数据
+            if (isOnline && getGitHubToken()) {
+                try {
+                    const cloudData = await fetchData();
+                    const cloudTime = cloudData._lastModified || 0;
+                    const localTime = data._lastModified || 0;
+
+                    if (cloudTime > localTime) {
+                        // 云端数据更新，提示冲突
+                        const useCloud = confirm(
+                            '⚠️ 数据冲突检测\n\n' +
+                            '其他设备在 ' + new Date(cloudTime).toLocaleString('zh-CN') + ' 更新了数据。\n' +
+                            '您当前的数据是 ' + new Date(localTime).toLocaleString('zh-CN') + ' 的。\n\n' +
+                            '点击【确定】放弃当前修改，加载最新云端数据。\n' +
+                            '点击【取消】强制用当前数据覆盖云端（可能导致其他设备数据丢失）。'
+                        );
+                        if (useCloud) {
+                            // 加载云端数据
+                            Object.keys(cloudData).forEach(key => {
+                                if (key !== '_deviceId') data[key] = cloudData[key];
+                            });
+                            localStorage.setItem('finance_data_cache', JSON.stringify(data));
+                            showToast('✅ 已加载其他设备的最新数据', 'success');
+                            updateAllViews();
+                            return; // 不继续保存
+                        }
+                        // 用户选择强制覆盖，继续执行
+                    }
+                } catch (e) {
+                    console.log('冲突检测失败（可能离线）:', e);
+                }
+            }
+            // ===== 冲突检测结束 =====
+
+            // 更新时间戳和设备标识
+            data._lastModified = Date.now();
+            data._deviceId = navigator.userAgent ? navigator.userAgent.slice(0, 50) : 'unknown';
+
             // 先尝试序列化数据，检查是否有循环引用等问题
             let jsonString;
             try {
@@ -3506,100 +3547,42 @@ async function saveData() {
             try {
                 const cloudData = await fetchData();
 
+                // 获取本地缓存用于对比
+                let localData = null;
+                const cached = localStorage.getItem('finance_data_cache');
+                if (cached) {
+                    try { localData = JSON.parse(cached); } catch(e) { localData = null; }
+                }
+
                 // 检查云端数据是否为空（新仓库或空文件）
-                const isEmptyCloud = !cloudData.purchaseOrders?.length && !cloudData.salesOrders?.length &&
+                const isEmptyCloud = !cloudData._lastModified &&
+                                     !cloudData.purchaseOrders?.length && !cloudData.salesOrders?.length &&
                                      !cloudData.suppliers?.length && !cloudData.customers?.length &&
                                      !cloudData.transactions?.length && !cloudData.expenses?.length &&
                                      !cloudData.shareholders?.length;
 
-                if (isEmptyCloud) {
-                    // 云端为空，尝试使用本地缓存
-                    const cached = localStorage.getItem('finance_data_cache');
-                    if (cached) {
-                        try {
-                            const parsed = JSON.parse(cached);
-                            const hasLocalData = parsed.purchaseOrders?.length > 0 ||
-                                                 parsed.salesOrders?.length > 0 ||
-                                                 parsed.suppliers?.length > 0;
-                            if (hasLocalData) {
-                                showToast('⚠️ GitHub 云端为空，已加载本地缓存数据', 'warning');
-                                data.suppliers = parsed.suppliers || [];
-                                data.customers = parsed.customers || [];
-                                data.products = parsed.products || [];
-                                data.purchaseOrders = parsed.purchaseOrders || [];
-                                data.salesOrders = parsed.salesOrders || [];
-                                data.transactions = parsed.transactions || [];
-                                data.lastPurchaseDocNumber = parsed.lastPurchaseDocNumber || 0;
-                                data.lastSalesDocNumbers = parsed.lastSalesDocNumbers || {};
-                                data.expenses = parsed.expenses || [];
-                                data.expensePayments = parsed.expensePayments || [];
-                                data.expenseTypes = parsed.expenseTypes || {};
-                                data.shareholders = parsed.shareholders || [];
-                                isOnline = true;
-                                updateSyncStatus('synced', '已加载本地数据（GitHub 云端为空）');
-                                // 延迟自动同步到 GitHub
-                                setTimeout(async () => {
-                                    try {
-                                        await saveData();
-                                        showToast('✅ 本地数据已自动同步到 GitHub');
-                                    } catch (e) {
-                                        console.error('自动同步失败:', e);
-                                    }
-                                }, 2000);
-                            } else {
-                                // 本地也是空的，正常初始化
-                                data.suppliers = cloudData.suppliers || [];
-                                data.customers = cloudData.customers || [];
-                                data.products = cloudData.products || [];
-                                data.purchaseOrders = cloudData.purchaseOrders || [];
-                                data.salesOrders = cloudData.salesOrders || [];
-                                data.transactions = cloudData.transactions || [];
-                                data.lastPurchaseDocNumber = cloudData.lastPurchaseDocNumber || 0;
-                                data.lastSalesDocNumbers = cloudData.lastSalesDocNumbers || {};
-                                data.expenses = cloudData.expenses || [];
-                                data.expensePayments = cloudData.expensePayments || [];
-                                data.expenseTypes = cloudData.expenseTypes || {};
-                                data.shareholders = cloudData.shareholders || [];
-                                isOnline = true;
-                                updateSyncStatus('synced', '已同步到 GitHub');
-                                showToast('✅ 数据加载成功');
-                            }
-                        } catch(e) {
-                            console.error('本地缓存解析失败:', e);
-                            data.suppliers = cloudData.suppliers || [];
-                            data.customers = cloudData.customers || [];
-                            data.products = cloudData.products || [];
-                            data.purchaseOrders = cloudData.purchaseOrders || [];
-                            data.salesOrders = cloudData.salesOrders || [];
-                            data.transactions = cloudData.transactions || [];
-                            data.lastPurchaseDocNumber = cloudData.lastPurchaseDocNumber || 0;
-                            data.lastSalesDocNumbers = cloudData.lastSalesDocNumbers || {};
-                            data.expenses = cloudData.expenses || [];
-                            data.expensePayments = cloudData.expensePayments || [];
-                            data.expenseTypes = cloudData.expenseTypes || {};
-                            data.shareholders = cloudData.shareholders || [];
-                            isOnline = true;
-                            updateSyncStatus('synced', '已同步到 GitHub');
-                            showToast('✅ 数据加载成功');
-                        }
-                    } else {
-                        data.suppliers = cloudData.suppliers || [];
-                        data.customers = cloudData.customers || [];
-                        data.products = cloudData.products || [];
-                        data.purchaseOrders = cloudData.purchaseOrders || [];
-                        data.salesOrders = cloudData.salesOrders || [];
-                        data.transactions = cloudData.transactions || [];
-                        data.lastPurchaseDocNumber = cloudData.lastPurchaseDocNumber || 0;
-                        data.lastSalesDocNumbers = cloudData.lastSalesDocNumbers || {};
-                        data.expenses = cloudData.expenses || [];
-                        data.expensePayments = cloudData.expensePayments || [];
-                        data.expenseTypes = cloudData.expenseTypes || {};
-                        data.shareholders = cloudData.shareholders || [];
-                        isOnline = true;
-                        updateSyncStatus('synced', '已同步到 GitHub');
-                        showToast('✅ 数据加载成功');
-                    }
-                } else {
+                if (isEmptyCloud && localData && (localData._lastModified || localData.purchaseOrders?.length > 0 || localData.salesOrders?.length > 0)) {
+                    // 云端为空但本地有数据：使用本地数据，但绝不自动推送（防止旧设备覆盖新设备）
+                    showToast('⚠️ GitHub 云端为空，已加载本地缓存（请手动点击保存以同步）', 'warning');
+                    data.suppliers = localData.suppliers || [];
+                    data.customers = localData.customers || [];
+                    data.products = localData.products || [];
+                    data.purchaseOrders = localData.purchaseOrders || [];
+                    data.salesOrders = localData.salesOrders || [];
+                    data.transactions = localData.transactions || [];
+                    data.lastPurchaseDocNumber = localData.lastPurchaseDocNumber || 0;
+                    data.lastSalesDocNumbers = localData.lastSalesDocNumbers || {};
+                    data.expenses = localData.expenses || [];
+                    data.expensePayments = localData.expensePayments || [];
+                    data.expenseTypes = localData.expenseTypes || {};
+                    data.shareholders = localData.shareholders || [];
+                    data._lastModified = localData._lastModified || Date.now();
+                    data._deviceId = localData._deviceId || '';
+                    isOnline = true;
+                    updateSyncStatus('synced', '已加载本地数据（GitHub 云端为空，请手动保存）');
+                    // ❌ 删除自动同步！不再自动推送旧数据到云端，防止多设备覆盖
+                } else if (isEmptyCloud) {
+                    // 云端和本地都为空，使用云端初始化
                     data.suppliers = cloudData.suppliers || [];
                     data.customers = cloudData.customers || [];
                     data.products = cloudData.products || [];
@@ -3612,6 +3595,54 @@ async function saveData() {
                     data.expensePayments = cloudData.expensePayments || [];
                     data.expenseTypes = cloudData.expenseTypes || {};
                     data.shareholders = cloudData.shareholders || [];
+                    data._lastModified = Date.now();
+                    data._deviceId = navigator.userAgent ? navigator.userAgent.slice(0, 50) : 'unknown';
+                    isOnline = true;
+                    updateSyncStatus('synced', '已同步到 GitHub（新仓库）');
+                    showToast('✅ 数据加载成功');
+                } else {
+                    // 云端有数据：对比时间戳，取最新的
+                    const cloudTime = cloudData._lastModified || 0;
+                    const localTime = localData ? (localData._lastModified || 0) : 0;
+
+                    if (localTime > cloudTime && localData) {
+                        // 本地比云端新（可能是离线后重新联网）
+                        showToast('⚠️ 本地数据比云端新，请手动保存以同步到云端', 'warning');
+                        data.suppliers = localData.suppliers || [];
+                        data.customers = localData.customers || [];
+                        data.products = localData.products || [];
+                        data.purchaseOrders = localData.purchaseOrders || [];
+                        data.salesOrders = localData.salesOrders || [];
+                        data.transactions = localData.transactions || [];
+                        data.lastPurchaseDocNumber = localData.lastPurchaseDocNumber || 0;
+                        data.lastSalesDocNumbers = localData.lastSalesDocNumbers || {};
+                        data.expenses = localData.expenses || [];
+                        data.expensePayments = localData.expensePayments || [];
+                        data.expenseTypes = localData.expenseTypes || {};
+                        data.shareholders = localData.shareholders || [];
+                        data._lastModified = localTime;
+                        data._deviceId = localData._deviceId || '';
+                    } else {
+                        // 云端更新或相同，使用云端数据
+                        data.suppliers = cloudData.suppliers || [];
+                        data.customers = cloudData.customers || [];
+                        data.products = cloudData.products || [];
+                        data.purchaseOrders = cloudData.purchaseOrders || [];
+                        data.salesOrders = cloudData.salesOrders || [];
+                        data.transactions = cloudData.transactions || [];
+                        data.lastPurchaseDocNumber = cloudData.lastPurchaseDocNumber || 0;
+                        data.lastSalesDocNumbers = cloudData.lastSalesDocNumbers || {};
+                        data.expenses = cloudData.expenses || [];
+                        data.expensePayments = cloudData.expensePayments || [];
+                        data.expenseTypes = cloudData.expenseTypes || {};
+                        data.shareholders = cloudData.shareholders || [];
+                        data._lastModified = cloudTime;
+                        data._deviceId = cloudData._deviceId || '';
+                        // ★ 关键：同步更新本地缓存，防止下次加载旧数据
+                        try {
+                            localStorage.setItem('finance_data_cache', JSON.stringify(data));
+                        } catch(e) { console.error('本地缓存更新失败:', e); }
+                    }
                     isOnline = true;
                     updateSyncStatus('synced', '已同步到 GitHub');
                     showToast('✅ 数据加载成功');
