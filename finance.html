@@ -1609,10 +1609,14 @@
                         <!-- 隐藏的文件输入框用于导入 -->
                         <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="importData(this)">
 
-                        <div class="sync-status" id="syncStatus">
+                        <div class="sync-status" id="syncStatus" onclick="forceRefreshFromCloud()" style="cursor: pointer;" title="点击强制刷新云端数据">
                             <span class="sync-dot"></span>
                             <span id="syncText">正在连接...</span>
                         </div>
+                        <button onclick="forceRefreshFromCloud()" class="inventory-jump-btn" style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); border: none; cursor: pointer; padding: 6px 12px;" title="强制刷新云端最新数据">
+                            <span style="font-size: 14px;">🔄</span>
+                            <span class="btn-text" style="font-size: 11px;">刷新</span>
+                        </button>
                     </div>
                 </div>
                 <!-- 手机端布局 -->
@@ -1627,10 +1631,14 @@
                                 <p class="text-xs text-gray-500">v5.1 | 防覆盖版版</p>
                             </div>
                         </div>
-                        <div class="sync-status" id="syncStatusMobile">
+                        <div class="sync-status" id="syncStatusMobile" onclick="forceRefreshFromCloud()" style="cursor: pointer;">
                             <span class="sync-dot"></span>
                             <span id="syncTextMobile">连接中</span>
                         </div>
+                        <button onclick="forceRefreshFromCloud()" class="inventory-jump-btn-mobile" style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); margin-top: 4px;">
+                            <span>🔄</span>
+                            <span>刷新</span>
+                        </button>
                         <!-- 手机端库存跳转 -->
                         <a href="https://1149749292-lgtm.github.io/jiaxincangchu/" 
                            target="_blank" 
@@ -2971,6 +2979,7 @@
         // ==================== 数据存储 ====================
         let data = {
             _lastModified: 0,
+            _version: 0,
             _deviceId: '',
             suppliers: [],
             customers: [],
@@ -3309,12 +3318,15 @@ async function saveData() {
                     const cloudTime = cloudData._lastModified || 0;
                     const localTime = data._lastModified || 0;
 
-                    if (cloudTime > localTime) {
+                    const cloudVersion = cloudData._version || 0;
+                    const localVersion = data._version || 0;
+
+                    if (cloudTime > localTime || cloudVersion > localVersion) {
                         // 云端数据更新，提示冲突
                         const useCloud = confirm(
                             '⚠️ 数据冲突检测\n\n' +
                             '其他设备在 ' + new Date(cloudTime).toLocaleString('zh-CN') + ' 更新了数据。\n' +
-                            '您当前的数据是 ' + new Date(localTime).toLocaleString('zh-CN') + ' 的。\n\n' +
+                            '云端版本: v' + cloudVersion + '，您的版本: v' + localVersion + '\n\n' +
                             '点击【确定】放弃当前修改，加载最新云端数据。\n' +
                             '点击【取消】强制用当前数据覆盖云端（可能导致其他设备数据丢失）。'
                         );
@@ -3324,11 +3336,11 @@ async function saveData() {
                                 if (key !== '_deviceId') data[key] = cloudData[key];
                             });
                             localStorage.setItem('finance_data_cache', JSON.stringify(data));
-                            showToast('✅ 已加载其他设备的最新数据', 'success');
+                            showToast('✅ 已加载其他设备的最新数据 (v' + cloudVersion + ')', 'success');
                             updateAllViews();
                             return; // 不继续保存
                         }
-                        // 用户选择强制覆盖，继续执行
+                        // 用户选择强制覆盖，继续执行（版本号已递增）
                     }
                 } catch (e) {
                     console.log('冲突检测失败（可能离线）:', e);
@@ -3336,8 +3348,9 @@ async function saveData() {
             }
             // ===== 冲突检测结束 =====
 
-            // 更新时间戳和设备标识
+            // 更新时间戳、版本号（递增）和设备标识
             data._lastModified = Date.now();
+            data._version = (data._version || 0) + 1;
             data._deviceId = navigator.userAgent ? navigator.userAgent.slice(0, 50) : 'unknown';
 
             // 先尝试序列化数据，检查是否有循环引用等问题
@@ -3605,24 +3618,13 @@ async function saveData() {
                     const cloudTime = cloudData._lastModified || 0;
                     const localTime = localData ? (localData._lastModified || 0) : 0;
 
-                    if (localTime > cloudTime && localData) {
-                        // 本地比云端新（可能是离线后重新联网）
-                        showToast('⚠️ 本地数据比云端新，请手动保存以同步到云端', 'warning');
-                        data.suppliers = localData.suppliers || [];
-                        data.customers = localData.customers || [];
-                        data.products = localData.products || [];
-                        data.purchaseOrders = localData.purchaseOrders || [];
-                        data.salesOrders = localData.salesOrders || [];
-                        data.transactions = localData.transactions || [];
-                        data.lastPurchaseDocNumber = localData.lastPurchaseDocNumber || 0;
-                        data.lastSalesDocNumbers = localData.lastSalesDocNumbers || {};
-                        data.expenses = localData.expenses || [];
-                        data.expensePayments = localData.expensePayments || [];
-                        data.expenseTypes = localData.expenseTypes || {};
-                        data.shareholders = localData.shareholders || [];
-                        data._lastModified = localTime;
-                        data._deviceId = localData._deviceId || '';
-                    } else {
+                    // 优先使用云端数据，确保显示最新云端版本
+                    // 如果本地确实较新，提示用户但不自动覆盖云端
+                    if (localTime > cloudTime && localData && localData._version > (cloudData._version || 0)) {
+                        showToast('⚠️ 检测到本地有未同步更新，但已强制加载云端最新版本', 'warning');
+                    }
+                    // 始终以云端为准，加载最新云端版本
+                    {
                         // 云端更新或相同，使用云端数据
                         data.suppliers = cloudData.suppliers || [];
                         data.customers = cloudData.customers || [];
@@ -3637,6 +3639,7 @@ async function saveData() {
                         data.expenseTypes = cloudData.expenseTypes || {};
                         data.shareholders = cloudData.shareholders || [];
                         data._lastModified = cloudTime;
+                        data._version = cloudData._version || 0;
                         data._deviceId = cloudData._deviceId || '';
                         // ★ 关键：同步更新本地缓存，防止下次加载旧数据
                         try {
@@ -3757,6 +3760,36 @@ async function saveData() {
                 case 'shareholders': renderShareholderList(); break;
                 case 'capital': updateCapitalOverview(); break;
                 case 'monthly': renderMonthlyReport(); break;
+            }
+        }
+
+        // 强制从云端拉取最新数据（用户手动刷新）
+        async function forceRefreshFromCloud() {
+            updateSyncStatus('syncing', '正在强制刷新云端数据...');
+            try {
+                const cloudData = await fetchData();
+                const cloudTime = cloudData._lastModified || 0;
+                const localTime = data._lastModified || 0;
+                const cloudVersion = cloudData._version || 0;
+                const localVersion = data._version || 0;
+
+                if (cloudTime > localTime || cloudVersion > localVersion) {
+                    // 云端更新，加载最新数据
+                    Object.keys(cloudData).forEach(key => {
+                        if (key !== '_deviceId') data[key] = cloudData[key];
+                    });
+                    localStorage.setItem('finance_data_cache', JSON.stringify(data));
+                    updateAllViews();
+                    updateSyncStatus('synced', '已刷新到最新云端版本 (v' + cloudVersion + ')');
+                    showToast('✅ 已加载云端最新数据 (v' + cloudVersion + ')', 'success');
+                } else {
+                    updateSyncStatus('synced', '当前已是最新版本 (v' + localVersion + ')');
+                    showToast('✅ 当前已是最新版本', 'success');
+                }
+            } catch (err) {
+                console.error('强制刷新失败:', err);
+                updateSyncStatus('error', '刷新失败: ' + (err.message || '网络错误'));
+                showToast('❌ 刷新失败，请检查网络', 'error');
             }
         }
 
@@ -4668,6 +4701,7 @@ async function saveData() {
             order.paymentStatus = paymentStatus;
             order.paidAmount = paidAmount;
             order.remainingAmount = remainingAmount;
+            order._lastModified = Date.now(); // 标记最后编辑时间
             const orderIndex = data.purchaseOrders.findIndex(o => o.id === editingPurchaseOrderId);
             if (orderIndex !== -1) {
                 data.purchaseOrders[orderIndex] = order;
@@ -4880,13 +4914,23 @@ async function saveData() {
             const startDate = document.getElementById('purchaseStartDate').value;
             const endDate = document.getElementById('purchaseEndDate').value;
 
-            let orders = data.purchaseOrders;
+            let orders = [...data.purchaseOrders]; // 创建副本避免修改原数组
             if (search) orders = orders.filter(o => o.id.toLowerCase().includes(search) || o.supplierName.toLowerCase().includes(search));
             if (statusFilter) orders = orders.filter(o => o.paymentStatus === statusFilter);
             if (startDate) orders = orders.filter(o => o.date >= startDate);
             if (endDate) orders = orders.filter(o => o.date <= endDate);
 
-            if (purchaseSortConfig.column) {
+            // 默认排序：日期倒序，同一天内最后操作的显示在最上面
+            if (!purchaseSortConfig.column) {
+                orders.sort((a, b) => {
+                    const dateDiff = new Date(b.date) - new Date(a.date);
+                    if (dateDiff !== 0) return dateDiff;
+                    // 同一天内按 _lastModified 或 id 时间戳倒序
+                    const timeA = a._lastModified || parseInt(a.id.replace(/\D/g, '')) || 0;
+                    const timeB = b._lastModified || parseInt(b.id.replace(/\D/g, '')) || 0;
+                    return timeB - timeA;
+                });
+            } else {
                 orders.sort((a, b) => {
                     let valueA, valueB;
                     if (purchaseSortConfig.column === 'docNumber') {
@@ -5300,6 +5344,7 @@ async function saveData() {
             order.totalAmount = totalAmount;
             order.chineseAmount = numberToChinese(totalAmount);
             order.remainingAmount = Math.max(0, newRemaining);
+            order._lastModified = Date.now(); // 标记最后编辑时间
             if (order.remainingAmount <= 0) {
                 order.paymentStatus = 'paid';
                 order.remainingAmount = 0;
@@ -5710,8 +5755,17 @@ function downloadSalesReceipt() {
             if (startDate) orders = orders.filter(o => o.date >= startDate);
             if (endDate) orders = orders.filter(o => o.date <= endDate);
 
-            // 应用排序
-            if (salesSortConfig.column) {
+            // 默认排序：日期倒序，同一天内最后操作的显示在最上面
+            if (!salesSortConfig.column) {
+                orders.sort((a, b) => {
+                    const dateDiff = new Date(b.date) - new Date(a.date);
+                    if (dateDiff !== 0) return dateDiff;
+                    // 同一天内按 _lastModified 或 id 时间戳倒序
+                    const timeA = a._lastModified || parseInt(a.id.replace(/\D/g, '')) || 0;
+                    const timeB = b._lastModified || parseInt(b.id.replace(/\D/g, '')) || 0;
+                    return timeB - timeA;
+                });
+            } else {
                 orders.sort((a, b) => {
                     let valueA, valueB;
                     switch (salesSortConfig.column) {
@@ -6311,7 +6365,15 @@ function renderTransactionList() {
 
             const tbody = document.getElementById('transactionList');
 
-            let html = filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date)).map(t => {
+            // 排序：日期倒序，同一天内按 id 时间戳倒序（最后操作的在前）
+            filteredTransactions.sort((a, b) => {
+                const dateDiff = new Date(b.date) - new Date(a.date);
+                if (dateDiff !== 0) return dateDiff;
+                const timeA = parseInt(a.id.replace(/\D/g, '')) || 0;
+                const timeB = parseInt(b.id.replace(/\D/g, '')) || 0;
+                return timeB - timeA;
+            });
+            let html = filteredTransactions.map(t => {
                 return `<tr>
                     <td class="px-6 py-4 text-sm text-gray-500">${t.date}</td>
                     <td class="px-6 py-4 text-sm"><span class="status-badge ${t.type === 'income' ? 'status-paid' : 'status-pending'}">${t.type === 'income' ? '收款' : '付款'}</span></td>
@@ -8026,8 +8088,16 @@ function syncPaymentDataToOrders() {
             });
             const totalUnpaid = Math.max(0, totalAmount - totalPaid);
 
+            // 排序：日期倒序，同一天内按 lastUpdated 或 id 时间戳倒序（最后操作的在前）
+            expenses.sort((a, b) => {
+                const dateDiff = new Date(b.date) - new Date(a.date);
+                if (dateDiff !== 0) return dateDiff;
+                const timeA = a.lastUpdated || parseInt(a.id.replace(/\D/g, '')) || 0;
+                const timeB = b.lastUpdated || parseInt(b.id.replace(/\D/g, '')) || 0;
+                return timeB - timeA;
+            });
             // 只显示费用登记记录，支付记录作为后台数据不展示
-            let html = expenses.sort((a, b) => new Date(b.date) - new Date(a.date)).map(expense => {
+            let html = expenses.map(expense => {
                 const typeInfo = EXPENSE_TYPES[expense.type] || { name: expense.type, color: 'gray' };
 
                 // 计算已付和未付（expense.paidAmount 已在付款时同步更新，无需重复加 payment 流水）

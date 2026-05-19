@@ -6393,22 +6393,22 @@ async function exportBatchImage(batchId) {
                                 ${rowsHtml}
                                 <!-- 合计行 -->
                                 <tr style="background: #1e293b; color: white; font-weight: 700;">
-                                    <td colspan="3" style="padding: 14px 8px; text-align: center; font-size: 14px; border-right: 1px solid #374151;">合计</td>
-                                    <td style="padding: 14px 8px; text-align: center; font-size: 13px; border-right: 1px solid #374151;">-</td>
-                                    <td style="padding: 14px 6px; text-align: center; font-size: 13px; border-right: 1px solid #374151;">${batch.items.reduce((a,b)=>a+b.pieces,0)}</td>
-                                    <td style="padding: 14px 8px; text-align: right; font-size: 13px; border-right: 1px solid #374151;">${(batch.totalWeight || 0).toFixed(2)}kg</td>
+                                    <td colspan="3" style="padding: 14px 8px; text-align: center; font-size: 14px; border-right: 1px solid #374151; color: #f1f5f9;">合计</td>
+                                    <td style="padding: 14px 8px; text-align: center; font-size: 13px; border-right: 1px solid #374151; color: #94a3b8;">-</td>
+                                    <td style="padding: 14px 6px; text-align: center; font-size: 13px; border-right: 1px solid #374151; color: #f1f5f9;">${batch.items.reduce((a,b)=>a+b.pieces,0)}</td>
+                                    <td style="padding: 14px 8px; text-align: right; font-size: 13px; border-right: 1px solid #374151; color: #f1f5f9;">${(batch.totalWeight || 0).toFixed(2)}kg</td>
                                     <td style="padding: 14px 6px; text-align: right; font-size: 13px; border-right: 1px solid #374151;">-</td>
                                     <td style="padding: 14px 8px; text-align: right; font-size: 14px; color: #fbbf24; border-right: 1px solid #374151;">¥${(batch.totalSales || 0).toFixed(2)}</td>
                                     <td style="padding: 14px 8px; text-align: right; font-size: 14px; color: #f87171; border-right: 1px solid #374151;">¥${batch.rawCost.toFixed(2)}</td>
-                                    <td style="padding: 14px 6px; text-align: right; font-size: 12px; color: #94a3b8; border-right: 1px solid #374151;">-</td>
+                                    <td style="padding: 14px 6px; text-align: right; font-size: 12px; color: #cbd5e1; border-right: 1px solid #374151;">-</td>
                                     <td style="padding: 14px 8px; text-align: right; font-size: 13px; color: #60a5fa; border-right: 1px solid #374151;">¥${totalBoxCost.toFixed(2)}</td>
-                                    <td style="padding: 14px 6px; text-align: right; font-size: 12px; color: #94a3b8; border-right: 1px solid #374151;">-</td>
+                                    <td style="padding: 14px 6px; text-align: right; font-size: 12px; color: #cbd5e1; border-right: 1px solid #374151;">-</td>
                                     <td style="padding: 14px 8px; text-align: right; font-size: 13px; color: #60a5fa; border-right: 1px solid #374151;">¥${totalPackCost.toFixed(2)}</td>
-                                    <td style="padding: 14px 6px; text-align: right; font-size: 12px; color: #94a3b8; border-right: 1px solid #374151;">-</td>
+                                    <td style="padding: 14px 6px; text-align: right; font-size: 12px; color: #cbd5e1; border-right: 1px solid #374151;">-</td>
                                     <td style="padding: 14px 8px; text-align: right; font-size: 13px; color: #60a5fa; border-right: 1px solid #374151;">¥${totalFreight.toFixed(2)}</td>
-                                    <td style="padding: 14px 6px; text-align: right; font-size: 12px; color: #94a3b8; border-right: 1px solid #374151;">-</td>
+                                    <td style="padding: 14px 6px; text-align: right; font-size: 12px; color: #cbd5e1; border-right: 1px solid #374151;">-</td>
                                     <td style="padding: 14px 8px; text-align: right; font-size: 13px; color: #60a5fa; border-right: 1px solid #374151;">¥${totalProcess.toFixed(2)}</td>
-                                    <td style="padding: 14px 8px; text-align: right; font-size: 18px; color: ${isTotalProfit ? '#34d399' : '#f87171'}; font-weight: 800;">${isTotalProfit ? '+' : ''}¥${(batch.profit || 0).toFixed(2)}</td>
+                                    <td style="padding: 14px 8px; text-align: right; font-size: 18px; color: ${isTotalProfit ? '#4ade80' : '#fca5a5'}; font-weight: 800;">${isTotalProfit ? '+' : ''}¥${(batch.profit || 0).toFixed(2)}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -6612,22 +6612,22 @@ async function exportCurrentBatchImage() {
                                 ${rowsHtml}
                                 <!-- 合计行 -->
                                 <tr style="background: #1e293b; color: white; font-weight: 700;">
-                                    <td colspan="3" style="padding: 14px 8px; text-align: center; font-size: 14px; border-right: 1px solid #374151;">合计</td>
-                                    <td style="padding: 14px 8px; text-align: center; font-size: 13px; border-right: 1px solid #374151;">-</td>
-                                    <td style="padding: 14px 6px; text-align: center; font-size: 13px; border-right: 1px solid #374151;">${totalPieces}</td>
-                                    <td style="padding: 14px 8px; text-align: right; font-size: 13px; border-right: 1px solid #374151;">${totalNetWeight.toFixed(2)}kg</td>
+                                    <td colspan="3" style="padding: 14px 8px; text-align: center; font-size: 14px; border-right: 1px solid #374151; color: #f1f5f9;">合计</td>
+                                    <td style="padding: 14px 8px; text-align: center; font-size: 13px; border-right: 1px solid #374151; color: #94a3b8;">-</td>
+                                    <td style="padding: 14px 6px; text-align: center; font-size: 13px; border-right: 1px solid #374151; color: #f1f5f9;">${totalPieces}</td>
+                                    <td style="padding: 14px 8px; text-align: right; font-size: 13px; border-right: 1px solid #374151; color: #f1f5f9;">${totalNetWeight.toFixed(2)}kg</td>
                                     <td style="padding: 14px 6px; text-align: right; font-size: 13px; border-right: 1px solid #374151;">-</td>
                                     <td style="padding: 14px 8px; text-align: right; font-size: 14px; color: #fbbf24; border-right: 1px solid #374151;">¥${totalSalesValue.toFixed(2)}</td>
                                     <td style="padding: 14px 8px; text-align: right; font-size: 14px; color: #f87171; border-right: 1px solid #374151;">¥${totalMaterialCost.toFixed(2)}</td>
-                                    <td style="padding: 14px 6px; text-align: right; font-size: 12px; color: #94a3b8; border-right: 1px solid #374151;">-</td>
+                                    <td style="padding: 14px 6px; text-align: right; font-size: 12px; color: #cbd5e1; border-right: 1px solid #374151;">-</td>
                                     <td style="padding: 14px 8px; text-align: right; font-size: 13px; color: #60a5fa; border-right: 1px solid #374151;">¥${totalBoxCost.toFixed(2)}</td>
-                                    <td style="padding: 14px 6px; text-align: right; font-size: 12px; color: #94a3b8; border-right: 1px solid #374151;">-</td>
+                                    <td style="padding: 14px 6px; text-align: right; font-size: 12px; color: #cbd5e1; border-right: 1px solid #374151;">-</td>
                                     <td style="padding: 14px 8px; text-align: right; font-size: 13px; color: #60a5fa; border-right: 1px solid #374151;">¥${totalPackCost.toFixed(2)}</td>
-                                    <td style="padding: 14px 6px; text-align: right; font-size: 12px; color: #94a3b8; border-right: 1px solid #374151;">-</td>
+                                    <td style="padding: 14px 6px; text-align: right; font-size: 12px; color: #cbd5e1; border-right: 1px solid #374151;">-</td>
                                     <td style="padding: 14px 8px; text-align: right; font-size: 13px; color: #60a5fa; border-right: 1px solid #374151;">¥${totalFreight.toFixed(2)}</td>
-                                    <td style="padding: 14px 6px; text-align: right; font-size: 12px; color: #94a3b8; border-right: 1px solid #374151;">-</td>
+                                    <td style="padding: 14px 6px; text-align: right; font-size: 12px; color: #cbd5e1; border-right: 1px solid #374151;">-</td>
                                     <td style="padding: 14px 8px; text-align: right; font-size: 13px; color: #60a5fa; border-right: 1px solid #374151;">¥${totalProcess.toFixed(2)}</td>
-                                    <td style="padding: 14px 8px; text-align: right; font-size: 18px; color: ${isTotalProfit ? '#34d399' : '#f87171'}; font-weight: 800;">${isTotalProfit ? '+' : ''}¥${totalProfitValue.toFixed(2)}</td>
+                                    <td style="padding: 14px 8px; text-align: right; font-size: 18px; color: ${isTotalProfit ? '#4ade80' : '#fca5a5'}; font-weight: 800;">${isTotalProfit ? '+' : ''}¥${totalProfitValue.toFixed(2)}</td>
                                 </tr>
                             </tbody>
                         </table>
