@@ -723,6 +723,10 @@
         <button class="btn btn-secondary" onclick="exportProducts()" style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
           <span>📊</span> 导出Excel
         </button>
+        <button class="btn btn-secondary" onclick="document.getElementById('productImportInput').click()" style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+          <span>📁</span> 导入Excel
+        </button>
+        <input type="file" id="productImportInput" accept=".xlsx,.xls" onchange="handleProductImport(this)" style="display: none;">
       </div>
 
       <!-- 筛选栏 -->
@@ -781,6 +785,32 @@
       <div style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--text-secondary);">
         <span id="productListInfo">共 0 种产品</span>
         <span id="productPageInfo"></span>
+      </div>
+
+      <!-- 产品导入预览区域 -->
+      <div class="preview-section" id="productImportPreviewSection" style="margin-top: 20px;">
+        <div class="preview-header">
+          <div class="preview-title"><span>📋</span><span>产品导入预览</span></div>
+          <div class="preview-stats">
+            <div class="preview-stat in"><span id="productPreviewNewCount">0</span> 个新产品</div>
+            <div class="preview-stat out"><span id="productPreviewUpdateCount">0</span> 个更新</div>
+            <div class="preview-stat"><span id="productPreviewTotal">0</span> 个总计</div>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table id="productPreviewTable">
+            <thead><tr>
+              <th>品牌</th><th>品名</th><th>规格</th><th>净重(kg)</th><th>毛重(kg)</th>
+              <th>售价(元)</th><th>加工费</th><th>包装费</th><th>状态</th>
+            </tr></thead>
+            <tbody id="productPreviewTableBody"></tbody>
+          </table>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-success" onclick="showProductImportConfirmModal()">✅ 确认导入</button>
+          <button class="btn btn-secondary" onclick="cancelProductImport()">❌ 取消</button>
+          <button class="btn btn-primary" onclick="downloadProductTemplate()">📋 下载模板</button>
+        </div>
       </div>
     </div>
   </div>
@@ -2009,7 +2039,25 @@ async function init() {
       }
     }
 
-function updateSyncStatus(status, text) {
+function updateStats() {
+      const totalIn = batches.filter(b => b.type === 'in').reduce((sum, b) => sum + b.totalQty, 0);
+      const totalOut = batches.filter(b => b.type === 'out').reduce((sum, b) => sum + b.totalQty, 0);
+      const currentStock = Object.values(stock).reduce((a, b) => a + b, 0);
+      document.getElementById('statProductCount').textContent = products.length;
+      document.getElementById('statTotalIn').textContent = totalIn.toLocaleString();
+      document.getElementById('statTotalOut').textContent = totalOut.toLocaleString();
+      document.getElementById('statCurrentStock').textContent = currentStock.toLocaleString();
+    }
+
+    function updateUI() {
+      updateStats();
+      updateFilters();
+      renderStockTable();
+      renderFlow();
+      updateFlowCascadeOptions();
+    }
+
+    function updateSyncStatus(status, text) {
       const el = document.getElementById('syncStatus');
       const txt = document.getElementById('syncText');
       const warning = document.getElementById('syncWarning');
@@ -4511,6 +4559,297 @@ function confirmCartonCheckContinue() {
         hideLoading();
         showError('删除失败', err.message);
       }
+    }
+
+    // ==================== 产品Excel导入功能 ====================
+    let currentProductPreview = null;
+
+    function handleProductImport(input) {
+      if (!input.files.length) return;
+      const file = input.files[0];
+      showLoading('正在解析产品Excel...');
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+          processProductImportData(jsonData);
+        } catch (err) {
+          hideLoading();
+          showError('Excel解析失败', err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+      input.value = '';
+    }
+
+    function processProductImportData(sheetData) {
+      if (!sheetData || sheetData.length < 2) {
+        hideLoading();
+        showError('导入失败', 'Excel文件为空或格式不正确，至少需要表头和一行数据');
+        return;
+      }
+
+      const headers = sheetData[0].map(h => normalizeString(String(h || '')));
+      const colMap = {};
+      const headerAliases = {
+        'brand': ['品牌', 'brand', '牌子', '厂牌'],
+        'name': ['品名', 'name', '产品名称', '产品名', '名称'],
+        'sku': ['规格', 'sku', '型号', 'size', '规格型号'],
+        'net': ['净重', 'net', '净重kg', '净重(kg)', '重量', '单件净重'],
+        'gross': ['毛重', 'gross', '毛重kg', '毛重(kg)', '单件毛重'],
+        'price': ['售价', 'price', '单价', '销售价格', '出厂价', '元'],
+        'processFee': ['加工费', 'processfee', '加工', '加工费元/吨', '加工费(元/吨)'],
+        'packCost': ['包装费', 'packcost', '包装', '包装费元/件', '包装费(元/件)'],
+        'unit': ['单位', 'unit', '计量单位'],
+        'remark': ['备注', 'remark', '说明', '注释']
+      };
+
+      for (const [field, aliases] of Object.entries(headerAliases)) {
+        for (let i = 0; i < headers.length; i++) {
+          if (aliases.some(a => headers[i].includes(a))) {
+            colMap[field] = i;
+            break;
+          }
+        }
+      }
+
+      if (colMap['brand'] === undefined || colMap['name'] === undefined || colMap['sku'] === undefined) {
+        hideLoading();
+        let missing = [];
+        if (colMap['brand'] === undefined) missing.push('品牌');
+        if (colMap['name'] === undefined) missing.push('品名');
+        if (colMap['sku'] === undefined) missing.push('规格');
+        showError('导入失败', `未找到必填列：${missing.join('、')}\n\n请确保Excel第一行表头包含：品牌、品名、规格\n\n支持的表头关键词：\n品牌(品牌/brand/牌子)、品名(品名/name/产品名称)、规格(规格/sku/型号)、净重(净重/net/重量)、毛重(毛重/gross)、售价(售价/price/单价)、加工费(加工费/processfee)、包装费(包装费/packcost)`);
+        return;
+      }
+
+      const items = [];
+      const seenKeys = new Set();
+
+      for (let rowIdx = 1; rowIdx < sheetData.length; rowIdx++) {
+        const row = sheetData[rowIdx];
+        if (!row || row.length === 0) continue;
+
+        const brand = String(row[colMap['brand']] || '').trim();
+        const name = String(row[colMap['name']] || '').trim();
+        const sku = String(row[colMap['sku']] || '').trim();
+
+        if (!brand || !name || !sku) continue;
+
+        const netVal = row[colMap['net']];
+        const net = netVal !== undefined ? parseFloat(String(netVal).replace(/kg|公斤|斤/gi, '').trim()) : 0;
+
+        const grossVal = row[colMap['gross']];
+        const gross = grossVal !== undefined ? parseFloat(String(grossVal).replace(/kg|公斤|斤/gi, '').trim()) : 0;
+
+        const priceVal = row[colMap['price']];
+        const price = priceVal !== undefined ? parseFloat(String(priceVal).replace(/[¥,]/g, '').trim()) : 0;
+
+        const processFeeVal = row[colMap['processFee']];
+        const processFee = processFeeVal !== undefined ? parseFloat(String(processFeeVal).replace(/[¥,]/g, '').trim()) : 0;
+
+        const packCostVal = row[colMap['packCost']];
+        const packCost = packCostVal !== undefined ? parseFloat(String(packCostVal).replace(/[¥,]/g, '').trim()) : 0;
+
+        const unit = colMap['unit'] !== undefined ? String(row[colMap['unit']] || '件').trim() : '件';
+        const remark = colMap['remark'] !== undefined ? String(row[colMap['remark']] || '').trim() : '';
+
+        if (isNaN(net) || net <= 0) {
+          console.warn(`跳过第${rowIdx + 1}行：净重无效 (${netVal})`);
+          continue;
+        }
+
+        const productKey = `${normalizeString(brand)}|${normalizeString(name)}|${normalizeString(sku)}|${net.toFixed(3)}`;
+        if (seenKeys.has(productKey)) {
+          console.warn(`跳过重复行：${brand} ${name} ${sku} ${net}kg`);
+          continue;
+        }
+        seenKeys.add(productKey);
+
+        const existingProduct = products.find(p => 
+          normalizeString(p.brand) === normalizeString(brand) && 
+          normalizeString(p.name) === normalizeString(name) && 
+          normalizeString(p.sku) === normalizeString(sku) && 
+          Math.abs((p.net || 0) - net) < 0.001
+        );
+
+        const isNew = !existingProduct;
+        const hasChanges = existingProduct ? (
+          (gross > 0 && Math.abs((existingProduct.gross || 0) - gross) > 0.001) ||
+          (price > 0 && Math.abs((existingProduct.price || 0) - price) > 0.01) ||
+          (processFee > 0 && Math.abs((existingProduct.processFee || 0) - processFee) > 0.01) ||
+          (packCost > 0 && Math.abs((existingProduct.packCost || 0) - packCost) > 0.01) ||
+          (remark && existingProduct.remark !== remark)
+        ) : false;
+
+        items.push({
+          brand, name, sku, net,
+          gross: isNaN(gross) ? 0 : gross,
+          price: isNaN(price) ? 0 : price,
+          processFee: isNaN(processFee) ? 0 : processFee,
+          packCost: isNaN(packCost) ? 0 : packCost,
+          unit, remark,
+          isNew, existingProduct, hasChanges,
+          rowIndex: rowIdx + 1
+        });
+      }
+
+      hideLoading();
+
+      if (items.length === 0) {
+        showError('导入失败', '未找到有效的产品数据\n\n请检查：\n1. 数据是否从第2行开始\n2. 品牌、品名、规格是否填写\n3. 净重是否为大于0的数字');
+        return;
+      }
+
+      currentProductPreview = { items };
+      showProductImportPreview();
+      showToast(`✅ 成功解析 ${items.length} 条产品数据，请确认后导入`);
+    }
+
+    function showProductImportPreview() {
+      const section = document.getElementById('productImportPreviewSection');
+      const tbody = document.getElementById('productPreviewTableBody');
+
+      const newCount = currentProductPreview.items.filter(i => i.isNew).length;
+      const updateCount = currentProductPreview.items.filter(i => !i.isNew && i.hasChanges).length;
+
+      document.getElementById('productPreviewNewCount').textContent = newCount;
+      document.getElementById('productPreviewUpdateCount').textContent = updateCount;
+      document.getElementById('productPreviewTotal').textContent = currentProductPreview.items.length;
+
+      tbody.innerHTML = currentProductPreview.items.map(item => {
+        let statusBadge = '';
+        if (item.isNew) {
+          statusBadge = '<span class="stock-badge ok" style="font-size:10px;padding:2px 6px;">🆕 新增</span>';
+        } else if (item.hasChanges) {
+          statusBadge = '<span class="stock-badge low" style="font-size:10px;padding:2px 6px;">🔄 更新</span>';
+        } else {
+          statusBadge = '<span class="stock-badge empty" style="font-size:10px;padding:2px 6px;">⏭️ 跳过</span>';
+        }
+
+        return `<tr>
+          <td style="font-weight:600;">${escapeHtml(item.brand)}</td>
+          <td>${escapeHtml(item.name)}</td>
+          <td><span class="product-tag">${escapeHtml(item.sku)}</span></td>
+          <td>${item.net}</td>
+          <td>${item.gross > 0 ? item.gross : '-'}</td>
+          <td style="color:var(--primary);font-weight:600;">${item.price > 0 ? '¥' + item.price : '-'}</td>
+          <td>${item.processFee > 0 ? item.processFee : '-'}</td>
+          <td>${item.packCost > 0 ? '¥' + item.packCost : '-'}</td>
+          <td>${statusBadge}</td>
+        </tr>`;
+      }).join('');
+
+      section.classList.add('show');
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function cancelProductImport() {
+      currentProductPreview = null;
+      document.getElementById('productImportPreviewSection').classList.remove('show');
+      showToast('❌ 已取消导入');
+    }
+
+    function showProductImportConfirmModal() {
+      if (!currentProductPreview) return;
+
+      const newCount = currentProductPreview.items.filter(i => i.isNew).length;
+      const updateCount = currentProductPreview.items.filter(i => !i.isNew && i.hasChanges).length;
+      const skipCount = currentProductPreview.items.filter(i => !i.isNew && !i.hasChanges).length;
+
+      document.getElementById('confirmProductNewTotal').textContent = newCount;
+      document.getElementById('confirmProductUpdateTotal').textContent = updateCount;
+      document.getElementById('confirmProductSkipTotal').textContent = skipCount;
+      document.getElementById('confirmProductTotal').textContent = currentProductPreview.items.length;
+
+      document.getElementById('productImportConfirmModal').classList.add('show');
+    }
+
+    function closeProductImportConfirmModal() {
+      document.getElementById('productImportConfirmModal').classList.remove('show');
+    }
+
+    async function executeProductImport() {
+      if (!editPermissionVerified) { checkEditPermission(() => executeProductImport()); return; }
+      if (!currentProductPreview) return;
+
+      closeProductImportConfirmModal();
+      showLoading('正在导入产品...');
+
+      let added = 0, updated = 0, skipped = 0;
+
+      currentProductPreview.items.forEach(item => {
+        if (item.isNew) {
+          const newProduct = {
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+            brand: item.brand,
+            name: item.name,
+            sku: item.sku,
+            net: item.net,
+            gross: item.gross,
+            unit: item.unit,
+            price: item.price,
+            processFee: item.processFee,
+            packCost: item.packCost,
+            remark: item.remark
+          };
+          products.push(newProduct);
+          stock[newProduct.id] = 0;
+          added++;
+        } else if (item.hasChanges && item.existingProduct) {
+          const p = item.existingProduct;
+          if (item.gross > 0) p.gross = item.gross;
+          if (item.price > 0) p.price = item.price;
+          if (item.processFee > 0) p.processFee = item.processFee;
+          if (item.packCost > 0) p.packCost = item.packCost;
+          if (item.remark) p.remark = item.remark;
+          if (item.unit && item.unit !== '件') p.unit = item.unit;
+          updated++;
+        } else {
+          skipped++;
+        }
+      });
+
+      try {
+        await saveData();
+        hideLoading();
+        document.getElementById('productImportPreviewSection').classList.remove('show');
+        showToast(`✅ 导入成功！新增 ${added} 个，更新 ${updated} 个，跳过 ${skipped} 个`);
+        currentProductPreview = null;
+
+        initProductPage();
+        updateUI();
+        updateFlowCascadeOptions();
+        updateManualCascadeOptions();
+      } catch (err) {
+        hideLoading();
+        showError('保存失败', err.message);
+      }
+    }
+
+    function downloadProductTemplate() {
+      const headers = ['品牌', '品名', '规格', '净重(kg)', '毛重(kg)', '售价(元)', '加工费(元/吨)', '包装费(元/件)', '单位', '备注'];
+      const sampleData = [
+        ['佳信', '干冰熟虾', '特大', 2.5, 5.0, 112, 3300, 0.6, '件', '示例数据'],
+        ['大富肴', '白灼黑虎熟虾', '21-25', 2.5, 5.0, 174, 4300, 0.6, '件', ''],
+        ['蓝琼', '白灼黑虎熟虾', '8-10', 2.8, 5.0, 64.5, 3700, 0.3, '件', '']
+      ];
+
+      const wsData = [headers, ...sampleData];
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+      ws['!cols'] = [
+        { wch: 12 }, { wch: 20 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, 
+        { wch: 10 }, { wch: 14 }, { wch: 14 }, { wch: 8 }, { wch: 15 }
+      ];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, '产品导入模板');
+      XLSX.writeFile(wb, '产品导入模板.xlsx');
+      showToast('✅ 模板下载成功');
     }
 
     // 导出产品列表
@@ -8942,6 +9281,42 @@ function showImportFromBatchModal() {
       <div class="modal-footer">
         <button class="modal-btn modal-btn-secondary" onclick="closeCartonCheckModal()">先去补货</button>
         <button class="modal-btn modal-btn-primary" onclick="confirmCartonCheckContinue()">仍要入库</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 产品导入确认弹窗 -->
+  <div class="modal-overlay" id="productImportConfirmModal">
+    <div class="modal-content">
+      <div class="modal-header"><div class="modal-icon success">✓</div><div class="modal-title">确认导入产品</div></div>
+      <div class="modal-body">
+        <div class="confirm-summary" id="productImportSummary">
+          <div class="summary-title">📊 导入概览</div>
+          <div class="summary-grid">
+            <div class="summary-item">
+              <div class="summary-item-value" id="confirmProductNewTotal">0</div>
+              <div class="summary-item-label">新增产品</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-item-value out" id="confirmProductUpdateTotal">0</div>
+              <div class="summary-item-label">更新产品</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-item-value" id="confirmProductSkipTotal">0</div>
+              <div class="summary-item-label">跳过(无变化)</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-item-value" id="confirmProductTotal">0</div>
+              <div class="summary-item-label">Excel总行数</div>
+            </div>
+          </div>
+        </div>
+        <p style="font-size: 13px; color: var(--text-secondary);">确认后将添加新产品并更新已有产品信息，是否继续？</p>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-secondary" onclick="closeProductImportConfirmModal()">取消</button>
+        <button class="modal-btn modal-btn-primary" onclick="executeProductImport()">确认导入</button>
       </div>
     </div>
   </div>
