@@ -562,8 +562,32 @@
           <button class="btn btn-primary" onclick="downloadTemplate()">📋 下载模板</button>
         </div>
       </div>
-    </div>
-  </div>
+    
+
+    <!-- 数据备份与导出区域 -->
+    <div style="margin-top: 24px; background: var(--card-bg); border-radius: var(--radius-xl); padding: 24px; box-shadow: var(--shadow); border: 1px solid var(--border);">
+      <div style="font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+        <span>💾</span> 数据备份与导出
+      </div>
+      <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.6;">
+        定期备份数据，防止意外丢失。导出后可在其他设备导入恢复，或作为历史存档。
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+        <button class="btn btn-primary" onclick="exportAllDataJSON()" style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px; font-size: 15px;">
+          <span style="font-size: 32px;">📄</span>
+          <span style="font-weight: 700;">导出 JSON</span>
+          <span style="font-size: 12px; color: rgba(255,255,255,0.8); font-weight: normal;">完整数据备份</span>
+        </button>
+        <button class="btn btn-success" onclick="exportAllDataExcel()" style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px; font-size: 15px;">
+          <span style="font-size: 32px;">📊</span>
+          <span style="font-weight: 700;">导出 Excel</span>
+          <span style="font-size: 12px; color: rgba(255,255,255,0.8); font-weight: normal;">多表格式备份</span>
+        </button>
+      </div>
+      <div style="margin-top: 16px; padding: 12px; background: var(--bg); border-radius: var(--radius); font-size: 13px; color: var(--text-secondary);">
+        💡 <strong>提示：</strong>建议每月15号和25号各备份一次。JSON格式可直接导入恢复，Excel格式便于查看和编辑。
+      </div>
+    </div></div>
 
   <!-- 手动出入库页面 -->
   <div class="page" id="manual">
@@ -725,6 +749,9 @@
         </button>
         <button class="btn btn-secondary" onclick="document.getElementById('productImportInput').click()" style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
           <span>📁</span> 导入Excel
+        </button>
+        <button class="btn btn-success" id="saveAllProductsBtn" onclick="saveAllProducts()" style="display: none; align-items: center; gap: 8px; white-space: nowrap;">
+          <span>💾</span> 保存所有修改
         </button>
         <input type="file" id="productImportInput" accept=".xlsx,.xls" onchange="handleProductImport(this)" style="display: none;">
       </div>
@@ -1112,6 +1139,7 @@
             预警阈值：<input type="number" id="cartonThresholdInput" value="50" min="0" style="width: 60px; padding: 4px 8px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px; text-align: center;" onchange="updateCartonThreshold(this.value)">
             <button onclick="saveCartonThreshold()" style="padding: 4px 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">💾 保存</button>
           </div>
+          <button class="btn btn-danger btn-sm" id="batchDeleteCartonBtn" onclick="batchDeleteCartons()" style="padding: 8px 16px; display: none; background: var(--danger); color: white;">🗑️ 批量删除</button>
           <button class="btn btn-primary btn-sm" onclick="showCartonAddModal()" style="padding: 8px 16px;">➕ 入库补货</button>
         </div>
       </div>
@@ -1120,13 +1148,14 @@
         <table id="cartonTable">
           <thead>
             <tr>
-              <th style="width: 30px; padding: 4px 2px; font-size: 10px;">序</th>
-              <th style="width: 35%; min-width: 90px; padding: 4px 2px; font-size: 10px;">纸箱名称</th>
-              <th style="width: 70px; padding: 4px 2px; font-size: 10px;">规格</th>
-              <th style="width: 45px; padding: 4px 2px; font-size: 10px;">品牌</th>
-              <th style="width: 55px; padding: 4px 2px; font-size: 10px;">库存</th>
-              <th style="width: 40px; padding: 4px 2px; font-size: 10px;">状态</th>
-              <th style="width: 55px; padding: 4px 2px; font-size: 10px;">操作</th>
+              <th style="width: 24px; padding: 4px 2px; font-size: 10px;"><input type="checkbox" id="cartonSelectAll" onclick="toggleCartonSelectAll()" style="width: 14px; height: 14px; cursor: pointer;"></th>
+              <th style="width: 24px; padding: 4px 2px; font-size: 10px;">序</th>
+              <th style="width: 32%; min-width: 80px; padding: 4px 2px; font-size: 10px;">纸箱名称</th>
+              <th style="width: 65px; padding: 4px 2px; font-size: 10px;">规格</th>
+              <th style="width: 40px; padding: 4px 2px; font-size: 10px;">品牌</th>
+              <th style="width: 50px; padding: 4px 2px; font-size: 10px;">库存</th>
+              <th style="width: 36px; padding: 4px 2px; font-size: 10px;">状态</th>
+              <th style="width: 50px; padding: 4px 2px; font-size: 10px;">操作</th>
             </tr>
           </thead>
           <tbody id="cartonTableBody"></tbody>
@@ -1571,15 +1600,42 @@ async function init() {
             showToast('✅ 首次使用，请添加产品数据');
           }
         } else {
-          // 云端有数据，正常使用
-          products = data.products || [];
-          stock = data.stock || {};
-          batches = data.batches || [];
-          loadProfitBatchData(data);
-          cleanInvalidProducts();
+          // 云端有数据，但先检查本地是否有更新的数据（防止撤销后被旧云端覆盖）
+          let useLocal = false;
+          try {
+            const localSaved = localStorage.getItem('warehouse_data_cache');
+            if (localSaved && data._lastModified) {
+              const localData = JSON.parse(localSaved);
+              if (localData._lastModified && localData._lastModified > data._lastModified) {
+                console.log('本地数据比云端新，优先使用本地数据');
+                useLocal = true;
+                products = localData.products || [];
+                stock = localData.stock || {};
+                batches = localData.batches || [];
+                loadProfitBatchData(localData);
+                cleanInvalidProducts();
+                if (localData.cartons) loadCartonDataFromCloud(localData.cartons);
+                else initCartonModule();
+              }
+            }
+          } catch (e) { console.error('本地数据比较失败:', e); }
+
+          if (!useLocal) {
+            // 云端有数据，正常使用
+            products = data.products || [];
+            stock = data.stock || {};
+            batches = data.batches || [];
+            loadProfitBatchData(data);
+            cleanInvalidProducts();
+          }
+
+          // 加载纸箱数据（无论使用本地还是云端）
+          if (data.cartons) loadCartonDataFromCloud(data.cartons);
+          else if (!useLocal) initCartonModule();
+
           isOnline = true;
-          updateSyncStatus('synced', '已同步到云端');
-          showToast('✅ 云端数据加载成功');
+          updateSyncStatus('synced', useLocal ? '已加载本地最新数据（云端较旧）' : '已同步到云端');
+          showToast(useLocal ? '✅ 已加载本地最新数据（撤销操作已保留）' : '✅ 云端数据加载成功');
         }
       } catch (err) {
         console.error('云端连接失败:', err);
@@ -3961,6 +4017,125 @@ async function doExecuteImport() {
     }
 
     // 安全导出函数 - 先检查同步状态
+
+    // ==================== 数据备份导出功能 ====================
+    function exportAllDataJSON() {
+      const exportData = {
+        _exportVersion: '2.0',
+        _exportTime: new Date().toISOString(),
+        _systemName: '佳信水产仓库系统',
+        products: products || [],
+        stock: stock || {},
+        batches: batches || [],
+        profitBatches: profitBatches || [],
+        cartons: {
+          types: CARTON_TYPES || [],
+          stock: cartonStockData || {},
+          threshold: cartonAlertThreshold || 50,
+          productMap: PRODUCT_CARTON_MAP || {},
+          history: cartonHistory || [],
+          deductedBatchIds: cartonDeductedBatchIds || []
+        }
+      };
+
+      const jsonStr = JSON.stringify(exportData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `仓库数据备份_${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      showToast('✅ JSON备份已下载，包含所有数据');
+    }
+
+    function exportAllDataExcel() {
+      const wb = XLSX.utils.book_new();
+
+      // Sheet 1: 产品列表
+      if (products.length > 0) {
+        const productWs = XLSX.utils.json_to_sheet(products.map(p => ({
+          'ID': p.id,
+          '品牌': p.brand,
+          '品名': p.name,
+          '规格': p.sku,
+          '净重(kg)': p.net,
+          '毛重(kg)': p.gross,
+          '售价(元)': p.price,
+          '加工费(元/吨)': p.processFee,
+          '包装费(元/件)': p.packCost,
+          '单位': p.unit,
+          '备注': p.remark,
+          '当前库存': stock[p.id] || 0
+        })));
+        XLSX.utils.book_append_sheet(wb, productWs, '产品列表');
+      }
+
+      // Sheet 2: 出入库流水
+      if (batches.length > 0) {
+        const flowData = batches.flatMap(batch => 
+          batch.items.map(item => ({
+            '批次ID': batch.id,
+            '类型': batch.type === 'in' ? '入库' : '出库',
+            '日期': item.date,
+            '品牌': item.brand,
+            '品名': item.name,
+            '规格': item.sku,
+            '净重(kg)': item.net,
+            '数量(件)': item.qty,
+            '备注': item.remark || ''
+          }))
+        );
+        const flowWs = XLSX.utils.json_to_sheet(flowData);
+        XLSX.utils.book_append_sheet(wb, flowWs, '出入库流水');
+      }
+
+      // Sheet 3: 当前库存
+      const stockData = products.map(p => ({
+        '品牌': p.brand,
+        '品名': p.name,
+        '规格': p.sku,
+        '净重(kg)': p.net,
+        '当前库存(件)': stock[p.id] || 0
+      }));
+      const stockWs = XLSX.utils.json_to_sheet(stockData);
+      XLSX.utils.book_append_sheet(wb, stockWs, '当前库存');
+
+      // Sheet 4: 纸箱库存
+      const cartonData = CARTON_TYPES.map(c => ({
+        '纸箱名称': c.name,
+        '规格': c.spec,
+        '品牌': c.brand,
+        '单位': c.unit,
+        '当前库存': cartonStockData[c.id] || 0
+      }));
+      const cartonWs = XLSX.utils.json_to_sheet(cartonData);
+      XLSX.utils.book_append_sheet(wb, cartonWs, '纸箱库存');
+
+      // Sheet 5: 批次利润
+      if (profitBatches.length > 0) {
+        const profitData = profitBatches.map(pb => ({
+          '批次名称': pb.name,
+          '日期': pb.date,
+          '原料重量(斤)': pb.rawWeight,
+          '原料单价': pb.rawPrice,
+          '原料成本': pb.rawCost,
+          '成品总重(kg)': pb.totalWeight,
+          '总销售额': pb.totalSales,
+          '总成本': pb.totalCost,
+          '净利润': pb.profit,
+          '出品率(%)': pb.yieldRate
+        }));
+        const profitWs = XLSX.utils.json_to_sheet(profitData);
+        XLSX.utils.book_append_sheet(wb, profitWs, '批次利润');
+      }
+
+      XLSX.writeFile(wb, `仓库数据备份_${new Date().toISOString().split('T')[0]}.xlsx`);
+      showToast('✅ Excel备份已下载，包含5个子表');
+    }
+
+
     function safeExportFlowToExcel() {
       if (!isOnline) {
         showToast('⚠️ 当前处于离线模式，导出前请确保数据已同步到云端', 'warning');
@@ -4045,11 +4220,19 @@ async function doExecuteImport() {
       const batch = batches.find(b => b.id === pendingRevokeBatchId);
       if (!batch) { closeRevokeModal(); return; }
       showLoading('正在撤销...');
+
+      // 撤销前立即备份本地数据
+      saveLocalData();
+
       batch.items.forEach(item => {
         if (batch.type === 'in') stock[item.productId] = (stock[item.productId] || 0) - item.qty;
         else stock[item.productId] = (stock[item.productId] || 0) + item.qty;
       });
       batches = batches.filter(b => b.id !== pendingRevokeBatchId);
+
+      // 撤销后立即保存本地缓存（确保即使云端失败，本地也是正确的）
+      saveLocalData();
+
       try {
         await saveData();
         hideLoading();
@@ -4057,10 +4240,206 @@ async function doExecuteImport() {
         const msg = batch.type === 'in' ? `✅ 已撤销入库，共扣除 ${batch.totalQty} 件` : `✅ 已撤销出库，共恢复 ${batch.totalQty} 件`;
         showToast(msg);
         updateUI();
-      } catch (err) { hideLoading(); showError('撤销失败', err.message); }
+      } catch (err) { 
+        hideLoading(); 
+        // 即使云端失败，本地已保存，强制刷新UI显示正确库存
+        updateUI();
+        showToast('⚠️ 撤销已保存到本地，库存已更新，云端同步稍后重试', 'warning');
+      }
     }
 
     // ==================== 数据管理 ====================
+
+    // ==================== 库存校准功能 ====================
+    async function recalculateStock() {
+      if (!editPermissionVerified) { checkEditPermission(() => recalculateStock()); return; }
+      if (!confirm('🔄 库存校准\n\n将执行以下操作：\n1. 清理重复产品\n2. 根据流水重新计算库存\n3. 清理残留数据\n\n是否继续？')) return;
+
+      showLoading('正在校准库存...');
+
+      // 备份
+      const stockBackup = JSON.parse(JSON.stringify(stock));
+      const productsBackup = JSON.parse(JSON.stringify(products));
+
+      try {
+        // 第1步：清理重复产品
+        const dupResult = removeDuplicateProducts();
+
+        // 第2步：完全重建 stock 对象（清理所有残留 ID）
+        const newStock = {};
+        products.forEach(p => {
+          newStock[p.id] = 0;
+        });
+
+        // 第3步：按时间顺序重新计算（batches 是倒序的，最新的在前，所以需要反转）
+        const sortedBatches = [...batches].reverse();
+        let totalIn = 0, totalOut = 0;
+        sortedBatches.forEach(batch => {
+          batch.items.forEach(item => {
+            if (!item.productId || !newStock.hasOwnProperty(item.productId)) return;
+            const qty = parseInt(item.qty) || 0;
+            if (batch.type === 'in') {
+              newStock[item.productId] = (newStock[item.productId] || 0) + qty;
+              totalIn += qty;
+            } else {
+              newStock[item.productId] = (newStock[item.productId] || 0) - qty;
+              totalOut += qty;
+            }
+          });
+        });
+
+        // 第4步：替换 stock
+        stock = newStock;
+
+        // 第5步：保存
+        await saveData();
+
+        hideLoading();
+
+        // 计算差异
+        const oldTotal = Object.values(stockBackup).reduce((a, b) => a + (parseInt(b) || 0), 0);
+        const newTotal = Object.values(stock).reduce((a, b) => a + (parseInt(b) || 0), 0);
+
+        updateUI();
+
+        // 显示详细报告
+        let report = `📊 库存校准报告\n\n`;
+        report += `🧹 清理重复产品: ${dupResult.removed} 个\n`;
+        if (dupResult.mergedStock > 0) report += `📦 合并库存: ${dupResult.mergedStock} 件\n`;
+        report += `📥 总入库: ${totalIn} 件\n`;
+        report += `📤 总出库: ${totalOut} 件\n`;
+        report += `📊 旧库存合计: ${oldTotal} 件\n`;
+        report += `📊 新库存合计: ${newTotal} 件\n`;
+        if (oldTotal !== newTotal) {
+          report += `⚠️ 差异: ${newTotal - oldTotal} 件\n`;
+        } else {
+          report += `✅ 库存无变化\n`;
+        }
+        report += `\n如果总数仍然不对，请检查流水页面是否有重复入库记录。`;
+
+        alert(report);
+        showToast(`✅ 校准完成！清理${dupResult.removed}个重复产品，合计 ${newTotal} 件`);
+
+      } catch (err) {
+        hideLoading();
+        stock = stockBackup;
+        products = productsBackup;
+        showError('校准失败', err.message);
+      }
+    }
+
+    // ==================== 库存诊断功能 ====================
+    function diagnoseStock() {
+      // 1. 计算残留 ID
+      const productIds = new Set(products.map(p => p.id));
+      const residualIds = Object.keys(stock).filter(id => !productIds.has(id));
+
+      // 2. 根据 batches 重新计算理论库存
+      const calcStock = {};
+      products.forEach(p => calcStock[p.id] = 0);
+      const sortedBatches = [...batches].reverse();
+      let totalIn = 0, totalOut = 0;
+      sortedBatches.forEach(batch => {
+        batch.items.forEach(item => {
+          if (!item.productId || !calcStock.hasOwnProperty(item.productId)) return;
+          const qty = parseInt(item.qty) || 0;
+          if (batch.type === 'in') { calcStock[item.productId] += qty; totalIn += qty; }
+          else { calcStock[item.productId] -= qty; totalOut += qty; }
+        });
+      });
+
+      // 3. 找出差异
+      let diffList = [];
+      let residualTotal = 0;
+      products.forEach(p => {
+        const current = stock[p.id] || 0;
+        const calculated = calcStock[p.id] || 0;
+        if (current !== calculated) {
+          diffList.push(`${p.brand} ${p.name} ${p.sku}: 当前${current} ≠ 理论${calculated} (差${current - calculated})`);
+        }
+      });
+      residualIds.forEach(id => {
+        residualTotal += (parseInt(stock[id]) || 0);
+      });
+
+      const currentTotal = Object.values(stock).reduce((a, b) => a + (parseInt(b) || 0), 0);
+      const calcTotal = Object.values(calcStock).reduce((a, b) => a + (parseInt(b) || 0), 0);
+
+      let report = `📊 库存诊断报告\n\n`;
+      report += `当前库存合计: ${currentTotal} 件\n`;
+      report += `理论库存合计: ${calcTotal} 件\n`;
+      report += `残留数据合计: ${residualTotal} 件 (${residualIds.length}个残留ID)\n`;
+      report += `总入库: ${totalIn} 件\n`;
+      report += `总出库: ${totalOut} 件\n`;
+      report += `\n`;
+
+      if (residualIds.length > 0) {
+        report += `⚠️ 发现残留数据！\n`;
+        report += `这些残留ID占用了 ${residualTotal} 件库存。\n`;
+        report += `请点击【校准库存】清理。\n\n`;
+      }
+
+      if (diffList.length > 0) {
+        report += `❌ 库存不一致的产品 (${diffList.length}个):\n${diffList.slice(0, 15).join('\n')}`;
+        if (diffList.length > 15) report += `\n...等共 ${diffList.length} 个`;
+      } else if (residualIds.length === 0) {
+        report += `✅ 所有产品库存与流水一致。\n\n如果总数仍然不对，说明流水记录本身包含重复入库，请去流水页面检查。`;
+      }
+
+      alert(report);
+    }
+
+    // ==================== 清理重复产品 ====================
+    function removeDuplicateProducts() {
+        // 1. 按 id 去重（同一个对象出现多次）
+        const uniqueById = [];
+        const seenIds = new Set();
+        products.forEach(p => {
+            if (!seenIds.has(p.id)) {
+                seenIds.add(p.id);
+                uniqueById.push(p);
+            }
+        });
+
+        // 2. 按品牌+品名+规格+净重去重（不同 id 但相同产品）
+        const finalProducts = [];
+        const seenKeys = new Map();
+        let mergedStock = 0;
+
+        uniqueById.forEach(p => {
+            const key = `${normalizeString(p.brand)}|${normalizeString(p.name)}|${normalizeString(p.sku)}|${(p.net || 0).toFixed(3)}`;
+            if (seenKeys.has(key)) {
+                // 合并库存到保留的产品
+                const keep = seenKeys.get(key);
+                const pStock = stock[p.id] || 0;
+                if (pStock !== 0) {
+                    stock[keep.id] = (stock[keep.id] || 0) + pStock;
+                    mergedStock += pStock;
+                }
+                delete stock[p.id];
+
+                // 更新 batches 中的 productId
+                batches.forEach(batch => {
+                    batch.items.forEach(item => {
+                        if (item.productId === p.id) item.productId = keep.id;
+                    });
+                });
+            } else {
+                seenKeys.set(key, p);
+                finalProducts.push(p);
+            }
+        });
+
+        const removed = products.length - finalProducts.length;
+        products = finalProducts;
+        return { removed, mergedStock };
+    }
+
+
+
+
+
+
 
     async function clearAllData() {
       if (!editPermissionVerified) { checkEditPermission(() => clearAllData()); return; }
@@ -4287,7 +4666,7 @@ function confirmCartonCheckContinue() {
       if (filteredProductList.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="7" style="padding: 60px 20px; text-align: center; color: var(--text-secondary);">
+            <td colspan="10" style="padding: 60px 20px; text-align: center; color: var(--text-secondary);">
               <div style="font-size: 48px; margin-bottom: 16px;">📦</div>
               <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">暂无产品数据</div>
               <div style="font-size: 14px; color: var(--text-tertiary);">点击"新增产品"按钮添加第一个产品</div>
@@ -4303,7 +4682,8 @@ function confirmCartonCheckContinue() {
         return `
           <tr style="border-bottom: 1px solid var(--border); transition: background 0.2s;" 
               onmouseover="this.style.background='rgba(37, 99, 235, 0.03)'" 
-              onmouseout="this.style.background='transparent'">
+              onmouseout="this.style.background='transparent'"
+              data-product-id="${p.id}">
             <td style="padding: 12px; text-align: center; font-weight: 600; font-size: 14px;">${escapeHtml(p.brand)}</td>
             <td style="padding: 12px; text-align: center; font-size: 14px;">${escapeHtml(p.name)}</td>
             <td style="padding: 12px; text-align: center;">
@@ -4311,20 +4691,49 @@ function confirmCartonCheckContinue() {
               ${p.isBLevel ? '<span style="display: inline-block; margin-left: 4px; padding: 2px 6px; background: var(--warning-light); color: var(--warning); border-radius: 10px; font-size: 10px; font-weight: 600;">B级</span>' : ''}
             </td>
             <td style="padding: 12px; text-align: center; font-size: 13px; color: var(--text-secondary);">${p.net || 0} kg</td>
-            <td style="padding: 12px; text-align: center; font-size: 13px; color: var(--text-secondary);">${p.gross || 0} kg</td>
-            <td style="padding: 12px; text-align: center; font-weight: 600; color: var(--primary);">${price > 0 ? '¥' + price : '-'}</td>
-            <td style="padding: 12px; text-align: center; font-size: 13px; color: var(--text-secondary);">${p.processFee > 0 ? p.processFee : '<span style="color:var(--text-tertiary)">-</span>'}</td>
-            <td style="padding: 12px; text-align: center; font-size: 13px; color: var(--text-secondary);">${p.packCost > 0 ? '¥' + p.packCost : '<span style="color:var(--text-tertiary)">-</span>'}</td>
-            <td style="padding: 12px; text-align: center; font-size: 13px; color: var(--text-tertiary);">${p.remark || '-'}</td>
+            <td style="padding: 8px 4px; text-align: center;">
+              <input type="number" id="gross_${p.id}" value="${p.gross || ''}" placeholder="-" step="0.1" min="0"
+                     style="width: 55px; padding: 4px 2px; border: 1.5px solid var(--border); border-radius: 6px; text-align: center; font-size: 13px;"
+                     onchange="markProductModified('${p.id}')" onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 2px rgba(37,99,235,0.1)';" onblur="this.style.borderColor='var(--border)'; this.style.boxShadow='none';">
+            </td>
+            <td style="padding: 8px 4px; text-align: center;">
+              <input type="number" id="price_${p.id}" value="${p.price || ''}" placeholder="-" step="0.01" min="0"
+                     style="width: 55px; padding: 4px 2px; border: 1.5px solid var(--border); border-radius: 6px; text-align: center; font-size: 13px; font-weight: 600; color: var(--primary);"
+                     onchange="markProductModified('${p.id}')" onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 2px rgba(37,99,235,0.1)';" onblur="this.style.borderColor='var(--border)'; this.style.boxShadow='none';">
+            </td>
+            <td style="padding: 8px 4px; text-align: center;">
+              <input type="number" id="processFee_${p.id}" value="${p.processFee || ''}" placeholder="-" step="100" min="0"
+                     style="width: 55px; padding: 4px 2px; border: 1.5px solid var(--border); border-radius: 6px; text-align: center; font-size: 13px;"
+                     onchange="markProductModified('${p.id}')" onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 2px rgba(37,99,235,0.1)';" onblur="this.style.borderColor='var(--border)'; this.style.boxShadow='none';">
+            </td>
+            <td style="padding: 8px 4px; text-align: center;">
+              <input type="number" id="packCost_${p.id}" value="${p.packCost || ''}" placeholder="-" step="0.1" min="0"
+                     style="width: 55px; padding: 4px 2px; border: 1.5px solid var(--border); border-radius: 6px; text-align: center; font-size: 13px;"
+                     onchange="markProductModified('${p.id}')" onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 2px rgba(37,99,235,0.1)';" onblur="this.style.borderColor='var(--border)'; this.style.boxShadow='none';">
+            </td>
+            <td style="padding: 8px 4px; text-align: center;">
+              <input type="text" id="remark_${p.id}" value="${escapeHtml(p.remark || '')}" placeholder="-"
+                     style="width: 80px; padding: 4px 2px; border: 1.5px solid var(--border); border-radius: 6px; text-align: center; font-size: 12px;"
+                     onchange="markProductModified('${p.id}')" onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 2px rgba(37,99,235,0.1)';" onblur="this.style.borderColor='var(--border)'; this.style.boxShadow='none';">
+            </td>
             <td style="padding: 12px; text-align: center;">
               <div style="display: flex; gap: 6px; justify-content: center;">
+                <button onclick="saveSingleProduct('${p.id}')" 
+                        id="saveBtn_${p.id}"
+                        style="padding: 6px 12px; background: var(--success-light); color: var(--success); 
+                               border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;
+                               transition: all 0.2s; display: none;"
+                        onmouseover="this.style.background='var(--success)'; this.style.color='white';"
+                        onmouseout="this.style.background='var(--success-light)'; this.style.color='var(--success)';">
+                  💾 保存
+                </button>
                 <button onclick="editProduct('${p.id}')" 
                         style="padding: 6px 12px; background: var(--primary-light); color: var(--primary); 
                                border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;
                                transition: all 0.2s;"
                         onmouseover="this.style.background='var(--primary)'; this.style.color='white';"
                         onmouseout="this.style.background='var(--primary-light)'; this.style.color='var(--primary)';">
-                  编辑
+                  ✏️
                 </button>
                 <button onclick="deleteProduct('${p.id}')" 
                         style="padding: 6px 12px; background: var(--danger-light); color: var(--danger); 
@@ -4332,7 +4741,7 @@ function confirmCartonCheckContinue() {
                                transition: all 0.2s;"
                         onmouseover="this.style.background='var(--danger)'; this.style.color='white';"
                         onmouseout="this.style.background='var(--danger-light)'; this.style.color='var(--danger)';">
-                  删除
+                  🗑️
                 </button>
               </div>
             </td>
@@ -4341,7 +4750,138 @@ function confirmCartonCheckContinue() {
       }).join('');
     }
 
-    // 显示产品编辑弹窗（新增模式）
+    // ==================== 行内编辑功能 ====================
+    let modifiedProductIds = new Set();
+
+    function markProductModified(productId) {
+      modifiedProductIds.add(productId);
+      const btn = document.getElementById('saveBtn_' + productId);
+      if (btn) btn.style.display = 'inline-block';
+      // 显示全局保存按钮
+      const globalBtn = document.getElementById('saveAllProductsBtn');
+      if (globalBtn) globalBtn.style.display = 'inline-flex';
+    }
+
+    async function saveSingleProduct(productId) {
+      if (!editPermissionVerified) { checkEditPermission(() => saveSingleProduct(productId)); return; }
+
+      const p = products.find(prod => prod.id === productId);
+      if (!p) return;
+
+      const priceVal = document.getElementById('price_' + productId)?.value;
+      const grossVal = document.getElementById('gross_' + productId)?.value;
+      const processFeeVal = document.getElementById('processFee_' + productId)?.value;
+      const packCostVal = document.getElementById('packCost_' + productId)?.value;
+      const remarkVal = document.getElementById('remark_' + productId)?.value;
+
+      if (priceVal !== undefined && priceVal !== '') p.price = parseFloat(priceVal) || 0;
+      if (grossVal !== undefined && grossVal !== '') p.gross = parseFloat(grossVal) || 0;
+      else if (grossVal === '') p.gross = 0;
+      if (processFeeVal !== undefined && processFeeVal !== '') p.processFee = parseFloat(processFeeVal) || 0;
+      else if (processFeeVal === '') delete p.processFee;
+      if (packCostVal !== undefined && packCostVal !== '') p.packCost = parseFloat(packCostVal) || 0;
+      else if (packCostVal === '') delete p.packCost;
+      if (remarkVal !== undefined) p.remark = remarkVal.trim();
+
+      // 同步更新批次中的产品信息
+      batches.forEach(batch => {
+        batch.items.forEach(item => {
+          if (item.productId === productId) {
+            item.brand = p.brand;
+            item.name = p.name;
+            item.sku = p.sku;
+            item.net = p.net;
+            item.gross = p.gross;
+          }
+        });
+      });
+
+      try {
+        await saveData();
+        modifiedProductIds.delete(productId);
+        const btn = document.getElementById('saveBtn_' + productId);
+        if (btn) btn.style.display = 'none';
+
+        // 检查是否还有未保存的
+        if (modifiedProductIds.size === 0) {
+          const globalBtn = document.getElementById('saveAllProductsBtn');
+          if (globalBtn) globalBtn.style.display = 'none';
+        }
+
+        showToast(`✅ ${p.name} 已保存`);
+      } catch (err) {
+        showError('保存失败', err.message);
+      }
+    }
+
+    async function saveAllProducts() {
+      if (!editPermissionVerified) { checkEditPermission(() => saveAllProducts()); return; }
+      if (modifiedProductIds.size === 0) {
+        showToast('没有需要保存的修改');
+        return;
+      }
+
+      showLoading(`正在保存 ${modifiedProductIds.size} 个产品...`);
+
+      let savedCount = 0;
+      const idsToSave = [...modifiedProductIds];
+
+      idsToSave.forEach(productId => {
+        const p = products.find(prod => prod.id === productId);
+        if (!p) return;
+
+        const priceVal = document.getElementById('price_' + productId)?.value;
+        const grossVal = document.getElementById('gross_' + productId)?.value;
+        const processFeeVal = document.getElementById('processFee_' + productId)?.value;
+        const packCostVal = document.getElementById('packCost_' + productId)?.value;
+        const remarkVal = document.getElementById('remark_' + productId)?.value;
+
+        if (priceVal !== undefined && priceVal !== '') p.price = parseFloat(priceVal) || 0;
+        if (grossVal !== undefined && grossVal !== '') p.gross = parseFloat(grossVal) || 0;
+        else if (grossVal === '') p.gross = 0;
+        if (processFeeVal !== undefined && processFeeVal !== '') p.processFee = parseFloat(processFeeVal) || 0;
+        else if (processFeeVal === '') delete p.processFee;
+        if (packCostVal !== undefined && packCostVal !== '') p.packCost = parseFloat(packCostVal) || 0;
+        else if (packCostVal === '') delete p.packCost;
+        if (remarkVal !== undefined) p.remark = remarkVal.trim();
+
+        // 同步更新批次
+        batches.forEach(batch => {
+          batch.items.forEach(item => {
+            if (item.productId === productId) {
+              item.brand = p.brand;
+              item.name = p.name;
+              item.sku = p.sku;
+              item.net = p.net;
+              item.gross = p.gross;
+            }
+          });
+        });
+
+        savedCount++;
+      });
+
+      try {
+        await saveData();
+        hideLoading();
+        modifiedProductIds.clear();
+
+        // 隐藏所有保存按钮
+        idsToSave.forEach(id => {
+          const btn = document.getElementById('saveBtn_' + id);
+          if (btn) btn.style.display = 'none';
+        });
+        const globalBtn = document.getElementById('saveAllProductsBtn');
+        if (globalBtn) globalBtn.style.display = 'none';
+
+        showToast(`✅ 已保存 ${savedCount} 个产品的修改`);
+      } catch (err) {
+        hideLoading();
+        showError('保存失败', err.message);
+      }
+    }
+
+    // 显示产品编辑弹窗（新增模式）// 显示产品编辑弹窗（新增模式）
     function showProductModal() {
       document.getElementById('productEditId').value = '';
       document.getElementById('productModalTitle').textContent = '新增产品';
@@ -7696,6 +8236,7 @@ function showImportFromBatchModal() {
             }
             const deleteBtn = `<button onclick="deleteCustomCarton('${carton.id}')" title="删除" style="margin-left: 2px; padding: 1px 4px; font-size: 10px; background: #fee2e2; color: #dc2626; border: none; border-radius: 3px; cursor: pointer;">🗑️</button>`;
             html += `<tr style="${rowStyle}">
+                <td style="padding: 2px 2px; text-align: center;"><input type="checkbox" class="carton-checkbox" data-carton-id="${carton.id}" style="width: 14px; height: 14px; cursor: pointer;" onclick="updateCartonSelectAllState()"></td>
                 <td style="font-weight: 600; color: var(--text-secondary); padding: 2px 2px; font-size: 10px; text-align: center;">${index + 1}</td>
                 <td style="padding: 2px 4px; line-height: 1.15;">
                     <div style="font-weight: 600; color: var(--text-primary); font-size: 11px; line-height: 1.2; word-break: keep-all;">${carton.name}</div>
@@ -7806,6 +8347,98 @@ function showImportFromBatchModal() {
         }
     }
     // 全选/反选配置产品
+
+    // ==================== 纸箱批量删除功能 ====================
+    function toggleCartonSelectAll() {
+        const allCheckbox = document.getElementById('cartonSelectAll');
+        const checkboxes = document.querySelectorAll('.carton-checkbox');
+        checkboxes.forEach(cb => {
+            cb.checked = allCheckbox.checked;
+        });
+        updateCartonBatchDeleteBtn();
+    }
+
+    function updateCartonSelectAllState() {
+        const checkboxes = document.querySelectorAll('.carton-checkbox');
+        const allCheckbox = document.getElementById('cartonSelectAll');
+        if (!allCheckbox) return;
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        const someChecked = Array.from(checkboxes).some(cb => cb.checked);
+        allCheckbox.checked = allChecked;
+        allCheckbox.indeterminate = someChecked && !allChecked;
+        updateCartonBatchDeleteBtn();
+    }
+
+    function updateCartonBatchDeleteBtn() {
+        const selected = getSelectedCartonIds();
+        const btn = document.getElementById('batchDeleteCartonBtn');
+        if (btn) {
+            btn.style.display = selected.length > 0 ? 'inline-block' : 'none';
+            btn.textContent = `🗑️ 批量删除 (${selected.length})`;
+        }
+    }
+
+    function getSelectedCartonIds() {
+        const checkboxes = document.querySelectorAll('.carton-checkbox:checked');
+        return Array.from(checkboxes).map(cb => cb.getAttribute('data-carton-id'));
+    }
+
+    async function batchDeleteCartons() {
+        const selectedIds = getSelectedCartonIds();
+        if (selectedIds.length === 0) {
+            showToast('请先选择要删除的纸箱', 'warning');
+            return;
+        }
+
+        const selectedNames = selectedIds.map(id => {
+            const c = CARTON_TYPES.find(ct => ct.id === id);
+            return c ? c.name : id;
+        });
+
+        if (!confirm(`确定删除以下 ${selectedIds.length} 个纸箱？\n\n${selectedNames.join('\n')}\n\n⚠️ 删除后相关库存和历史记录将一并清除，此操作不可恢复！`)) return;
+
+        showLoading(`正在删除 ${selectedIds.length} 个纸箱...`);
+
+        let deletedCount = 0;
+        selectedIds.forEach(id => {
+            // 删除库存数据
+            delete cartonStockData[id];
+            // 从历史记录中移除
+            cartonHistory = cartonHistory.filter(h => h.cartonId !== id);
+            // 从产品关联中移除
+            Object.keys(PRODUCT_CARTON_MAP).forEach(key => {
+                const config = PRODUCT_CARTON_MAP[key];
+                if (config && (config.carton1 === id || config.carton2 === id)) {
+                    delete PRODUCT_CARTON_MAP[key];
+                }
+            });
+            deletedCount++;
+        });
+
+        // 从类型列表中移除
+        CARTON_TYPES = CARTON_TYPES.filter(c => !selectedIds.includes(c.id));
+
+        try {
+            await saveData();
+            hideLoading();
+
+            // 重置全选框
+            const allCheckbox = document.getElementById('cartonSelectAll');
+            if (allCheckbox) { allCheckbox.checked = false; allCheckbox.indeterminate = false; }
+            updateCartonBatchDeleteBtn();
+
+            renderCartonTable();
+            updateCartonStats();
+            checkCartonAlerts();
+            renderCartonHistory();
+            showToast(`✅ 已删除 ${deletedCount} 个纸箱`);
+        } catch (err) {
+            hideLoading();
+            showError('批量删除失败', err.message);
+        }
+    }
+
+
     function toggleSelectAllConfig(checkbox) {
         const checkboxes = document.querySelectorAll('.config-product-checkbox');
         checkboxes.forEach(cb => cb.checked = checkbox.checked);
