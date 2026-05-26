@@ -403,12 +403,12 @@
         <h1>🦐 佳信水产</h1>
         <p>佳信水产仓库系统 v5.0.1 · 微信缓存已优化</p>
       </div>
-      <div style="position: absolute; top: 16px; right: 16px; z-index: 2; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
-        <div class="sync-status" id="syncStatus" style="cursor: pointer; position: static;" onclick="checkSyncStatus()" title="点击检查同步状态">
+      <div style="position: absolute; top: 16px; right: 16px; z-index: 10; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+        <div class="sync-status" id="syncStatus" style="position: static; cursor: pointer;" onclick="checkSyncStatus()" title="点击检查同步状态">
           <span class="sync-dot"></span>
           <span id="syncText">正在连接云端...</span>
         </div>
-        <button onclick="forcePromptGitHubToken()" id="tokenSetupBtn" style="display: none; background: rgba(255,255,255,0.25); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+        <button onclick="forcePromptGitHubToken()" id="tokenSetupBtn" style="background: #ffffff; border: 2px solid #2563eb; color: #2563eb; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(37,99,235,0.3); letter-spacing: 0.5px;">
           🔐 配置Token
         </button>
       </div>
@@ -1468,29 +1468,23 @@ function getProductPrice(product) {
 
     function getGitHubToken() {
       const raw = localStorage.getItem('github_token') || '';
-      // 如果存在内容但不是合法格式，视为无效（触发重新输入）
-      if (raw && !isValidGitHubToken(raw)) {
-        console.warn('[Token] 本地存储的Token格式无效，将重新提示输入');
+      // 格式校验：必须以 ghp_ 或 github_pat_ 开头
+      if (raw && !/^ghp_[a-zA-Z0-9]{36}$/.test(raw) && !/^github_pat_[a-zA-Z0-9_]+$/.test(raw)) {
+        console.warn('[Token] 本地Token格式无效，视为空');
         return '';
       }
       return raw;
     }
 
-    function isValidGitHubToken(token) {
-      if (!token || typeof token !== 'string') return false;
-      // GitHub classic token 以 ghp_ 开头，fine-grained 以 github_pat_ 开头
-      return /^ghp_[a-zA-Z0-9]{36}$/.test(token) || /^github_pat_[a-zA-Z0-9_]{22,}$/.test(token);
-    }
-
     function forcePromptGitHubToken() {
-      // 强制显示Token弹窗（不管localStorage里有没有值）
-      const oldModal = document.getElementById('tokenPromptModal');
-      if (oldModal) oldModal.remove();
+      // 强制显示Token弹窗
+      const old = document.getElementById('tokenPromptModal');
+      if (old) old.remove();
       promptGitHubToken(true);
     }
 
     // 首次使用提示输入 GitHub Token（与财务系统一致）
-    function promptGitHubToken(force = false) {
+    function promptGitHubToken(force) {
       const existing = localStorage.getItem('github_token');
       if (existing && !force) return existing;
 
@@ -1499,9 +1493,9 @@ function getProductPrice(product) {
       modal.id = 'tokenPromptModal';
       modal.style.cssText = `
         position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
-        z-index: 100000; display: flex; align-items: center; justify-content: center;
-        padding: 16px;
+        background: rgba(0,0,0,0.65); backdrop-filter: blur(6px);
+        z-index: 999999; display: flex; align-items: center; justify-content: center;
+        padding: 16px; animation: fadeIn 0.3s ease-out;
       `;
       modal.innerHTML = `
         <div style="background: white; border-radius: 16px; padding: 32px; width: 100%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
@@ -1631,16 +1625,16 @@ async function init() {
       const token = getGitHubToken();
       if (!token) {
         hideLoading();
-        // 延迟一点确保DOM已就绪，弹窗一定显示在最上层
-        setTimeout(() => {
+        // 确保DOM就绪后再弹窗
+        setTimeout(function() {
           promptGitHubToken();
           // 设置默认日期
-          const today = new Date().toISOString().split('T')[0];
+          var today = new Date().toISOString().split('T')[0];
           document.getElementById('flowStartDate').value = today;
           document.getElementById('flowEndDate').value = today;
           updateUI();
           updateFlowCascadeOptions();
-        }, 100);
+        }, 200);
         return;
       }
 
@@ -1919,27 +1913,17 @@ async function init() {
     }
 
     function updateSyncStatus(status, text) {
-      const el = document.getElementById('syncStatus');
-      const txt = document.getElementById('syncText');
-      const warning = document.getElementById('syncWarning');
-      const tokenBtn = document.getElementById('tokenSetupBtn');
+      var el = document.getElementById('syncStatus');
+      var txt = document.getElementById('syncText');
+      var warning = document.getElementById('syncWarning');
       if (el) el.className = 'sync-status ' + status;
       if (txt) txt.textContent = text;
-
-      // 离线或错误时显示配置Token按钮
-      if (tokenBtn) {
-        if (status === 'error' || !isOnline) {
-          tokenBtn.style.display = 'inline-block';
-        } else {
-          tokenBtn.style.display = 'none';
-        }
-      }
 
       // 显示/隐藏离线警告
       if (warning) {
         if (status === 'error' || (!isOnline && status !== 'synced')) {
           warning.style.display = 'block';
-          setTimeout(() => { warning.style.display = 'none'; }, 5000);
+          setTimeout(function() { warning.style.display = 'none'; }, 5000);
         } else {
           warning.style.display = 'none';
         }
@@ -5161,13 +5145,13 @@ function showLoading(text) {
     // 检查同步状态
     function checkSyncStatus() {
       if (!isOnline) {
-        const warning = document.getElementById('syncWarning');
-        warning.style.display = warning.style.display === 'none' ? 'block' : 'none';
+        var warning = document.getElementById('syncWarning');
+        if (warning) warning.style.display = warning.style.display === 'none' ? 'block' : 'none';
         showToast('⚠️ 当前处于离线模式，请检查网络连接', 'warning');
-        // 如果离线，同时弹出Token配置
-        setTimeout(() => {
-          if (!getGitHubToken()) forcePromptGitHubToken();
-        }, 300);
+        // 如果未配置Token，自动弹出配置
+        if (!getGitHubToken()) {
+          setTimeout(function() { forcePromptGitHubToken(); }, 300);
+        }
       } else {
         showToast('✅ 已连接到云端，数据会自动同步');
       }
