@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="timestamp" content="2026-04-12 10:41">
-  <title>佳信水产仓库系统 v5.0.1</title>
+  <meta name="timestamp" content="2026-05-26 15:41">
+  <title>佳信水产仓库系统 v6.0.0 · GitHub存储</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js?v=20260502_1130"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js?v=20260502_1130"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter&v=20260502_1130:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
@@ -389,31 +389,23 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="timestamp" content="2026-05-02 11:30">
+  <meta name="timestamp" content="2026-05-26 15:41">
 </head>
 <body>
   <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><div class="loading-text">正在处理...</div></div>
   <div class="toast" id="toast"></div>
   <div class="container">
     <div class="header">
-      <div id="syncWarning" style="display: none; position: absolute; top: 50px; right: 16px; background: #fef3c7; border: 2px solid #f59e0b; padding: 12px; border-radius: 8px; font-size: 12px; color: #92400e; z-index: 100; max-width: 200px;">
+      <div class="sync-status" id="syncStatus" style="cursor: pointer;" onclick="checkSyncStatus()" title="点击检查同步状态">
+          <span class="sync-dot"></span>
+          <span id="syncText">正在连接云端...</span>
+        </div>
+        <div id="syncWarning" style="display: none; position: absolute; top: 50px; right: 16px; background: #fef3c7; border: 2px solid #f59e0b; padding: 12px; border-radius: 8px; font-size: 12px; color: #92400e; z-index: 100; max-width: 200px;">
           ⚠️ 离线模式：数据仅保存在本地，刷新页面会丢失！
         </div>
       <div style="position: relative; z-index: 1;">
         <h1>🦐 佳信水产</h1>
-        <p>佳信水产仓库系统 v5.0.1 · 微信缓存已优化</p>
-      </div>
-      <div style="position: absolute; top: 16px; right: 16px; z-index: 10; display: flex; flex-direction: row; flex-wrap: wrap; align-items: flex-start; justify-content: flex-end; gap: 8px; max-width: 70%;">
-        <div class="sync-status" id="syncStatus" style="position: static; cursor: pointer;" onclick="checkSyncStatus()" title="点击检查同步状态">
-          <span class="sync-dot"></span>
-          <span id="syncText">正在连接云端...</span>
-        </div>
-        <button onclick="forcePromptGitHubToken()" id="tokenSetupBtn" style="display: none; background: #ffffff; border: 2px solid #2563eb; color: #2563eb; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(37,99,235,0.3);">
-          🔐 配置Token
-        </button>
-        <button onclick="showSystemSettings()" id="settingsBtn" style="background: #ffffff; border: 2px solid #7c3aed; color: #7c3aed; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(124,58,237,0.3);">
-          ⚙️ 系统设置
-        </button>
+        <p>佳信水产仓库系统 v6.0.0 · GitHub存储 · 微信缓存已优化</p>
       </div>
     </div>
 
@@ -570,26 +562,7 @@
           <button class="btn btn-primary" onclick="downloadTemplate()">📋 下载模板</button>
         </div>
       </div>
-    <!-- 数据备份导出区域 -->
-  <div class="card" style="margin-top: 20px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 2px solid #0ea5e9;">
-    <div class="card-title" style="border-bottom-color: #bae6fd;">💾 数据备份与导出</div>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
-      <button class="btn btn-primary" onclick="safeExportFlowToExcel()" style="display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);">
-        <span>📊</span> 导出流水明细
-      </button>
-      <button class="btn btn-secondary" onclick="exportAllData()" style="display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none;">
-        <span>💾</span> 导出全部备份(Excel)
-      </button>
-      <button class="btn btn-secondary" onclick="exportJsonBackup()" style="display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none;">
-        <span>📁</span> 导出JSON备份
-      </button>
     </div>
-    <div style="margin-top: 16px; padding: 12px; background: white; border-radius: 8px; font-size: 13px; color: #0369a1; border-left: 3px solid #0ea5e9;">
-      💡 <strong>备份建议：</strong>JSON备份包含最完整的数据结构，可用于灾难恢复；Excel备份便于查看和分享。建议定期导出备份到手机文件管理器。
-    </div>
-  </div>
-
-  </div>
   </div>
 
   <!-- 手动出入库页面 -->
@@ -1462,105 +1435,17 @@ function getProductPrice(product) {
 }
 
 
-    // ==================== GitHub 仓库配置（与财务系统一致） ====================
-    // 财务系统用 data.json，仓库系统用 warehouse-data.json，完全隔离
-    // Token 从 localStorage 读取（与财务系统共用 github_token）
-    const GITHUB_OWNER = '1149749292-lgtm';
-    const GITHUB_REPO = 'jiaxincangchu';
-    const GITHUB_PATH = 'warehouse-data.json'; // 与财务系统的 data.json 隔离
+    // ==================== GitHub 存储配置 ====================
+const CONFIG = {
+    GITHUB_OWNER: '1149749292-lgtm',
+    GITHUB_REPO: 'jiaxincangchu',
+    GITHUB_PATH: 'warehouse.json',
+    GITHUB_TOKEN: ''
+};
 
-    function getGitHubToken() {
-      var raw = localStorage.getItem('github_token') || '';
-      if (raw && raw.length > 10) return raw;
-      return '';
-    }
-
-    function forcePromptGitHubToken() {
-      var old = document.getElementById('tokenPromptModal');
-      if (old) old.remove();
-      promptGitHubToken(true);
-    }
-
-    // 首次使用提示输入 GitHub Token（与财务系统一致）
-    function promptGitHubToken(force) {
-      var existing = localStorage.getItem('github_token');
-      if (existing && !force) return existing;
-
-      // 创建弹窗输入 Token
-      const modal = document.createElement('div');
-      modal.id = 'tokenPromptModal';
-      modal.style.cssText = `
-        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
-        z-index: 100000; display: flex; align-items: center; justify-content: center;
-        padding: 16px;
-      `;
-      modal.innerHTML = `
-        <div style="background: white; border-radius: 16px; padding: 32px; width: 100%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
-          <div style="text-align: center; margin-bottom: 24px;">
-            <div style="font-size: 48px; margin-bottom: 8px;">🔐</div>
-            <div style="font-size: 20px; font-weight: 700; color: #0f172a;">配置 GitHub Token</div>
-            <div style="font-size: 14px; color: #64748b; margin-top: 8px;">
-              首次使用需要配置 GitHub Token 才能同步数据到云端<br>
-              <span style="color: #dc2626;">Token 仅保存在本地，不会上传</span>
-            </div>
-          </div>
-          <div style="margin-bottom: 20px;">
-            <input type="password" id="tokenInput" placeholder="ghp_xxxxxxxxxxxx" 
-              style="width: 100%; padding: 14px; font-size: 14px; border: 2px solid #e2e8f0; border-radius: 12px; outline: none;">
-            <div id="tokenError" style="color: #dc2626; font-size: 13px; margin-top: 8px; display: none;">Token 不能为空</div>
-          </div>
-          <div style="font-size: 12px; color: #64748b; margin-bottom: 20px; background: #f8fafc; padding: 12px; border-radius: 8px;">
-            <strong>如何获取 Token：</strong><br>
-            1. 打开 github.com/settings/tokens<br>
-            2. 点击 Generate new token (classic)<br>
-            3. 勾选 <strong>repo</strong> 权限<br>
-            4. 复制 Token 粘贴到这里
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <button onclick="skipTokenSetup()" style="padding: 14px; border: 1.5px solid #e2e8f0; background: white; border-radius: 10px; font-weight: 600; color: #64748b; cursor: pointer;">跳过（离线模式）</button>
-            <button onclick="saveGitHubToken()" style="padding: 14px; border: none; background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%); border-radius: 10px; font-weight: 600; color: white; cursor: pointer;">保存并连接</button>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(modal);
-
-      setTimeout(() => {
-        document.getElementById('tokenInput').focus();
-        document.getElementById('tokenInput').addEventListener('keypress', function(e) {
-          if (e.key === 'Enter') saveGitHubToken();
-        });
-      }, 100);
-
-      return null;
-    }
-
-    function saveGitHubToken() {
-      const input = document.getElementById('tokenInput');
-      const error = document.getElementById('tokenError');
-      const token = input.value.trim();
-
-      if (!token) {
-        error.style.display = 'block';
-        input.style.borderColor = '#dc2626';
-        return;
-      }
-
-      localStorage.setItem('github_token', token);
-      document.getElementById('tokenPromptModal').remove();
-      showToast('✅ Token 已保存，正在连接 GitHub...');
-
-      // 重新初始化
-      setTimeout(() => {
-        init();
-      }, 500);
-    }
-
-    function skipTokenSetup() {
-      document.getElementById('tokenPromptModal').remove();
-      showToast('⚠️ 已跳过 Token 配置，使用离线模式', 'warning');
-      updateSyncStatus('error', '未配置 Token，使用本地模式');
-    }
+// 设备唯一标识
+const DEVICE_ID = localStorage.getItem('warehouse_device_id') || ('D_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6));
+localStorage.setItem('warehouse_device_id', DEVICE_ID);
 
     let products = [];
     let stock = {};
@@ -1604,114 +1489,8 @@ function getProductPrice(product) {
 
     let pendingVirtualStock = null;
 
-function loadSavedGitHubConfig() {
-      var savedOwner = localStorage.getItem('warehouse_github_owner');
-      var savedRepo = localStorage.getItem('warehouse_github_repo');
-      var savedPath = localStorage.getItem('warehouse_github_path');
-      if (savedOwner) GITHUB_OWNER = savedOwner;
-      if (savedRepo) GITHUB_REPO = savedRepo;
-      if (savedPath) GITHUB_PATH = savedPath;
-    }
-
-    
-    // ==================== 系统设置 ====================
-    function showSystemSettings() {
-      var modal = document.getElementById('settingsModal');
-      if (!modal) return;
-      var token = localStorage.getItem('github_token') || '';
-      document.getElementById('settingToken').value = token;
-      document.getElementById('settingOwner').value = GITHUB_OWNER;
-      document.getElementById('settingRepo').value = GITHUB_REPO;
-      document.getElementById('settingPath').value = GITHUB_PATH;
-      var resultDiv = document.getElementById('settingsTestResult');
-      if (resultDiv) {
-        resultDiv.style.display = 'none';
-        resultDiv.textContent = '';
-      }
-      modal.classList.add('show');
-    }
-
-    function closeSystemSettings() {
-      var modal = document.getElementById('settingsModal');
-      if (modal) modal.classList.remove('show');
-    }
-
-    async function saveSystemSettings() {
-      var newToken = document.getElementById('settingToken').value.trim();
-      var newOwner = document.getElementById('settingOwner').value.trim();
-      var newRepo = document.getElementById('settingRepo').value.trim();
-      var newPath = document.getElementById('settingPath').value.trim();
-      var resultDiv = document.getElementById('settingsTestResult');
-
-      if (!newOwner || !newRepo || !newPath) {
-        if (resultDiv) {
-          resultDiv.style.display = 'block';
-          resultDiv.style.background = '#fef2f2';
-          resultDiv.style.border = '1px solid #fecaca';
-          resultDiv.style.color = '#b91c1c';
-          resultDiv.textContent = '仓库所有者、仓库名称和文件路径不能为空';
-        }
-        return;
-      }
-
-      if (newToken) {
-        localStorage.setItem('github_token', newToken);
-      }
-
-      GITHUB_OWNER = newOwner;
-      GITHUB_REPO = newRepo;
-      GITHUB_PATH = newPath;
-
-      localStorage.setItem('warehouse_github_owner', GITHUB_OWNER);
-      localStorage.setItem('warehouse_github_repo', GITHUB_REPO);
-      localStorage.setItem('warehouse_github_path', GITHUB_PATH);
-
-      showToast('配置已保存，正在测试连接...');
-
-      try {
-        var data = await fetchData();
-        products = data.products || [];
-        stock = data.stock || {};
-        batches = data.batches || [];
-        loadProfitBatchData(data);
-        cleanInvalidProducts();
-        isOnline = true;
-        updateSyncStatus('synced', '已同步到云端');
-        showToast('连接成功！云端数据已加载');
-
-        if (resultDiv) {
-          resultDiv.style.display = 'block';
-          resultDiv.style.background = '#f0fdf4';
-          resultDiv.style.border = '1px solid #bbf7d0';
-          resultDiv.style.color = '#15803d';
-          resultDiv.innerHTML = '连接成功！仓库: ' + GITHUB_OWNER + '/' + GITHUB_REPO + '<br>文件: ' + GITHUB_PATH + '<br>产品: ' + products.length + '种 | 批次: ' + batches.length + '个';
-        }
-
-        updateUI();
-        updateFlowCascadeOptions();
-
-        setTimeout(function() {
-          closeSystemSettings();
-        }, 2000);
-
-      } catch (err) {
-        var errMsg = err && err.message ? err.message : '连接失败';
-        showToast('连接测试失败: ' + errMsg, 'error');
-
-        if (resultDiv) {
-          resultDiv.style.display = 'block';
-          resultDiv.style.background = '#fef2f2';
-          resultDiv.style.border = '1px solid #fecaca';
-          resultDiv.style.color = '#b91c1c';
-          resultDiv.innerHTML = '连接失败: ' + errMsg + '<br><br>请检查:<br>1. Token是否有repo权限<br>2. 仓库名是否拼写正确<br>3. 文件路径是否正确<br>4. 仓库是否为公开或Token有访问权限';
-        }
-      }
-    }
-    // ==================== 系统设置结束 ====================
-
-    async function init() {
-      loadSavedGitHubConfig();
-      // ===== 微信防缓存：强制清除微信内置浏览器缓存 =====
+async function init() {
+      // ===== 微信防缓存 =====
       (function clearWeChatCache() {
         const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
         if (isWeChat) {
@@ -1725,56 +1504,68 @@ function loadSavedGitHubConfig() {
         }
       })();
 
-      // 首次使用检查 Token
-      var token = getGitHubToken();
-      if (!token) {
-        hideLoading();
-        setTimeout(function() {
-          promptGitHubToken();
-          var today = new Date().toISOString().split('T')[0];
-          var el1 = document.getElementById('flowStartDate');
-          var el2 = document.getElementById('flowEndDate');
-          if (el1) el1.value = today;
-          if (el2) el2.value = today;
-          updateUI();
-          updateFlowCascadeOptions();
-        }, 200);
-        return;
-      }
-
       showLoading('正在加载数据...');
-      updateSyncStatus('syncing', '正在连接 GitHub...');
+      updateSyncStatus('syncing', '正在连接云端...');
 
       const today = new Date().toISOString().split('T')[0];
       document.getElementById('flowStartDate').value = today;
       document.getElementById('flowEndDate').value = today;
 
+      // 初始化 GitHub Token
+      const token = getGitHubToken();
+      if (!token) {
+        initGitHubToken();
+      }
+
       try {
         // 优先尝试云端
         const data = await fetchData();
-        products = data.products || [];
-        stock = data.stock || {};
-        batches = data.batches || [];
-        loadProfitBatchData(data);
-        cleanInvalidProducts();
-        isOnline = true;
-        updateSyncStatus('synced', '已同步到云端');
-        showToast('✅ 云端数据加载成功');
+
+        // 检查云端数据是否为空（首次使用）
+        const isEmptyCloud = !data.products && !data.stock && !data.batches && 
+                             (!data._version || data._version === 0);
+
+        if (isEmptyCloud) {
+          // 云端为空，尝试加载本地缓存
+          const localLoaded = loadLocalData();
+          if (localLoaded) {
+            isOnline = true;
+            updateSyncStatus('synced', '云端为空，已加载本地缓存（请手动保存到云端）');
+            showToast('⚠️ 云端数据为空，已加载本地缓存。请操作一次保存以同步到云端。', 'warning');
+          } else {
+            isOnline = true;
+            updateSyncStatus('synced', '云端为空，首次使用');
+            products = [];
+            stock = {};
+            batches = [];
+            showToast('✅ 首次使用，请添加产品数据');
+          }
+        } else {
+          // 云端有数据，正常使用
+          products = data.products || [];
+          stock = data.stock || {};
+          batches = data.batches || [];
+          loadProfitBatchData(data);
+          cleanInvalidProducts();
+          isOnline = true;
+          updateSyncStatus('synced', '已同步到云端');
+          showToast('✅ 云端数据加载成功');
+        }
       } catch (err) {
         console.error('云端连接失败:', err);
-        var errMsg = err && err.message ? err.message : '网络错误';
-        var localLoaded = loadLocalData();
+        // 云端失败 → 加载本地缓存
+        const localLoaded = loadLocalData();
         if (localLoaded) {
           isOnline = false;
-          updateSyncStatus('error', '读取失败');
-          showToast('云端读取失败: ' + errMsg + '，已加载本地缓存', 'warning');
+          updateSyncStatus('error', '云端离线，已加载本地缓存');
+          showToast('⚠️ 云端连接失败，已加载本地缓存数据', 'warning');
         } else {
           isOnline = false;
-          updateSyncStatus('error', '连接失败');
+          updateSyncStatus('error', '连接失败，无本地数据');
           products = [];
           stock = {};
           batches = [];
-          showToast('云端读取失败: ' + errMsg + '，且无本地缓存', 'warning');
+          showToast('⚠️ 云端离线且无本地缓存', 'warning');
         }
       } finally {
         try {
@@ -1787,11 +1578,25 @@ function loadSavedGitHubConfig() {
       }
     }
 
-    // 从 localStorage 加载本地缓存数据
+// 从 localStorage 加载本地缓存数据
     function loadLocalData() {
       try {
-        const saved = localStorage.getItem('warehouse_data_v1');
+        const saved = localStorage.getItem('warehouse_data_cache');
         if (!saved) {
+          // 兼容旧版本缓存键
+          const oldSaved = localStorage.getItem('warehouse_data_v1');
+          if (oldSaved) {
+            const data = JSON.parse(oldSaved);
+            products = data.products || [];
+            stock = data.stock || {};
+            batches = data.batches || [];
+            if (data.cartons) loadCartonDataFromCloud(data.cartons);
+            else initCartonModule();
+            loadProfitBatchData(data);
+            cleanInvalidProducts();
+            console.log('✅ 旧版本本地缓存加载成功');
+            return true;
+          }
           console.log('本地无缓存数据');
           return false;
         }
@@ -1830,9 +1635,12 @@ function loadSavedGitHubConfig() {
           batches: batches || [],
           profitBatches: profitBatches || [],
           cartons: getCartonSaveData(),
+          _lastModified: Date.now(),
+          _version: (typeof appData !== 'undefined' && appData._version) ? appData._version : 1,
+          _deviceId: DEVICE_ID,
           lastSaveTime: new Date().toISOString()
         };
-        localStorage.setItem('warehouse_data_v1', JSON.stringify(data));
+        localStorage.setItem('warehouse_data_cache', JSON.stringify(data));
         console.log('✅ 本地缓存已更新');
       } catch (e) {
         console.error('本地缓存保存失败:', e);
@@ -1873,44 +1681,150 @@ function loadSavedGitHubConfig() {
     }
 
     async function fetchData() {
-      var token = getGitHubToken();
-      var headers = { 'Accept': 'application/vnd.github.v3+json' };
-      if (token) headers['Authorization'] = 'token ' + token;
+      const token = getGitHubToken();
+      if (!token) {
+        throw new Error('未配置 GitHub Token');
+      }
+
+      const url = `https://api.github.com/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/contents/${CONFIG.GITHUB_PATH}`;
 
       try {
-        var apiUrl = 'https://api.github.com/repos/' + GITHUB_OWNER + '/' + GITHUB_REPO + '/contents/' + GITHUB_PATH + '?t=' + Date.now();
-        var response = await fetch(apiUrl, { method: 'GET', headers: headers, cache: 'no-store' });
-        if (response.ok) {
-          var result = await response.json();
-          var decoded = decodeURIComponent(escape(atob(result.content)));
-          var record = JSON.parse(decoded);
-          if (record.compressed && typeof LZString !== 'undefined') {
-            try {
-              var decompressed = LZString.decompressFromUTF16(record.compressed);
-              if (decompressed) record = JSON.parse(decompressed);
-            } catch(e) {}
-          }
-          if (record.cartons) loadCartonDataFromCloud(record.cartons);
-          isOnline = true;
-          updateSyncStatus('synced', '已同步到 GitHub');
-          return record;
-        } else if (response.status === 404) {
-          console.log('仓库文件不存在，返回空数据');
-          return { products: [], stock: {}, batches: [], profitBatches: [] };
-        } else if (response.status === 401) {
-          throw new Error('Token无效(401)，请重新配置');
-        } else if (response.status === 403) {
-          throw new Error('API限制(403)，请检查Token权限');
-        } else {
-          var errText = await response.text();
-          throw new Error('GitHub错误' + response.status + ': ' + errText.slice(0,100));
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/vnd.github+json',
+            'Authorization': `Bearer ${token}`,
+            'X-GitHub-Api-Version': '2022-11-28'
+          },
+          cache: 'no-store'
+        });
+
+        if (response.status === 404) {
+          // 文件不存在，返回空数据（首次使用）
+          console.log('GitHub 文件不存在，首次使用');
+          return { _version: 0, _lastModified: 0, _deviceId: '' };
         }
-      } catch(e) {
-        console.error('仓库读取失败:', e.message || e);
-        isOnline = false;
-        updateSyncStatus('error', '读取失败');
-        throw e;
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`GitHub 读取失败: ${response.status} - ${errorText}`);
+        }
+
+        const result = await response.json();
+
+        if (!result.content) {
+          throw new Error('GitHub 返回数据无 content 字段');
+        }
+
+        // Base64 解码
+        const base64Content = result.content.replace(/\n/g, '');
+        const jsonString = decodeURIComponent(escape(atob(base64Content)));
+        let record = JSON.parse(jsonString);
+
+        // 兼容：如果数据是压缩格式，解压
+        if (record && record._compressed && typeof LZString !== 'undefined') {
+          try {
+            const decompressed = LZString.decompressFromUTF16(record._compressed);
+            if (decompressed) {
+              record = JSON.parse(decompressed);
+              console.log('✅ 云端数据解压成功');
+            }
+          } catch (e) {
+            console.error('解压失败:', e);
+          }
+        }
+
+        // 如果云端有纸箱数据，加载它
+        if (record && record.cartons) {
+          loadCartonDataFromCloud(record.cartons);
+        }
+
+        // 保存云端元数据用于冲突检测
+        if (record._lastModified) {
+          localStorage.setItem('warehouse_cloud_lastModified', record._lastModified.toString());
+        }
+        if (record._version) {
+          localStorage.setItem('warehouse_cloud_version', record._version.toString());
+        }
+
+        return record;
+      } catch (err) {
+        console.error('fetchData 错误:', err);
+        // 尝试返回本地缓存
+        const localData = localStorage.getItem('warehouse_data_cache');
+        if (localData) {
+          console.log('云端读取失败，返回本地缓存');
+          return JSON.parse(localData);
+        }
+        throw err;
       }
+    }
+
+    // 修复：从云端加载纸箱数据
+    function loadCartonDataFromCloud(cartonData) {
+      if (!cartonData) {
+        console.warn('云端没有纸箱数据，使用本地默认');
+        cartonsLoadedFromCloud = false;
+        return;
+      }
+
+      console.log('从云端加载纸箱数据');
+      cartonsLoadedFromCloud = true;
+
+      // 修复：加载纸箱类型（使用云端保存的完整列表）
+      if (cartonData.types && Array.isArray(cartonData.types) && cartonData.types.length > 0) {
+        CARTON_TYPES = cartonData.types.map(c => ({
+          ...c,
+          isDefault: c.isDefault || false
+        }));
+      } else {
+        console.warn('云端纸箱类型为空，使用默认值');
+        CARTON_TYPES = [...DEFAULT_CARTON_TYPES];
+      }
+
+      // 修复：加载库存数据
+      if (cartonData.stock && typeof cartonData.stock === 'object') {
+        cartonStockData = { ...cartonData.stock };
+      }
+
+      // 修复：加载阈值
+      if (cartonData.threshold !== undefined && !isNaN(cartonData.threshold)) {
+        cartonAlertThreshold = parseInt(cartonData.threshold);
+      }
+
+      // 修复：加载产品关联配置
+      if (cartonData.productMap && typeof cartonData.productMap === 'object') {
+        PRODUCT_CARTON_MAP = { 
+          ...DEFAULT_PRODUCT_CARTON_MAP, 
+          ...cartonData.productMap 
+        };
+      } else {
+        PRODUCT_CARTON_MAP = { ...DEFAULT_PRODUCT_CARTON_MAP };
+      }
+
+      // 加载历史记录
+      if (cartonData.history && Array.isArray(cartonData.history)) {
+        cartonHistory = [...cartonData.history];
+      }
+      // 加载已扣减批次ID
+      if (cartonData.deductedBatchIds && Array.isArray(cartonData.deductedBatchIds)) {
+        cartonDeductedBatchIds = [...cartonData.deductedBatchIds];
+      }
+
+      // 确保所有纸箱都有库存条目
+      CARTON_TYPES.forEach(carton => {
+        if (cartonStockData[carton.id] === undefined) {
+          cartonStockData[carton.id] = 0;
+        }
+      });
+
+      // 清理已删除纸箱的库存数据
+      const validCartonIds = new Set(CARTON_TYPES.map(c => c.id));
+      Object.keys(cartonStockData).forEach(id => {
+        if (!validCartonIds.has(id)) {
+          delete cartonStockData[id];
+        }
+      });
     }
 
     async function saveData() {
@@ -1918,132 +1832,252 @@ function loadSavedGitHubConfig() {
       saveLocalData();
       localStorage.setItem('warehouse_profit_batches', JSON.stringify(profitBatches || []));
 
-      // 2. 保存到 GitHub 仓库
-      var token = getGitHubToken();
+      const token = getGitHubToken();
       if (!token) {
-        isOnline = false;
-        updateSyncStatus('error', '未配置Token');
-        showToast('未配置Token，已保存到本地', 'warning');
+        showToast('⚠️ 未配置 GitHub Token，数据仅保存在本地', 'warning');
         saveCartonDataLocal();
         return;
       }
 
       try {
         updateSyncStatus('syncing', '正在同步...');
-        var savePayload = { 
-          products: products || [],
-          stock: stock || {},
-          batches: batches || [],
+
+        // ===== 冲突检测：先拉取云端最新数据 =====
+        let cloudSha = null;
+        let cloudData = null;
+        try {
+          const checkUrl = `https://api.github.com/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/contents/${CONFIG.GITHUB_PATH}`;
+          const checkResp = await fetch(checkUrl, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/vnd.github+json',
+              'Authorization': `Bearer ${token}`,
+              'X-GitHub-Api-Version': '2022-11-28'
+            },
+            cache: 'no-store'
+          });
+
+          if (checkResp.ok) {
+            const checkResult = await checkResp.json();
+            cloudSha = checkResult.sha;
+
+            // 解码云端数据用于冲突检测
+            if (checkResult.content) {
+              const cloudJson = decodeURIComponent(escape(atob(checkResult.content.replace(/\n/g, ''))));
+              cloudData = JSON.parse(cloudJson);
+            }
+          } else if (checkResp.status === 404) {
+            // 文件不存在，首次创建
+            cloudSha = null;
+          }
+        } catch (checkErr) {
+          console.warn('冲突检测拉取失败:', checkErr);
+        }
+
+        // 冲突检测逻辑
+        if (cloudData && cloudData._lastModified && cloudData._version) {
+          const localLastModified = parseInt(localStorage.getItem('warehouse_cloud_lastModified') || '0');
+          const localVersion = parseInt(localStorage.getItem('warehouse_cloud_version') || '0');
+
+          // 如果云端数据比本地记录的更新，且不是本设备保存的
+          if (cloudData._lastModified > localLastModified && 
+              cloudData._version > localVersion && 
+              cloudData._deviceId !== DEVICE_ID) {
+
+            const conflictChoice = confirm(
+              `⚠️ 数据冲突检测\n\n` +
+              `其他设备于 ${new Date(cloudData._lastModified).toLocaleString('zh-CN')} 更新了数据（版本 ${cloudData._version}）。\n\n` +
+              `当前本地版本: ${localVersion}\n` +
+              `云端最新版本: ${cloudData._version}\n\n` +
+              `点击【确定】= 强制覆盖云端（当前设备数据优先）\n` +
+              `点击【取消】= 放弃保存，保留当前数据不推送`
+            );
+
+            if (!conflictChoice) {
+              updateSyncStatus('error', '已取消保存（检测到冲突）');
+              showToast('⚠️ 已取消保存，请刷新页面加载云端最新数据', 'warning');
+              saveCartonDataLocal();
+              return;
+            }
+          }
+        }
+
+        // 修复：确保纸箱数据完整
+        const cartonDataToSave = {
+          types: CARTON_TYPES.map(c => ({
+            id: c.id,
+            name: c.name,
+            spec: c.spec,
+            unit: c.unit,
+            brand: c.brand,
+            isDefault: c.isDefault || false
+          })),
+          stock: { ...cartonStockData },
+          threshold: cartonAlertThreshold || 50,
+          productMap: { ...PRODUCT_CARTON_MAP },
+          history: cartonHistory.slice(0, 200),
+          deductedBatchIds: cartonDeductedBatchIds
+        };
+
+        // 构建完整数据包
+        let savePayload = {
+          products,
+          stock,
+          batches,
           profitBatches: profitBatches || [],
-          cartons: getCartonSaveData(),
+          cartons: cartonDataToSave,
+          _lastModified: Date.now(),
+          _version: (cloudData && cloudData._version ? cloudData._version : 0) + 1,
+          _deviceId: DEVICE_ID,
           lastSyncTime: new Date().toISOString()
         };
-        var requestBody;
+
+        // 使用 LZString 压缩数据
+        let requestBody;
+        let useCompressed = false;
         if (typeof LZString !== 'undefined') {
-          var compressed = LZString.compressToUTF16(JSON.stringify(savePayload));
-          requestBody = JSON.stringify({ compressed: compressed });
-        } else {
-          requestBody = JSON.stringify(savePayload);
-        }
+          const compressed = LZString.compressToUTF16(JSON.stringify(savePayload));
+          const wrappedPayload = {
+            _compressed: compressed,
+            _lastModified: savePayload._lastModified,
+            _version: savePayload._version,
+            _deviceId: DEVICE_ID
+          };
+          const jsonString = JSON.stringify(wrappedPayload);
+          const base64Content = btoa(unescape(encodeURIComponent(jsonString)));
 
-        // 先获取当前文件的 sha
-        var sha = '';
-        try {
-          var getHeaders = { 'Accept': 'application/vnd.github.v3+json' };
-          if (token) getHeaders['Authorization'] = 'token ' + token;
-          var getRes = await fetch('https://api.github.com/repos/' + GITHUB_OWNER + '/' + GITHUB_REPO + '/contents/' + GITHUB_PATH + '?t=' + Date.now(), {
-            headers: getHeaders
+          requestBody = JSON.stringify({
+            message: `仓库数据更新 v${savePayload._version} - ${new Date().toLocaleString('zh-CN')}`,
+            content: base64Content,
+            sha: cloudSha
           });
-          if (getRes.ok) {
-            var fileInfo = await getRes.json();
-            sha = fileInfo.sha;
-          }
-        } catch(e) {
-          console.warn('获取sha异常:', e.message);
+          useCompressed = true;
+        } else {
+          const jsonString = JSON.stringify(savePayload);
+          const base64Content = btoa(unescape(encodeURIComponent(jsonString)));
+
+          requestBody = JSON.stringify({
+            message: `仓库数据更新 v${savePayload._version} - ${new Date().toLocaleString('zh-CN')}`,
+            content: base64Content,
+            sha: cloudSha
+          });
         }
 
-        // 创建或更新文件
-        var putBody = {
-          message: 'Update warehouse data ' + new Date().toISOString(),
-          content: btoa(unescape(encodeURIComponent(requestBody))),
-          sha: sha || undefined
-        };
-        if (!sha) delete putBody.sha;
+        // 检查数据大小（GitHub 单文件 1MB 限制）
+        const sizeKB = requestBody.length / 1024;
+        console.log('云端数据大小:', sizeKB.toFixed(2), 'KB');
 
-        var putHeaders = { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/vnd.github.v3+json'
-        };
-        if (token) putHeaders['Authorization'] = 'token ' + token;
+        if (sizeKB > 900) {
+          throw new Error(`数据过大(${sizeKB.toFixed(1)}KB)，接近 GitHub 1MB 限制。建议导出备份或清理历史数据。`);
+        }
 
-        var response = await fetch('https://api.github.com/repos/' + GITHUB_OWNER + '/' + GITHUB_REPO + '/contents/' + GITHUB_PATH, {
+        const saveUrl = `https://api.github.com/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/contents/${CONFIG.GITHUB_PATH}`;
+        const response = await fetch(saveUrl, {
           method: 'PUT',
-          headers: putHeaders,
-          body: JSON.stringify(putBody)
+          headers: {
+            'Accept': 'application/vnd.github+json',
+            'Authorization': `Bearer ${token}`,
+            'X-GitHub-Api-Version': '2022-11-28',
+            'Content-Type': 'application/json'
+          },
+          body: requestBody
         });
 
-        if (response.ok) {
-          updateSyncStatus('synced', '已同步到GitHub');
-          saveCartonDataLocal();
-          return;
+        if (!response.ok) {
+          const errorText = await response.text();
+          if (response.status === 409) {
+            throw new Error('GitHub 冲突：文件已被其他设备修改，请刷新后重试');
+          }
+          if (response.status === 401 || response.status === 403) {
+            throw new Error('GitHub Token 无效或权限不足，请检查 Token');
+          }
+          throw new Error(`保存失败: ${response.status} - ${errorText}`);
         }
 
-        var errText = await response.text();
-        var errMsg = '保存失败';
-        if (response.status === 401) errMsg = 'Token无效(401)';
-        else if (response.status === 403) errMsg = '权限不足(403)';
-        else if (response.status === 404) errMsg = '仓库不存在(404)';
-        else if (response.status === 422) errMsg = '数据过大(422)';
-        else errMsg = 'GitHub错误' + response.status;
+        // 保存成功后更新本地记录的云端版本号
+        localStorage.setItem('warehouse_cloud_lastModified', savePayload._lastModified.toString());
+        localStorage.setItem('warehouse_cloud_version', savePayload._version.toString());
 
-        console.error('仓库保存失败:', response.status, errText);
-        throw new Error(errMsg);
-      } catch(e) {
-        console.error('仓库保存失败:', e.message || e);
-        isOnline = false;
-        updateSyncStatus('error', '保存失败');
-        showToast('保存到云端失败: ' + (e.message || '网络错误') + '，已保存到本地', 'warning');
+        updateSyncStatus('synced', '已同步到云端');
         saveCartonDataLocal();
+        console.log('✅ GitHub 云端同步成功，版本:', savePayload._version);
+
+      } catch (err) {
+        console.error('同步失败:', err);
+        updateSyncStatus('error', '同步失败: ' + err.message);
+        throw err;
       }
     }
 
-    function updateUI() {
-      updateStats();
-      updateFilters();
-      renderStockTable();
-      renderFlow();
-      updateFlowCascadeOptions();
-    }
-
-    function updateStats() {
-      const totalIn = batches.filter(b => b.type === 'in').reduce((sum, b) => sum + b.totalQty, 0);
-      const totalOut = batches.filter(b => b.type === 'out').reduce((sum, b) => sum + b.totalQty, 0);
-      const currentStock = Object.values(stock).reduce((a, b) => a + b, 0);
-      document.getElementById('statProductCount').textContent = products.length;
-      document.getElementById('statTotalIn').textContent = totalIn.toLocaleString();
-      document.getElementById('statTotalOut').textContent = totalOut.toLocaleString();
-      document.getElementById('statCurrentStock').textContent = currentStock.toLocaleString();
-    }
-
-    function updateSyncStatus(status, text) {
-      var el = document.getElementById('syncStatus');
-      var txt = document.getElementById('syncText');
-      var warning = document.getElementById('syncWarning');
-      var tokenBtn = document.getElementById('tokenSetupBtn');
-      if (el) el.className = 'sync-status ' + status;
-      if (txt) txt.textContent = text;
-
-      if (tokenBtn) {
-        tokenBtn.style.display = (status === 'error' || !isOnline) ? 'inline-block' : 'none';
-      }
+function updateSyncStatus(status, text) {
+      const el = document.getElementById('syncStatus');
+      const txt = document.getElementById('syncText');
+      const warning = document.getElementById('syncWarning');
+      el.className = 'sync-status ' + status;
+      txt.textContent = text;
 
       if (warning) {
-        if (status === 'error' || (!isOnline && status !== 'synced')) {
+        if (status === 'error' || (status !== 'synced' && !getGitHubToken())) {
           warning.style.display = 'block';
-          setTimeout(function() { warning.style.display = 'none'; }, 5000);
+          warning.innerHTML = '⚠️ ' + (getGitHubToken() ? '云端连接失败，数据仅保存在本地' : '未配置 GitHub Token，请点击右上角配置');
+          setTimeout(() => { warning.style.display = 'none'; }, 8000);
         } else {
           warning.style.display = 'none';
         }
+      }
+    }
+
+    // ==================== GitHub Token 管理 ====================
+    function getGitHubToken() {
+      // 优先从 CONFIG 读取（已初始化）
+      if (CONFIG.GITHUB_TOKEN && CONFIG.GITHUB_TOKEN.startsWith('ghp_')) {
+        return CONFIG.GITHUB_TOKEN;
+      }
+      // 从 localStorage 读取（与财务系统共用）
+      const token = localStorage.getItem('github_token');
+      if (token && token.startsWith('ghp_')) {
+        CONFIG.GITHUB_TOKEN = token;
+        return token;
+      }
+      return null;
+    }
+
+    function initGitHubToken() {
+      const token = prompt(
+        '🔐 首次使用需要配置 GitHub Token\n\n' +
+        '1. 访问 https://github.com/settings/tokens\n' +
+        '2. 点击 "Generate new token (classic)"\n' +
+        '3. 勾选 "repo" 权限\n' +
+        '4. 复制以 ghp_ 开头的 Token\n\n' +
+        '请输入 Token:'
+      );
+
+      if (token && token.trim().startsWith('ghp_')) {
+        const cleanToken = token.trim();
+        localStorage.setItem('github_token', cleanToken);
+        CONFIG.GITHUB_TOKEN = cleanToken;
+        showToast('✅ Token 配置成功，正在重新连接...');
+        setTimeout(() => location.reload(), 1500);
+      } else if (token) {
+        alert('Token 格式错误，必须以 ghp_ 开头');
+        initGitHubToken();
+      } else {
+        showToast('⚠️ 未配置 Token，数据将仅保存在本地', 'warning');
+      }
+    }
+
+    // 手动触发 Token 配置
+    function checkSyncStatus() {
+      if (!getGitHubToken()) {
+        initGitHubToken();
+        return;
+      }
+      if (!isOnline) {
+        const warning = document.getElementById('syncWarning');
+        warning.style.display = warning.style.display === 'none' ? 'block' : 'none';
+        showToast('⚠️ 当前处于离线模式，请检查网络连接', 'warning');
+      } else {
+        showToast('✅ 已连接到云端，数据会自动同步');
       }
     }
 
@@ -5262,14 +5296,11 @@ function showLoading(text) {
     // 检查同步状态
     function checkSyncStatus() {
       if (!isOnline) {
-        var warning = document.getElementById('syncWarning');
-        if (warning) warning.style.display = warning.style.display === 'none' ? 'block' : 'none';
-        showToast('当前处于离线模式，请检查网络连接', 'warning');
-        if (!getGitHubToken()) {
-          setTimeout(function() { forcePromptGitHubToken(); }, 300);
-        }
+        const warning = document.getElementById('syncWarning');
+        warning.style.display = warning.style.display === 'none' ? 'block' : 'none';
+        showToast('⚠️ 当前处于离线模式，请检查网络连接', 'warning');
       } else {
-        showToast('已连接到云端，数据会自动同步');
+        showToast('✅ 已连接到云端，数据会自动同步');
       }
     }
     
@@ -8911,47 +8942,6 @@ function showImportFromBatchModal() {
       <div class="modal-footer">
         <button class="modal-btn modal-btn-secondary" onclick="closeCartonCheckModal()">先去补货</button>
         <button class="modal-btn modal-btn-primary" onclick="confirmCartonCheckContinue()">仍要入库</button>
-      </div>
-    </div>
-  </div>
-
-
-  <!-- 系统设置弹窗 -->
-  <div class="modal-overlay" id="settingsModal">
-    <div class="modal-content" style="max-width: 500px;">
-      <div class="modal-header">
-        <div class="modal-icon" style="background: #ede9fe; color: #7c3aed;">⚙️</div>
-        <div class="modal-title">系统设置</div>
-      </div>
-      <div class="modal-body">
-        <div style="display: grid; gap: 16px;">
-          <div style="background: #f0f9ff; border-radius: 8px; padding: 12px; border-left: 3px solid #0ea5e9;">
-            <div style="font-size: 13px; color: #0369a1; font-weight: 600;">当前配置</div>
-            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">修改后点击保存并测试立即生效</div>
-          </div>
-          <div class="form-group" style="margin-bottom: 0;">
-            <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">GitHub Token</label>
-            <input type="text" id="settingToken" placeholder="ghp_xxxxxxxx..." style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px; font-family: monospace;">
-            <p style="font-size: 11px; color: var(--text-tertiary); margin-top: 4px; margin-bottom: 0;">留空则使用当前已保存的Token</p>
-          </div>
-          <div class="form-group" style="margin-bottom: 0;">
-            <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">仓库所有者 (OWNER)</label>
-            <input type="text" id="settingOwner" placeholder="例如: 1149749292-lgtm" style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px;">
-          </div>
-          <div class="form-group" style="margin-bottom: 0;">
-            <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">仓库名称 (REPO)</label>
-            <input type="text" id="settingRepo" placeholder="例如: jiaxincangchu" style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px;">
-          </div>
-          <div class="form-group" style="margin-bottom: 0;">
-            <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">文件路径 (PATH)</label>
-            <input type="text" id="settingPath" placeholder="例如: warehouse-data.json" style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px;">
-          </div>
-          <div id="settingsTestResult" style="display: none; padding: 12px; border-radius: 8px; font-size: 13px;"></div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="modal-btn modal-btn-secondary" onclick="closeSystemSettings()">取消</button>
-        <button class="modal-btn modal-btn-primary" onclick="saveSystemSettings()" style="background: #7c3aed;">保存并测试</button>
       </div>
     </div>
   </div>
