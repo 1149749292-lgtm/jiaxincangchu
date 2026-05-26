@@ -396,16 +396,21 @@
   <div class="toast" id="toast"></div>
   <div class="container">
     <div class="header">
-      <div class="sync-status" id="syncStatus" style="cursor: pointer;" onclick="checkSyncStatus()" title="点击检查同步状态">
-          <span class="sync-dot"></span>
-          <span id="syncText">正在连接云端...</span>
-        </div>
-        <div id="syncWarning" style="display: none; position: absolute; top: 50px; right: 16px; background: #fef3c7; border: 2px solid #f59e0b; padding: 12px; border-radius: 8px; font-size: 12px; color: #92400e; z-index: 100; max-width: 200px;">
+      <div id="syncWarning" style="display: none; position: absolute; top: 50px; right: 16px; background: #fef3c7; border: 2px solid #f59e0b; padding: 12px; border-radius: 8px; font-size: 12px; color: #92400e; z-index: 100; max-width: 200px;">
           ⚠️ 离线模式：数据仅保存在本地，刷新页面会丢失！
         </div>
       <div style="position: relative; z-index: 1;">
         <h1>🦐 佳信水产</h1>
         <p>佳信水产仓库系统 v5.0.1 · 微信缓存已优化</p>
+      </div>
+      <div style="position: absolute; top: 16px; right: 16px; z-index: 2; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+        <div class="sync-status" id="syncStatus" style="cursor: pointer; position: static;" onclick="checkSyncStatus()" title="点击检查同步状态">
+          <span class="sync-dot"></span>
+          <span id="syncText">正在连接云端...</span>
+        </div>
+        <button onclick="forcePromptGitHubToken()" id="tokenSetupBtn" style="display: none; background: rgba(255,255,255,0.25); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+          🔐 配置Token
+        </button>
       </div>
     </div>
 
@@ -1462,13 +1467,32 @@ function getProductPrice(product) {
     const GITHUB_PATH = 'warehouse-data.json'; // 与财务系统的 data.json 隔离
 
     function getGitHubToken() {
-      return localStorage.getItem('github_token') || '';
+      const raw = localStorage.getItem('github_token') || '';
+      // 如果存在内容但不是合法格式，视为无效（触发重新输入）
+      if (raw && !isValidGitHubToken(raw)) {
+        console.warn('[Token] 本地存储的Token格式无效，将重新提示输入');
+        return '';
+      }
+      return raw;
+    }
+
+    function isValidGitHubToken(token) {
+      if (!token || typeof token !== 'string') return false;
+      // GitHub classic token 以 ghp_ 开头，fine-grained 以 github_pat_ 开头
+      return /^ghp_[a-zA-Z0-9]{36}$/.test(token) || /^github_pat_[a-zA-Z0-9_]{22,}$/.test(token);
+    }
+
+    function forcePromptGitHubToken() {
+      // 强制显示Token弹窗（不管localStorage里有没有值）
+      const oldModal = document.getElementById('tokenPromptModal');
+      if (oldModal) oldModal.remove();
+      promptGitHubToken(true);
     }
 
     // 首次使用提示输入 GitHub Token（与财务系统一致）
-    function promptGitHubToken() {
+    function promptGitHubToken(force = false) {
       const existing = localStorage.getItem('github_token');
-      if (existing) return existing;
+      if (existing && !force) return existing;
 
       // 创建弹窗输入 Token
       const modal = document.createElement('div');
@@ -1607,13 +1631,16 @@ async function init() {
       const token = getGitHubToken();
       if (!token) {
         hideLoading();
-        promptGitHubToken();
-        // 设置默认日期
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('flowStartDate').value = today;
-        document.getElementById('flowEndDate').value = today;
-        updateUI();
-        updateFlowCascadeOptions();
+        // 延迟一点确保DOM已就绪，弹窗一定显示在最上层
+        setTimeout(() => {
+          promptGitHubToken();
+          // 设置默认日期
+          const today = new Date().toISOString().split('T')[0];
+          document.getElementById('flowStartDate').value = today;
+          document.getElementById('flowEndDate').value = today;
+          updateUI();
+          updateFlowCascadeOptions();
+        }, 100);
         return;
       }
 
@@ -1895,8 +1922,18 @@ async function init() {
       const el = document.getElementById('syncStatus');
       const txt = document.getElementById('syncText');
       const warning = document.getElementById('syncWarning');
-      el.className = 'sync-status ' + status;
-      txt.textContent = text;
+      const tokenBtn = document.getElementById('tokenSetupBtn');
+      if (el) el.className = 'sync-status ' + status;
+      if (txt) txt.textContent = text;
+
+      // 离线或错误时显示配置Token按钮
+      if (tokenBtn) {
+        if (status === 'error' || !isOnline) {
+          tokenBtn.style.display = 'inline-block';
+        } else {
+          tokenBtn.style.display = 'none';
+        }
+      }
 
       // 显示/隐藏离线警告
       if (warning) {
@@ -5127,6 +5164,10 @@ function showLoading(text) {
         const warning = document.getElementById('syncWarning');
         warning.style.display = warning.style.display === 'none' ? 'block' : 'none';
         showToast('⚠️ 当前处于离线模式，请检查网络连接', 'warning');
+        // 如果离线，同时弹出Token配置
+        setTimeout(() => {
+          if (!getGitHubToken()) forcePromptGitHubToken();
+        }, 300);
       } else {
         showToast('✅ 已连接到云端，数据会自动同步');
       }
