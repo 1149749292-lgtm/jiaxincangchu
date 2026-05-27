@@ -1183,6 +1183,29 @@
           <tbody id="cartonTableBody"></tbody>
         </table>
       </div>
+        <!-- 纸箱汇总统计 -->
+        <div style="display: flex; gap: 8px; margin-top: 12px; padding: 10px 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; align-items: center; flex-wrap: nowrap; overflow-x: auto;">
+          <div style="display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+            <span style="font-size: 14px;">📦</span>
+            <span style="font-size: 12px; color: #475569; font-weight: 500;">总库存</span>
+            <span style="font-size: 16px; font-weight: 700; color: #0284c7; font-variant-numeric: tabular-nums;" id="cartonTotalStock">0</span>
+            <span style="font-size: 11px; color: #94a3b8;">个/套</span>
+          </div>
+          <div style="width: 1px; height: 16px; background: #e2e8f0; flex-shrink: 0;"></div>
+          <div style="display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+            <span style="font-size: 14px;">⚠️</span>
+            <span style="font-size: 12px; color: #475569; font-weight: 500;">预警</span>
+            <span style="font-size: 16px; font-weight: 700; color: #dc2626; font-variant-numeric: tabular-nums;" id="cartonAlertCount">0</span>
+            <span style="font-size: 11px; color: #94a3b8;">种</span>
+          </div>
+          <div style="width: 1px; height: 16px; background: #e2e8f0; flex-shrink: 0;"></div>
+          <div style="display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+            <span style="font-size: 14px;">🚫</span>
+            <span style="font-size: 12px; color: #475569; font-weight: 500;">缺货</span>
+            <span style="font-size: 16px; font-weight: 700; color: #64748b; font-variant-numeric: tabular-nums;" id="cartonZeroCount">0</span>
+            <span style="font-size: 11px; color: #94a3b8;">种</span>
+          </div>
+        </div>
     </div>
 
     <!-- 纸箱历史记录 -->
@@ -1883,18 +1906,22 @@ async function init() {
     // 保存数据到 localStorage（作为云端备份）
     function saveLocalData() {
       try {
+        const now = Date.now();
         const data = {
           products: products || [],
           stock: stock || {},
           batches: batches || [],
           profitBatches: profitBatches || [],
           cartons: getCartonSaveData(),
-          _lastModified: Date.now(),
+          _lastModified: now,
           _version: (typeof appData !== 'undefined' && appData._version) ? appData._version : 1,
           _deviceId: DEVICE_ID,
           lastSaveTime: new Date().toISOString()
         };
         localStorage.setItem('warehouse_data_cache', JSON.stringify(data));
+        // 单独保存批次时间戳，用于多设备同步判断
+        localStorage.setItem('warehouse_profit_batches_time', now.toString());
+        localStorage.setItem('warehouse_profit_batches', JSON.stringify(profitBatches || []));
         console.log('✅ 本地缓存已更新');
       } catch (e) {
         console.error('本地缓存保存失败:', e);
@@ -7454,6 +7481,11 @@ function toggleProfitBatchDetail(batchId) {
             loadCartonHistoryLocal();
             loadCartonDeductedLocal();
         }
+        // 确保阈值输入框显示当前值（本地修改优先）
+        const thresholdInput = document.getElementById('cartonThresholdInput');
+        if (thresholdInput) {
+            thresholdInput.value = cartonAlertThreshold;
+        }
         renderCartonTable();
         updateCartonStats();
         checkCartonAlerts();
@@ -7492,6 +7524,15 @@ function toggleProfitBatchDetail(batchId) {
                     }
                 });
             } catch(e) {}
+        }
+
+        // 合并本地阈值（本地修改的阈值优先）
+        const savedThreshold = localStorage.getItem('warehouse_carton_threshold_v1');
+        if (savedThreshold) {
+            const localThreshold = parseInt(savedThreshold);
+            if (!isNaN(localThreshold) && localThreshold > 0) {
+                cartonAlertThreshold = localThreshold;
+            }
         }
     }
 
@@ -8056,9 +8097,10 @@ async function saveProfitBatchData() {
 
 // 加载批次利润数据
 function loadProfitBatchData(data) {
-  // 优先从本地加载
+  // 读取本地缓存
   const local = localStorage.getItem('warehouse_profit_batches');
   let localBatches = [];
+  let localTime = parseInt(localStorage.getItem('warehouse_profit_batches_time') || '0');
   if (local) {
     try { 
       const localData = JSON.parse(local);
@@ -8070,21 +8112,55 @@ function loadProfitBatchData(data) {
     }
   }
 
-  // 如果云端有数据，优先使用云端数据（云端为最新）
-  if (data && data.profitBatches && Array.isArray(data.profitBatches) && data.profitBatches.length > 0) {
-    // 如果本地为空，或云端数据比本地多，使用云端数据
-    if (localBatches.length === 0 || data.profitBatches.length >= localBatches.length) {
+  // 判断云端是否有有效数据（包括空数组！空数组也是合法状态）
+  const hasCloudData = data && data.profitBatches !== undefined && Array.isArray(data.profitBatches);
+
+  if (hasCloudData) {
+    const cloudTime = data._lastModified || 0;
+    const cloudCount = data.profitBatches.length;
+    const localCount = localBatches.length;
+
+    // 云端数据比本地新（有时间戳且更大），直接使用云端
+    if (cloudTime > 0 && cloudTime >= localTime) {
       profitBatches = data.profitBatches;
       localStorage.setItem('warehouse_profit_batches', JSON.stringify(profitBatches));
-      console.log('从云端加载批次利润数据:', profitBatches.length, '个');
+      localStorage.setItem('warehouse_profit_batches_time', cloudTime.toString());
+      console.log('✅ 从云端加载批次利润数据（时间戳较新）:', cloudCount, '个, 时间:', new Date(cloudTime).toLocaleString());
       return;
     }
+
+    // 没有时间戳时：云端空数组 vs 本地有数据 → 信任云端（可能是有意清空）
+    // 云端有数据 vs 本地空 → 使用云端
+    // 云端有数据 vs 本地有数据 → 使用数量更多的（保守策略）
+    if (cloudCount === 0 && localCount > 0) {
+      // 云端为空但本地有：可能是用户清空了，信任云端
+      profitBatches = data.profitBatches;
+      localStorage.setItem('warehouse_profit_batches', JSON.stringify(profitBatches));
+      console.log('✅ 云端批次为空，同步清空本地批次（用户可能已清空）');
+      return;
+    }
+    if (cloudCount > 0 && localCount === 0) {
+      profitBatches = data.profitBatches;
+      localStorage.setItem('warehouse_profit_batches', JSON.stringify(profitBatches));
+      console.log('✅ 从云端加载批次利润数据:', cloudCount, '个');
+      return;
+    }
+    if (cloudCount > 0 && localCount > 0) {
+      // 两边都有数据，使用云端（云端是权威来源）
+      profitBatches = data.profitBatches;
+      localStorage.setItem('warehouse_profit_batches', JSON.stringify(profitBatches));
+      console.log('✅ 从云端加载批次利润数据（覆盖本地）:', cloudCount, '个');
+      return;
+    }
+    // 两边都为空，无需处理
   }
 
-  // 使用本地数据
+  // 回退到本地数据
   profitBatches = localBatches;
   if (profitBatches.length > 0) {
-    console.log('从本地加载批次利润数据:', profitBatches.length, '个');
+    console.log('⚠️ 从本地加载批次利润数据（云端无数据）:', profitBatches.length, '个');
+  } else {
+    profitBatches = [];
   }
 }
 
@@ -9008,6 +9084,7 @@ function showImportFromBatchModal() {
             </tr>`;
         });
         tbody.innerHTML = html;
+        updateCartonStats();
     }
 
     // 删除自定义纸箱
