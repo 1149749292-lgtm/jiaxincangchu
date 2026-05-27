@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="timestamp" content="2026-05-26 15:41">
-  <title>佳信水产仓库系统 v6.0.0 · GitHub存储</title>
+  <title>佳信水产仓库系统 v6.0.5 · GitHub存储</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js?v=20260502_1130"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js?v=20260502_1130"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter&v=20260502_1130:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
@@ -405,7 +405,7 @@
         </div>
       <div style="position: relative; z-index: 1;">
         <h1>🦐 佳信水产</h1>
-        <p>佳信水产仓库系统 v6.0.0 · GitHub存储 · 微信缓存已优化</p>
+        <p>佳信水产仓库系统 v6.0.5 · GitHub存储 · 微信缓存已优化</p>
       </div>
     </div>
 
@@ -583,6 +583,15 @@
           <span style="font-weight: 700;">导出 Excel</span>
           <span style="font-size: 12px; color: rgba(255,255,255,0.8); font-weight: normal;">多表格式备份</span>
         </button>
+        <div style="position: relative; width: 100%; min-height: 44px;">
+          <input type="file" id="jsonImportInput" accept=".json" onchange="handleJSONImport(this)" 
+                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 100; font-size: 0; padding: 0; margin: 0; border: none;">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px; font-size: 15px; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; border-radius: var(--radius); box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); width: 100%; min-height: 44px; justify-content: center; font-weight: 700; pointer-events: none;">
+            <span style="font-size: 32px;">📥</span>
+            <span style="font-weight: 700;">导入JSON备份</span>
+            <span style="font-size: 12px; color: rgba(255,255,255,0.8); font-weight: normal;">完整数据恢复</span>
+          </div>
+        </div>
       </div>
       <div style="margin-top: 16px; padding: 12px; background: var(--bg); border-radius: var(--radius); font-size: 13px; color: var(--text-secondary);">
         💡 <strong>提示：</strong>建议每月15号和25号各备份一次。JSON格式可直接导入恢复，Excel格式便于查看和编辑。
@@ -667,11 +676,16 @@
         </div>
       </div>
 
-      <!-- 批次备注 -->
-      <div style="margin-bottom: 20px;">
+      <!-- 批次备注和日期 -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
         <div class="form-group" style="margin-bottom: 0;">
-          <label>批次备注（可选）</label>
-          <input type="text" id="batchRemark" placeholder="请输入批次备注，例如：客户订单、采购入库等..." style="font-size: 14px;">
+          <label>📅 出入库日期</label>
+          <input type="date" id="batchDate" value="" style="font-size: 14px;">
+          <p style="font-size: 12px; color: var(--text-tertiary); margin-top: 4px; margin-bottom: 0;">留空则使用当天日期</p>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label>📝 批次备注（可选）</label>
+          <input type="text" id="batchRemark" placeholder="请输入批次备注..." style="font-size: 14px;">
         </div>
       </div>
 
@@ -1033,6 +1047,14 @@
         <button class="btn btn-secondary" onclick="exportBatchProfitList()" style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
           <span>📊</span> 导出Excel
         </button>
+        <div style="flex: 1;"></div>
+        <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); cursor: pointer; user-select: none; padding: 8px 12px; background: var(--bg); border-radius: var(--radius);">
+          <input type="checkbox" id="batchSelectAll" onchange="toggleBatchSelectAll()" style="width: 16px; height: 16px; cursor: pointer;">
+          <span>全选</span>
+        </label>
+        <button class="btn btn-danger" id="batchDeleteBtn" onclick="showBatchDeleteConfirm()" style="display: none; align-items: center; gap: 8px; white-space: nowrap;">
+          <span>🗑️</span> 批量删除 <span id="batchSelectedCount" style="background: white; color: var(--danger); padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700;">0</span>
+        </button>
       </div>
 
       <!-- 筛选栏 -->
@@ -1316,6 +1338,35 @@
     </div>
   </div>
 
+  <!-- JSON导入确认弹窗 -->
+  <div class="modal-overlay" id="jsonImportModal">
+    <div class="modal-content">
+      <div class="modal-header"><div class="modal-icon success">📥</div><div class="modal-title">确认导入JSON备份</div></div>
+      <div class="modal-body">
+        <div class="confirm-summary" id="jsonImportSummary">
+          <div class="summary-title">📊 导入数据概览</div>
+          <div class="summary-grid">
+            <div class="summary-item"><div class="summary-item-value" id="jsonImportProductCount">0</div><div class="summary-item-label">产品种类</div></div>
+            <div class="summary-item"><div class="summary-item-value" id="jsonImportStockCount">0</div><div class="summary-item-label">库存记录</div></div>
+            <div class="summary-item"><div class="summary-item-value" id="jsonImportBatchCount">0</div><div class="summary-item-label">出入库批次</div></div>
+            <div class="summary-item"><div class="summary-item-value" id="jsonImportProfitCount">0</div><div class="summary-item-label">利润批次</div></div>
+          </div>
+        </div>
+        <div id="jsonImportVersionInfo" style="background: var(--bg); border-radius: var(--radius); padding: 12px; margin-bottom: 16px; font-size: 13px; color: var(--text-secondary);">
+          备份版本: <strong id="jsonImportVersion">-</strong>
+        </div>
+        <p style="font-size: 13px; color: var(--text-secondary);">
+          ⚠️ 导入将<strong>完全覆盖</strong>当前所有数据（产品、库存、批次、利润、纸箱）。<br>
+          建议先导出当前数据作为备份。
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-secondary" onclick="closeJSONImportModal()">取消</button>
+        <button class="modal-btn modal-btn-primary" onclick="executeJSONImport()" style="background: var(--primary);">确认导入并覆盖</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 批次编辑-修改数量弹窗 -->
   <div class="modal-overlay" id="batchEditQtyModal">
     <div class="modal-content" style="max-width: 400px;">
@@ -1453,9 +1504,93 @@
         <button class="modal-btn modal-btn-primary" onclick="confirmAddBatchItem()">确认添加</button>
       </div>
     </div>
+
+
+  <!-- 批次编辑-修改产品信息弹窗 -->
+  <div class="modal-overlay" id="batchEditProductModal">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <div class="modal-icon" style="background: var(--primary-light); color: var(--primary);">🔄</div>
+        <div class="modal-title">修改产品信息</div>
+      </div>
+      <div class="modal-body">
+        <div class="modal-info" style="margin-bottom: 16px; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 1px solid #ef4444;">
+          <div class="modal-info-row">
+            <span class="modal-info-label">当前产品</span>
+            <span class="modal-info-value" id="editProductCurrentName" style="color: var(--danger);">-</span>
+          </div>
+          <div class="modal-info-row">
+            <span class="modal-info-label">规格</span>
+            <span class="modal-info-value" id="editProductCurrentSku">-</span>
+          </div>
+          <div class="modal-info-row">
+            <span class="modal-info-label">数量</span>
+            <span class="modal-info-value" id="editProductCurrentQty" style="color: var(--primary);">-</span>
+          </div>
+          <div class="modal-info-row">
+            <span class="modal-info-label">批次类型</span>
+            <span class="modal-info-value" id="editProductBatchType">-</span>
+          </div>
+        </div>
+
+        <div style="background: var(--bg); padding: 16px; border-radius: var(--radius); margin-bottom: 16px;">
+          <div style="font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px;">📦 选择新产品</div>
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label>品牌</label>
+            <select id="editProductBrand" onchange="updateEditProductCascade('brand')" style="width: 100%;">
+              <option value="">请选择品牌</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label>品名</label>
+            <select id="editProductName" onchange="updateEditProductCascade('name')" style="width: 100%;">
+              <option value="">请选择品名</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label>规格</label>
+            <select id="editProductSku" onchange="updateEditProductCascade('sku')" style="width: 100%;">
+              <option value="">请选择规格</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>净重</label>
+            <select id="editProductNet" onchange="updateEditProductSelected()" style="width: 100%;">
+              <option value="">请选择净重</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top: 12px; padding: 10px; background: white; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border);">
+          <span style="color: #64748b; font-size: 14px;">选中产品当前库存：</span>
+          <span id="editProductNewStock" style="font-size: 18px; font-weight: 700; color: #0284c7;">请选择产品</span>
+        </div>
+
+        <div style="margin-top: 12px; padding: 12px; background: var(--warning-light); border-radius: var(--radius); border-left: 3px solid var(--warning);">
+          <p style="font-size: 13px; color: var(--warning); margin: 0; font-weight: 600;">⚠️ 修改产品将调整库存</p>
+          <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">入库批次：原产品库存减少，新产品库存增加<br>出库批次：原产品库存增加，新产品库存减少</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-secondary" onclick="closeBatchEditProductModal()">取消</button>
+        <button class="modal-btn modal-btn-primary" onclick="confirmEditProduct()">确认修改</button>
+      </div>
+    </div>
+  </div>
+
   </div>
 
   <script>
+    // 全局错误捕获（帮助调试）
+    window.addEventListener('error', function(e) {
+      console.error('全局错误:', e.message, '在', e.filename, '行', e.lineno);
+      showToast('❌ 脚本错误: ' + e.message.substring(0, 50), 'error');
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      console.error('未处理的Promise错误:', e.reason);
+      showToast('❌ 异步错误: ' + (e.reason && e.reason.message ? e.reason.message.substring(0, 50) : '未知'), 'error');
+    });
+
 // ==================== 产品价格配置 ====================
 const PRODUCT_PRICES = {
   "白灼黑虎熟虾|21-25|大富肴": 174, "白灼黑虎熟虾|26-30|大富肴": 169,
@@ -1544,6 +1679,39 @@ localStorage.setItem('warehouse_device_id', DEVICE_ID);
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
+    }
+
+    function compareSku(a, b) {
+      if (!a || !b) return 0;
+      const strA = String(a);
+      const strB = String(b);
+
+      // 检查是否包含数字
+      const hasNumA = /\d/.test(strA);
+      const hasNumB = /\d/.test(strB);
+
+      // 不含数字的排在含数字的前面（如"特大"在"2-4"前面）
+      if (!hasNumA && hasNumB) return -1;
+      if (hasNumA && !hasNumB) return 1;
+
+      // 两者都不含数字，按字母排序
+      if (!hasNumA && !hasNumB) {
+        if (strA.startsWith(strB) && strA.length > strB.length) return -1;
+        if (strB.startsWith(strA) && strB.length > strA.length) return 1;
+        return strA.localeCompare(strB, 'zh-CN');
+      }
+
+      // 两者都含数字，提取第一个数字进行排序
+      const numMatchA = strA.match(/(\d+(?:\.\d+)?)/);
+      const numMatchB = strB.match(/(\d+(?:\.\d+)?)/);
+      if (numMatchA && numMatchB) {
+        const numA = parseFloat(numMatchA[1]);
+        const numB = parseFloat(numMatchB[1]);
+        if (numA !== numB) return numA - numB;
+      }
+
+      // 数字相同或无法提取，按完整字符串排序
+      return strA.localeCompare(strB, undefined, { numeric: true });
     }
 
     let pendingVirtualStock = null;
@@ -2321,7 +2489,7 @@ function updateStats() {
 
       let skuOptions = [...new Set(filteredProducts.map(p => p.sku).filter(s => s && s !== 'undefined' && String(s).trim() !== ''))];
       if (!brand && !name) skuOptions = [...new Set(products.map(p => p.sku).filter(s => s && s !== 'undefined' && String(s).trim() !== ''))];
-      skuOptions.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+      skuOptions.sort(compareSku);
       const currentSku = document.getElementById('filterSku').value;
       updateSelectOptions('filterSku', skuOptions, currentSku, '全部规格');
 
@@ -2330,6 +2498,10 @@ function updateStats() {
       netOptions.sort((a, b) => a - b);
       const currentNet = document.getElementById('filterNet').value;
       updateSelectOptions('filterNet', netOptions.map(n => n.toFixed(2)), currentNet, '全部净重');
+      // 如果处于结余库存模式，级联更新后重新渲染非零库存表
+      if (window.isNonZeroFilter) {
+        renderStockTableNonZero();
+      }
     }
 
     function updateSelectOptions(selectId, options, currentValue, defaultLabel) {
@@ -2350,20 +2522,37 @@ function updateStats() {
       if (options.includes(currentVal)) sel.value = currentVal;
     }
 
-    function queryStock() { 
+    function queryStock() {
       updateStockCascade('sku');
-      renderStockTable(); 
+      if (window.isNonZeroFilter) {
+        renderStockTableNonZero();
+      } else {
+        renderStockTable();
+      }
     }
     function resetStockFilters() {
       document.getElementById('filterNet').value = '';
       document.getElementById('filterBrand').value = '';
       document.getElementById('filterName').value = '';
       document.getElementById('filterSku').value = '';
+      window.isNonZeroFilter = false;
+
+      // 重置合计区域样式
+      const totalSection = document.getElementById('stockTotalSection');
+      totalSection.style.background = '';
+      totalSection.style.borderColor = '';
+      totalSection.querySelector('div').style.color = '';
+      totalSection.querySelector('div div').style.color = '';
+
       updateStockCascade('brand');
       renderStockTable();
     }
 
     function renderStockTable() {
+      if (window.isNonZeroFilter) {
+        renderStockTableNonZero();
+        return;
+      }
       const net = document.getElementById('filterNet').value;
       const brand = document.getElementById('filterBrand').value;
       const name = document.getElementById('filterName').value;
@@ -2375,9 +2564,11 @@ function updateStats() {
                (!sku || normalizeString(p.sku) === normalizeString(sku));
       });
       filtered.sort((a, b) => { 
-        if (normalizeString(a.brand) !== normalizeString(b.brand)) 
-          return normalizeString(a.brand).localeCompare(normalizeString(b.brand)); 
-        return normalizeString(a.name).localeCompare(normalizeString(b.name)); 
+        const brandCompare = normalizeString(a.brand).localeCompare(normalizeString(b.brand));
+        if (brandCompare !== 0) return brandCompare;
+        const nameCompare = normalizeString(a.name).localeCompare(normalizeString(b.name));
+        if (nameCompare !== 0) return nameCompare;
+        return compareSku(a.sku, b.sku);
       });
 
       // 计算合计
@@ -2425,17 +2616,10 @@ function updateStats() {
 
     // 结余库存筛选 - 只显示库存不为零的商品
     function filterNonZeroStock() {
-      // 先重置筛选条件
-      document.getElementById('filterNet').value = '';
-      document.getElementById('filterBrand').value = '';
-      document.getElementById('filterName').value = '';
-      document.getElementById('filterSku').value = '';
-      updateStockCascade('brand');
-
-      // 标记为结余库存模式
+      // 保留当前筛选条件，仅叠加库存不为零的过滤
       window.isNonZeroFilter = true;
       renderStockTableNonZero();
-      showToast('📦 已筛选出所有结余库存商品（库存不为零）');
+      showToast('📦 已筛选出结余库存商品（库存不为零）');
     }
 
     // 结余库存渲染
@@ -2457,9 +2641,11 @@ function updateStats() {
       });
 
       filtered.sort((a, b) => { 
-        if (normalizeString(a.brand) !== normalizeString(b.brand)) 
-          return normalizeString(a.brand).localeCompare(normalizeString(b.brand)); 
-        return normalizeString(a.name).localeCompare(normalizeString(b.name)); 
+        const brandCompare = normalizeString(a.brand).localeCompare(normalizeString(b.brand));
+        if (brandCompare !== 0) return brandCompare;
+        const nameCompare = normalizeString(a.name).localeCompare(normalizeString(b.name));
+        if (nameCompare !== 0) return nameCompare;
+        return compareSku(a.sku, b.sku);
       });
 
       // 计算合计
@@ -2521,6 +2707,8 @@ function updateStats() {
       const totalSection = document.getElementById('stockTotalSection');
       totalSection.style.background = '';
       totalSection.style.borderColor = '';
+      totalSection.querySelector('div').style.color = '';
+      totalSection.querySelector('div div').style.color = '';
 
       updateStockCascade('brand');
       renderStockTable();
@@ -3547,7 +3735,8 @@ async function doExecuteImport() {
                   <div class="batch-item-stock">当前库存<br><strong>${currentQty}</strong></div>
                   <div class="batch-item-stock">日期<br>${item.date}</div>
                   <div class="batch-item-actions" onclick="event.stopPropagation()">
-                    <button class="batch-item-btn edit" onclick="showBatchEditQty('${batch.id}', ${index}, event)">修改</button>
+                    <button class="batch-item-btn edit" onclick="showBatchEditQty('${batch.id}', ${index}, event)">改数量</button>
+                    <button class="batch-item-btn edit" onclick="event.stopPropagation(); showBatchEditProduct('${batch.id}', ${index})" style="background:#dbeafe;color:#2563eb;">改产品</button>
                     <button class="batch-item-btn delete" onclick="showBatchDeleteItem('${batch.id}', ${index}, event)">删除</button>
                   </div>
                 </div>`;
@@ -3792,7 +3981,8 @@ async function doExecuteImport() {
       if (changedField === 'name' || (changedField === 'brand' && nameSelect.value)) {
         let nameFiltered = filteredProducts;
         if (nameSelect.value) nameFiltered = filteredProducts.filter(p => p.name === nameSelect.value);
-        const skus = [...new Set(nameFiltered.map(p => p.sku).filter(s => s && s !== 'undefined' && String(s).trim() !== ''))].sort();
+        const skus = [...new Set(nameFiltered.map(p => p.sku).filter(s => s && s !== 'undefined' && String(s).trim() !== ''))];
+        skus.sort(compareSku);
         skuSelect.innerHTML = '<option value="">请选择规格</option>' + 
           skus.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
         netSelect.innerHTML = '<option value="">请选择净重</option>';
@@ -3914,6 +4104,182 @@ async function doExecuteImport() {
       } catch (err) {
         hideLoading();
         showError('添加失败', err.message);
+      }
+    }
+
+    // ==================== 批次编辑-修改产品信息功能 ====================
+
+    let currentEditingProductBatchId = null;
+    let currentEditingProductItemIndex = null;
+    let currentEditProduct = null;
+
+    function showBatchEditProduct(batchId, itemIndex) {
+      if (!editPermissionVerified) { checkEditPermission(() => showBatchEditProduct(batchId, itemIndex)); return; }
+
+      const batch = batches.find(b => b.id === batchId);
+      if (!batch || !batch.items[itemIndex]) return;
+
+      const item = batch.items[itemIndex];
+      currentEditingProductBatchId = batchId;
+      currentEditingProductItemIndex = itemIndex;
+      currentEditProduct = null;
+
+      // 填充当前信息
+      document.getElementById('editProductCurrentName').textContent = item.brand + ' ' + item.name;
+      document.getElementById('editProductCurrentSku').textContent = item.sku + ' · 净重' + item.net + 'kg';
+      document.getElementById('editProductCurrentQty').textContent = (batch.type === 'in' ? '+' : '-') + item.qty + ' 件';
+      document.getElementById('editProductCurrentQty').style.color = batch.type === 'in' ? 'var(--success)' : 'var(--danger)';
+      document.getElementById('editProductBatchType').textContent = batch.type === 'in' ? '入库' : '出库';
+      document.getElementById('editProductBatchType').style.color = batch.type === 'in' ? 'var(--success)' : 'var(--danger)';
+
+      // 初始化级联选择
+      initEditProductCascade();
+      document.getElementById('editProductNewStock').textContent = '请选择产品';
+      document.getElementById('editProductNewStock').style.color = '#94a3b8';
+
+      document.getElementById('batchEditProductModal').classList.add('show');
+    }
+
+    function closeBatchEditProductModal() {
+      document.getElementById('batchEditProductModal').classList.remove('show');
+      currentEditingProductBatchId = null;
+      currentEditingProductItemIndex = null;
+      currentEditProduct = null;
+    }
+
+    function initEditProductCascade() {
+      const brands = [...new Set(products.map(p => p.brand).filter(b => b && b !== 'undefined' && String(b).trim() !== ''))].sort();
+      const brandSelect = document.getElementById('editProductBrand');
+      brandSelect.innerHTML = '<option value="">请选择品牌</option>' +
+        brands.map(b => `<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`).join('');
+
+      document.getElementById('editProductName').innerHTML = '<option value="">请选择品名</option>';
+      document.getElementById('editProductSku').innerHTML = '<option value="">请选择规格</option>';
+      document.getElementById('editProductNet').innerHTML = '<option value="">请选择净重</option>';
+    }
+
+    function updateEditProductCascade(changedField) {
+      const brand = document.getElementById('editProductBrand').value;
+      const nameSelect = document.getElementById('editProductName');
+      const skuSelect = document.getElementById('editProductSku');
+      const netSelect = document.getElementById('editProductNet');
+
+      let filteredProducts = products;
+      if (brand) filteredProducts = products.filter(p => p.brand === brand);
+
+      if (changedField === 'brand') {
+        const names = [...new Set(filteredProducts.map(p => p.name).filter(n => n && n !== 'undefined' && String(n).trim() !== ''))].sort();
+        nameSelect.innerHTML = '<option value="">请选择品名</option>' +
+          names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+        skuSelect.innerHTML = '<option value="">请选择规格</option>';
+        netSelect.innerHTML = '<option value="">请选择净重</option>';
+      }
+
+      if (changedField === 'name' || (changedField === 'brand' && nameSelect.value)) {
+        let nameFiltered = filteredProducts;
+        if (nameSelect.value) nameFiltered = filteredProducts.filter(p => p.name === nameSelect.value);
+        const skus = [...new Set(nameFiltered.map(p => p.sku).filter(s => s && s !== 'undefined' && String(s).trim() !== ''))];
+        skus.sort(compareSku);
+        skuSelect.innerHTML = '<option value="">请选择规格</option>' +
+          skus.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+        netSelect.innerHTML = '<option value="">请选择净重</option>';
+      }
+
+      if (changedField === 'sku' || ((changedField === 'name' || changedField === 'brand') && skuSelect.value)) {
+        let skuFiltered = filteredProducts;
+        if (nameSelect.value) skuFiltered = skuFiltered.filter(p => p.name === nameSelect.value);
+        if (skuSelect.value) skuFiltered = skuFiltered.filter(p => p.sku === skuSelect.value);
+        const nets = [...new Set(skuFiltered.map(p => p.net).filter(n => n !== undefined && n !== null && !isNaN(n)))].sort((a, b) => a - b);
+        netSelect.innerHTML = '<option value="">请选择净重</option>' +
+          nets.map(n => `<option value="${n}">${n}kg</option>`).join('');
+      }
+
+      updateEditProductSelected();
+    }
+
+    function updateEditProductSelected() {
+      const brand = document.getElementById('editProductBrand').value;
+      const name = document.getElementById('editProductName').value;
+      const sku = document.getElementById('editProductSku').value;
+      const net = document.getElementById('editProductNet').value;
+
+      if (brand && name && sku && net) {
+        currentEditProduct = products.find(p =>
+          p.brand === brand && p.name === name && p.sku === sku &&
+          Math.abs(p.net - parseFloat(net)) < 0.001
+        );
+      } else {
+        currentEditProduct = null;
+      }
+
+      const stockEl = document.getElementById('editProductNewStock');
+      if (currentEditProduct) {
+        const qty = stock[currentEditProduct.id] || 0;
+        stockEl.textContent = qty + ' 件';
+        stockEl.style.color = qty > 0 ? '#059669' : qty < 0 ? '#dc2626' : '#94a3b8';
+      } else {
+        stockEl.textContent = '请选择产品';
+        stockEl.style.color = '#94a3b8';
+      }
+    }
+
+    async function confirmEditProduct() {
+      if (!currentEditingProductBatchId || currentEditingProductItemIndex === null) return;
+      if (!currentEditProduct) {
+        showToast('⚠️ 请先选择完整的新产品信息', 'warning');
+        return;
+      }
+
+      const batch = batches.find(b => b.id === currentEditingProductBatchId);
+      const item = batch.items[currentEditingProductItemIndex];
+      const oldProductId = item.productId;
+      const newProductId = currentEditProduct.id;
+
+      // 不能改成同一个产品
+      if (oldProductId === newProductId) {
+        closeBatchEditProductModal();
+        showToast('⚠️ 新产品与当前产品相同，无需修改');
+        return;
+      }
+
+      showLoading('正在修改产品信息...');
+
+      // 库存调整逻辑
+      if (batch.type === 'in') {
+        // 入库批次：原产品库存减少，新产品库存增加
+        stock[oldProductId] = (stock[oldProductId] || 0) - item.qty;
+        stock[newProductId] = (stock[newProductId] || 0) + item.qty;
+      } else {
+        // 出库批次：原产品库存增加（释放），新产品库存减少（消耗）
+        stock[oldProductId] = (stock[oldProductId] || 0) + item.qty;
+        const newStockQty = stock[newProductId] || 0;
+        if (newStockQty < item.qty) {
+          // 库存不足，回滚并提示
+          stock[oldProductId] = (stock[oldProductId] || 0) - item.qty; // 回滚
+          hideLoading();
+          showToast(`❌ 新产品库存不足！当前库存${newStockQty}件，需要${item.qty}件`, 'error');
+          return;
+        }
+        stock[newProductId] = newStockQty - item.qty;
+      }
+
+      // 更新批次项的产品信息
+      item.productId = newProductId;
+      item.name = currentEditProduct.name;
+      item.sku = currentEditProduct.sku;
+      item.brand = currentEditProduct.brand;
+      item.net = currentEditProduct.net;
+      item.gross = currentEditProduct.gross;
+
+      try {
+        await saveData();
+        hideLoading();
+        closeBatchEditProductModal();
+        showToast(`✅ 已修改为 ${currentEditProduct.brand} ${currentEditProduct.name} ${currentEditProduct.sku}，库存已自动调整`);
+        updateUI();
+      } catch (err) {
+        hideLoading();
+        showError('保存失败', err.message);
       }
     }
 
@@ -4049,6 +4415,168 @@ async function doExecuteImport() {
 
       showToast('✅ JSON备份已下载，包含所有数据');
     }
+
+    // ==================== JSON导入功能 ====================
+    let pendingImportData = null;
+
+    function handleJSONImport(input) {
+      if (!input.files.length) return;
+      const file = input.files[0];
+      showToast('📁 已选择文件: ' + file.name + ' (' + (file.size/1024).toFixed(1) + 'KB)');
+      showLoading('正在读取JSON备份...');
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const jsonStr = e.target.result;
+          const data = JSON.parse(jsonStr);
+          pendingImportData = data;
+          hideLoading();
+          showJSONImportPreview(data);
+        } catch (err) {
+          hideLoading();
+          showError('JSON解析失败', '文件格式错误，请确保选择的是有效的JSON备份文件。\n\n错误详情: ' + err.message);
+        }
+      };
+      reader.onerror = function() {
+        hideLoading();
+        showToast('❌ 文件读取失败', 'error');
+      };
+      reader.readAsText(file);
+      input.value = '';
+    }
+
+    function showJSONImportPreview(data) {
+      showToast('📊 正在解析备份数据...');
+      // 判断备份版本
+      let version = '旧版本（基础数据）';
+      if (data._exportVersion) {
+        version = '新版本 v' + data._exportVersion + '（完整备份）';
+      } else if (data.cartons || data.profitBatches) {
+        version = '新版本（完整备份）';
+      }
+
+      const productCount = (data.products || []).length;
+      const stockCount = Object.keys(data.stock || {}).length;
+      const batchCount = (data.batches || []).length;
+      const profitCount = (data.profitBatches || []).length;
+      const cartonCount = (data.cartons && data.cartons.types) ? data.cartons.types.length : 0;
+
+      document.getElementById('jsonImportVersion').textContent = version;
+      document.getElementById('jsonImportProductCount').textContent = productCount;
+      document.getElementById('jsonImportStockCount').textContent = stockCount;
+      document.getElementById('jsonImportBatchCount').textContent = batchCount;
+      document.getElementById('jsonImportProfitCount').textContent = profitCount;
+
+      // 如果有纸箱数据，添加显示
+      const summaryDiv = document.getElementById('jsonImportSummary');
+      const existingCartonItem = document.getElementById('jsonImportCartonItem');
+      if (cartonCount > 0 && !existingCartonItem) {
+        const grid = summaryDiv.querySelector('.summary-grid');
+        if (grid) {
+          const cartonItem = document.createElement('div');
+          cartonItem.className = 'summary-item';
+          cartonItem.id = 'jsonImportCartonItem';
+          cartonItem.innerHTML = '<div class="summary-item-value" id="jsonImportCartonCount">' + cartonCount + '</div><div class="summary-item-label">纸箱规格</div>';
+          grid.appendChild(cartonItem);
+        }
+      } else if (cartonCount > 0 && existingCartonItem) {
+        const cartonCountEl = document.getElementById('jsonImportCartonCount');
+        if (cartonCountEl) cartonCountEl.textContent = cartonCount;
+      } else if (existingCartonItem) {
+        existingCartonItem.remove();
+      }
+
+      document.getElementById('jsonImportModal').classList.add('show');
+    }
+
+    function closeJSONImportModal() {
+      document.getElementById('jsonImportModal').classList.remove('show');
+      pendingImportData = null;
+    }
+
+    async function executeJSONImport() {
+      if (!pendingImportData) return;
+      if (!editPermissionVerified) { checkEditPermission(() => executeJSONImport()); return; }
+
+      showLoading('正在导入数据...');
+      const data = pendingImportData;
+
+      try {
+        // 1. 导入产品库
+        if (data.products && Array.isArray(data.products)) {
+          products = data.products;
+        }
+
+        // 2. 导入库存
+        if (data.stock && typeof data.stock === 'object') {
+          stock = data.stock;
+        }
+
+        // 3. 导入出入库批次
+        if (data.batches && Array.isArray(data.batches)) {
+          batches = data.batches;
+        }
+
+        // 4. 导入利润批次（新版本）
+        if (data.profitBatches && Array.isArray(data.profitBatches)) {
+          profitBatches = data.profitBatches;
+          localStorage.setItem('warehouse_profit_batches', JSON.stringify(profitBatches));
+        }
+
+        // 5. 导入纸箱数据（新版本）
+        if (data.cartons) {
+          loadCartonDataFromCloud(data.cartons);
+          saveCartonDataLocal();
+        }
+
+        // 6. 清理无效产品
+        cleanInvalidProducts();
+
+        // 7. 确保所有产品都有库存条目
+        products.forEach(p => {
+          if (stock[p.id] === undefined) {
+            stock[p.id] = 0;
+          }
+        });
+
+        // 8. 清理库存中不存在产品的残留ID
+        const validIds = new Set(products.map(p => p.id));
+        Object.keys(stock).forEach(id => {
+          if (!validIds.has(id)) {
+            delete stock[id];
+          }
+        });
+
+        // 9. 保存到云端
+        await saveData();
+
+        hideLoading();
+        closeJSONImportModal();
+
+        const msg = '✅ 导入成功！产品: ' + products.length + ' 种, 库存: ' + Object.keys(stock).length + ' 条, 批次: ' + batches.length + ' 个, 利润批次: ' + (profitBatches || []).length + ' 个';
+        showToast(msg);
+
+        // 刷新所有UI
+        updateUI();
+        const activeNav = document.querySelector('.nav-item.active');
+        const activePage = activeNav ? activeNav.getAttribute('data-page') : null;
+        if (activePage === 'products') {
+          initProductPage();
+        }
+        if (activePage === 'batch') {
+          initProfitBatchPage();
+        }
+        if (activePage === 'carton') {
+          initCartonModule();
+        }
+
+      } catch (err) {
+        hideLoading();
+        console.error('导入失败:', err);
+        showError('导入失败', err.message || '未知错误，请检查JSON文件格式');
+      }
+    }
+
 
     function exportAllDataExcel() {
       const wb = XLSX.utils.book_new();
@@ -4645,10 +5173,12 @@ function confirmCartonCheckContinue() {
           case 'stockAsc':
             return (stock[a.id] || 0) - (stock[b.id] || 0);
           default:
-            // 默认按品牌+品名排序
+            // 默认按品牌+品名+规格排序
             const brandCompare = normalizeString(a.brand).localeCompare(normalizeString(b.brand));
             if (brandCompare !== 0) return brandCompare;
-            return normalizeString(a.name).localeCompare(normalizeString(b.name));
+            const nameCompare = normalizeString(a.name).localeCompare(normalizeString(b.name));
+            if (nameCompare !== 0) return nameCompare;
+            return compareSku(a.sku, b.sku);
         }
       });
 
@@ -5940,6 +6470,9 @@ function showLoading(text) {
       try {
         // 执行出库
         const remark = document.getElementById('batchRemark').value || '批量出库';
+        const batchDateVal = document.getElementById('batchDate').value;
+        const batchDate = batchDateVal ? new Date(batchDateVal + 'T00:00:00.000Z') : new Date();
+        const batchDateStr = batchDate.toISOString().split('T')[0];
         const totalQty = currentBatch.reduce((sum, item) => sum + item.qty, 0);
 
         currentBatch.forEach(item => {
@@ -5950,8 +6483,8 @@ function showLoading(text) {
         const batch = {
           id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
           type: 'out',
-          date: new Date().toISOString(),
-          dateRange: { min: new Date().toISOString().split('T')[0], max: new Date().toISOString().split('T')[0] },
+          date: batchDate.toISOString(),
+          dateRange: { min: batchDateStr, max: batchDateStr },
           items: currentBatch.map(item => ({
             productId: item.product.id,
             name: item.product.name,
@@ -5959,7 +6492,7 @@ function showLoading(text) {
             brand: item.product.brand,
             net: item.product.net,
             gross: item.product.gross,
-            date: new Date().toISOString().split('T')[0],
+            date: batchDateStr,
             qty: item.qty,
             remark: remark
           })),
@@ -6023,6 +6556,9 @@ function showLoading(text) {
 
       try {
         const remark = document.getElementById('batchRemark').value || '批量入库';
+        const batchDateVal = document.getElementById('batchDate').value;
+        const batchDate = batchDateVal ? new Date(batchDateVal + 'T00:00:00.000Z') : new Date();
+        const batchDateStr = batchDate.toISOString().split('T')[0];
         const totalQty = currentBatch.reduce((sum, item) => sum + item.qty, 0);
 
         // 执行入库
@@ -6034,8 +6570,8 @@ function showLoading(text) {
         const batch = {
           id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
           type: 'in',
-          date: new Date().toISOString(),
-          dateRange: { min: new Date().toISOString().split('T')[0], max: new Date().toISOString().split('T')[0] },
+          date: batchDate.toISOString(),
+          dateRange: { min: batchDateStr, max: batchDateStr },
           items: currentBatch.map(item => ({
             productId: item.product.id,
             name: item.product.name,
@@ -6043,7 +6579,7 @@ function showLoading(text) {
             brand: item.product.brand,
             net: item.product.net,
             gross: item.product.gross,
-            date: new Date().toISOString().split('T')[0],
+            date: batchDateStr,
             qty: item.qty,
             remark: remark
           })),
@@ -6516,6 +7052,160 @@ let profitBatchItems = []; // 当前编辑的批次明细
 let profitBatches = [];    // 利润批次数据（从云端加载）
 
 // 初始化批次利润页面
+
+// ==================== 批次多选删除功能 ====================
+let selectedBatchIds = new Set();
+
+function updateBatchSelection(batchId, checked) {
+  if (checked) {
+    selectedBatchIds.add(batchId);
+  } else {
+    selectedBatchIds.delete(batchId);
+  }
+  updateBatchDeleteUI();
+
+  // 更新全选复选框状态
+  const checkboxes = document.querySelectorAll('.batch-checkbox');
+  const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
+  const selectAllCheckbox = document.getElementById('batchSelectAll');
+  if (selectAllCheckbox) {
+    selectAllCheckbox.checked = allChecked;
+  }
+}
+
+function toggleBatchSelectAll() {
+  const selectAllCheckbox = document.getElementById('batchSelectAll');
+  const checkboxes = document.querySelectorAll('.batch-checkbox');
+  const isChecked = selectAllCheckbox ? selectAllCheckbox.checked : false;
+
+  checkboxes.forEach(cb => {
+    cb.checked = isChecked;
+    const batchId = cb.getAttribute('data-batch-id');
+    if (isChecked) {
+      selectedBatchIds.add(batchId);
+    } else {
+      selectedBatchIds.delete(batchId);
+    }
+  });
+
+  updateBatchDeleteUI();
+}
+
+function updateBatchDeleteUI() {
+  const deleteBtn = document.getElementById('batchDeleteBtn');
+  const countSpan = document.getElementById('batchSelectedCount');
+  const count = selectedBatchIds.size;
+
+  if (countSpan) {
+    countSpan.textContent = count;
+  }
+  if (deleteBtn) {
+    deleteBtn.style.display = count > 0 ? 'inline-flex' : 'none';
+  }
+}
+
+function showBatchDeleteConfirm() {
+  const count = selectedBatchIds.size;
+  if (count === 0) {
+    showToast('⚠️ 请先选择要删除的批次', 'warning');
+    return;
+  }
+
+  // 构建确认信息
+  const batchNames = [];
+  selectedBatchIds.forEach(id => {
+    const batch = profitBatches.find(b => b.id === id);
+    if (batch) {
+      batchNames.push(batch.name || '未命名批次');
+    }
+  });
+
+  const modal = document.createElement('div');
+  modal.id = 'batchDeleteConfirmModal';
+  modal.style.cssText = `
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+    z-index: 10000; display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+  `;
+
+  modal.innerHTML = `
+    <div style="background: white; border-radius: 16px; padding: 32px; width: 100%; max-width: 480px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); animation: fadeIn 0.3s ease-out;">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <div style="font-size: 48px; margin-bottom: 8px;">🗑️</div>
+        <div style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">确认批量删除</div>
+        <div style="font-size: 14px; color: #64748b;">即将删除 ${count} 个批次，此操作不可恢复</div>
+      </div>
+
+      <div style="max-height: 200px; overflow-y: auto; margin-bottom: 20px; background: #f8fafc; border-radius: 12px; padding: 12px;">
+        ${batchNames.map(name => `
+          <div style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 14px; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+            <span style="color: #dc2626;">•</span> ${escapeHtml(name)}
+          </div>
+        `).join('')}
+      </div>
+
+      <div style="background: #fef2f2; border-radius: 8px; padding: 12px; margin-bottom: 20px; border-left: 3px solid #ef4444;">
+        <p style="font-size: 13px; color: #dc2626; margin: 0; font-weight: 600;">⚠️ 警告：删除后批次数据将永久丢失！</p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <button onclick="closeBatchDeleteConfirm()" style="padding: 14px; border: 1.5px solid #e2e8f0; background: white; border-radius: 10px; font-weight: 600; color: #64748b; cursor: pointer; font-size: 15px;">取消</button>
+        <button onclick="executeBatchDelete()" style="padding: 14px; border: none; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); border-radius: 10px; font-weight: 600; color: white; cursor: pointer; font-size: 15px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);">确认删除 ${count} 个</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+}
+
+function closeBatchDeleteConfirm() {
+  const modal = document.getElementById('batchDeleteConfirmModal');
+  if (modal) modal.remove();
+}
+
+async function executeBatchDelete() {
+  if (!editPermissionVerified) { 
+    closeBatchDeleteConfirm();
+    checkEditPermission(() => {
+      showBatchDeleteConfirm();
+    }); 
+    return; 
+  }
+
+  const count = selectedBatchIds.size;
+  if (count === 0) return;
+
+  closeBatchDeleteConfirm();
+  showLoading(`正在删除 ${count} 个批次...`);
+
+  // 删除选中的批次
+  profitBatches = profitBatches.filter(b => !selectedBatchIds.has(b.id));
+
+  // 清空选中状态
+  selectedBatchIds.clear();
+
+  // 重置全选复选框
+  const selectAllCheckbox = document.getElementById('batchSelectAll');
+  if (selectAllCheckbox) selectAllCheckbox.checked = false;
+
+  // 更新UI
+  updateBatchDeleteUI();
+
+  try {
+    await saveData();
+    hideLoading();
+    showToast(`✅ 已删除 ${count} 个批次`);
+
+    // 刷新批次列表
+    updateProfitBatchStats();
+    filterProfitBatchList();
+  } catch (err) {
+    hideLoading();
+    showError('删除失败', err.message);
+  }
+}
+
 function initProfitBatchPage() {
   // 确保利润批次数据已加载
   if (!profitBatches || profitBatches.length === 0) {
@@ -6536,7 +7226,7 @@ function initQuickAddSelect() {
 
 function updateProfitBatchStats() {
   const totalCount = profitBatches.length;
-  const totalProfit = profitBatches.reduce((sum, b) => sum + (b.profit || 0), 0);
+  const totalProfit = profitBatches.reduce((sum, b) => sum + (parseFloat(b.profit) || 0), 0);
   const totalSales = profitBatches.reduce((sum, b) => sum + (b.totalSales || 0), 0);
   const avgYield = totalCount > 0 ? (profitBatches.reduce((sum, b) => sum + (b.yieldRate || 0), 0) / totalCount) : 0;
 
@@ -6590,17 +7280,29 @@ function renderProfitBatchList(batchList) {
   }
 
   container.innerHTML = batchList.map(batch => {
-    const isProfit = (batch.profit || 0) >= 0;
+    // 安全计算批次净利润（防止NaN）
+    let batchProfit = 0;
+    if (batch.items && batch.items.length > 0) {
+      batchProfit = batch.items.reduce((sum, item) => {
+        const p = getProfitProduct(item.productId);
+        const sales = parseFloat(item.sales) || 0;
+        const materialCost = parseFloat(item.materialCost) || 0;
+        const boxCost = parseFloat(item.boxCost) || 0;
+        const freightCost = parseFloat(item.freightCost) || 0;
+        const processCost = parseFloat(item.processCost) || 0;
+        const packCost = item.packCost !== undefined ? (parseFloat(item.packCost) || 0) : ((parseFloat(item.pieces) || 0) * (parseFloat(p?.packCost) || 0));
+        const itemProfit = sales - materialCost - boxCost - packCost - freightCost - processCost;
+        return sum + (isNaN(itemProfit) ? 0 : itemProfit);
+      }, 0);
+    } else {
+      batchProfit = parseFloat(batch.profit) || 0;
+    }
+    if (isNaN(batchProfit)) batchProfit = 0;
+
+    const isProfit = batchProfit >= 0;
     const profitColor = isProfit ? '#059669' : '#dc2626';
     const profitBg = isProfit ? '#f0fdf4' : '#fef2f2';
     const profitBorder = isProfit ? '#bbf7d0' : '#fecaca';
-
-    // 计算批次净利润（实时计算确保准确）
-    const batchProfit = batch.items ? batch.items.reduce((sum, item) => {
-      const p = getProfitProduct(item.productId);
-      const packCost = item.packCost !== undefined ? item.packCost : (item.pieces * (p?.packCost || 0));
-      return sum + (item.sales - (item.materialCost || 0) - (item.boxCost || 0) - packCost - (item.freightCost || 0) - (item.processCost || 0));
-    }, 0) : (batch.profit || 0);
 
     return `
       <div style="background: white; border-radius: 12px; border: 2px solid ${profitBorder}; overflow: hidden; transition: all 0.2s; cursor: pointer;"
@@ -6609,14 +7311,17 @@ function renderProfitBatchList(batchList) {
            onclick="toggleProfitBatchDetail('${batch.id}')">
         <div style="padding: 16px 20px; background: ${profitBg}; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
           <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-            <span style="font-size: 24px;">📦</span>
-            <div>
-              <div style="font-weight: 700; font-size: 16px; color: #0f172a;">
-                ${escapeHtml(batch.name || '未命名批次')}
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <input type="checkbox" class="batch-checkbox" data-batch-id="${batch.id}" onchange="updateBatchSelection('${batch.id}', this.checked); event.stopPropagation();" style="width: 18px; height: 18px; cursor: pointer; flex-shrink: 0;">
+              <span style="font-size: 24px;">📦</span>
+              <div>
+                <div style="font-weight: 700; font-size: 16px; color: #0f172a;">
+                  ${escapeHtml(batch.name || '未命名批次')}
                 <span style="display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; background: #374151; color: white; margin-left: 8px;">#${(batch.id || '').toString().slice(-6)}</span>
               </div>
-              <div style="font-size: 13px; color: #64748b; margin-top: 4px;">
-                📅 ${batch.date || '-'} · 原料${batch.rawWeight || 0}斤 · 出品率${(batch.yieldRate || 0).toFixed(1)}% · 出称${(batch.lossWeight || 0).toFixed(1)}kg
+                <div style="font-size: 13px; color: #64748b; margin-top: 4px;">
+                  📅 ${batch.date || '-'} · 原料${batch.rawWeight || 0}斤 · 出品率${(batch.yieldRate || 0).toFixed(1)}% · 出称${(batch.lossWeight || 0).toFixed(1)}kg
+                </div>
               </div>
             </div>
           </div>
@@ -6662,9 +7367,15 @@ function renderProfitBatchList(batchList) {
                 <tbody>
                   ${(batch.items || []).map(item => {
                     const p = getProfitProduct(item.productId);
-                    const packCost = item.packCost !== undefined ? item.packCost : (item.pieces * (p?.packCost || 0));
-                    const netProfit = item.sales - (item.materialCost || 0) - (item.boxCost || 0) - packCost - (item.freightCost || 0) - (item.processCost || 0);
-                    const isItemProfit = netProfit >= 0;
+                    const sales = parseFloat(item.sales) || 0;
+                    const materialCost = parseFloat(item.materialCost) || 0;
+                    const boxCost = parseFloat(item.boxCost) || 0;
+                    const freightCost = parseFloat(item.freightCost) || 0;
+                    const processCost = parseFloat(item.processCost) || 0;
+                    const packCost = item.packCost !== undefined ? (parseFloat(item.packCost) || 0) : ((parseFloat(item.pieces) || 0) * (parseFloat(p?.packCost) || 0));
+                    const netProfit = sales - materialCost - boxCost - packCost - freightCost - processCost;
+                    const safeNetProfit = isNaN(netProfit) ? 0 : netProfit;
+                    const isItemProfit = safeNetProfit >= 0;
                     return `
                       <tr style="border-bottom: 1px solid #f1f5f9;">
                         <td style="padding: 8px; text-align: left;">
@@ -6676,8 +7387,8 @@ function renderProfitBatchList(batchList) {
                         </td>
                         <td style="padding: 8px; text-align: center; font-weight: 600;">${item.pieces || 0}</td>
                         <td style="padding: 8px; text-align: right;">${(item.netWeight || 0).toFixed(2)}kg</td>
-                        <td style="padding: 8px; text-align: right; color: #059669; font-weight: 600;">¥${(item.sales || 0).toFixed(1)}</td>
-                        <td style="padding: 8px; text-align: right; font-weight: 700; color: ${isItemProfit ? '#059669' : '#dc2626'};">${isItemProfit ? '+' : ''}¥${netProfit.toFixed(1)}</td>
+                        <td style="padding: 8px; text-align: right; color: #059669; font-weight: 600;">¥${sales.toFixed(1)}</td>
+                        <td style="padding: 8px; text-align: right; font-weight: 700; color: ${isItemProfit ? '#059669' : '#dc2626'};">${isItemProfit ? '+' : ''}¥${Math.abs(safeNetProfit).toFixed(1)}</td>
                       </tr>
                     `;
                   }).join('')}
@@ -7049,7 +7760,7 @@ function renderProfitBatchItems() {
           <div style="color: #94a3b8; font-size: 10px;">${isPricePerKg ? '元/kg×' + p.weight + 'kg' : '元/件'}</div>
         </td>
         <td style="padding: 10px 8px; text-align: right; color: #059669; font-weight: 700;">¥${sales.toFixed(1)}</td>
-        <td style="padding: 10px 8px; text-align: right; font-weight: 700; color: ${isProfit ? '#059669' : '#dc2626'};">${isProfit ? '+' : ''}¥${netProfit.toFixed(1)}</td>
+        <td style="padding: 10px 8px; text-align: right; font-weight: 700; color: ${isProfit ? '#059669' : '#dc2626'};">${isProfit ? '+' : ''}¥${Math.abs(safeNetProfit).toFixed(1)}</td>
         <td style="padding: 10px 8px; text-align: center;">
           <button onclick="removeProfitBatchItem(${idx})" style="background: #fee2e2; color: #dc2626; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;">🗑️</button>
         </td>
@@ -7441,8 +8152,15 @@ async function exportBatchImage(batchId) {
                 const freightPerPiece = item.freightCost && item.pieces ? (item.freightCost / item.pieces).toFixed(2) : (product?.freight || 0).toFixed(2);
                 const processPerTon = item.processCost && item.netWeight ? (item.processCost / item.netWeight * 1000).toFixed(0) : (product?.processFee || 3300);
 
-                const netProfit = item.sales - (item.materialCost || 0) - (item.boxCost || 0) - (item.packCost || 0) - (item.freightCost || 0) - (item.processCost || 0);
-                const isProfit = netProfit >= 0;
+                const sales = parseFloat(item.sales) || 0;
+                const materialCost = parseFloat(item.materialCost) || 0;
+                const boxCost = parseFloat(item.boxCost) || 0;
+                const packCost = parseFloat(item.packCost) || 0;
+                const freightCost = parseFloat(item.freightCost) || 0;
+                const processCost = parseFloat(item.processCost) || 0;
+                const netProfit = sales - materialCost - boxCost - packCost - freightCost - processCost;
+                const safeNetProfit = isNaN(netProfit) ? 0 : netProfit;
+                const isProfit = safeNetProfit >= 0;
 
                 rowsHtml += `
                     <tr style="background: ${isProfit ? '#d1fae5' : '#fee2e2'}; border-bottom: 1px solid #e5e7eb;">
@@ -7466,12 +8184,29 @@ async function exportBatchImage(batchId) {
                         <td style="padding: 10px 8px; text-align: right; font-size: 12px; color: #2563eb; font-weight: 600; border-right: 1px solid #e5e7eb;">¥${(item.freightCost || 0).toFixed(2)}</td>
                         <td style="padding: 10px 6px; text-align: right; font-size: 11px; color: #6b7280; border-right: 1px solid #f3f4f6; background: #f9fafb;">¥${processPerTon}</td>
                         <td style="padding: 10px 8px; text-align: right; font-size: 12px; color: #2563eb; font-weight: 600; border-right: 1px solid #e5e7eb;">¥${(item.processCost || 0).toFixed(2)}</td>
-                        <td style="padding: 10px 8px; text-align: right; font-size: 14px; color: ${isProfit ? '#059669' : '#dc2626'}; font-weight: 800; background: ${isProfit ? '#ecfdf5' : '#fef2f2'};">${isProfit ? '+' : ''}¥${netProfit.toFixed(2)}</td>
+                        <td style="padding: 10px 8px; text-align: right; font-size: 14px; color: ${isProfit ? '#059669' : '#dc2626'}; font-weight: 800; background: ${isProfit ? '#ecfdf5' : '#fef2f2'};">${isProfit ? '+' : ''}¥${Math.abs(safeNetProfit).toFixed(2)}</td>
                     </tr>
                 `;
             });
 
-            const isTotalProfit = (batch.profit || 0) >= 0;
+            let calcBatchProfit = 0;
+            if (batch.items && batch.items.length > 0) {
+              calcBatchProfit = batch.items.reduce((sum, item) => {
+                const p = getProfitProduct(item.productId);
+                const sales = parseFloat(item.sales) || 0;
+                const materialCost = parseFloat(item.materialCost) || 0;
+                const boxCost = parseFloat(item.boxCost) || 0;
+                const freightCost = parseFloat(item.freightCost) || 0;
+                const processCost = parseFloat(item.processCost) || 0;
+                const packCost = item.packCost !== undefined ? (parseFloat(item.packCost) || 0) : ((parseFloat(item.pieces) || 0) * (parseFloat(p?.packCost) || 0));
+                const itemProfit = sales - materialCost - boxCost - packCost - freightCost - processCost;
+                return sum + (isNaN(itemProfit) ? 0 : itemProfit);
+              }, 0);
+            } else {
+              calcBatchProfit = parseFloat(batch.profit) || 0;
+            }
+            if (isNaN(calcBatchProfit)) calcBatchProfit = 0;
+            const isTotalProfit = calcBatchProfit >= 0;
 
             exportContainer.innerHTML = `
                 <div style="background: white; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); overflow: hidden; border: 2px solid #e5e7eb;">
@@ -7684,7 +8419,7 @@ async function exportCurrentBatchImage() {
                         <td style="padding: 10px 8px; text-align: right; font-size: 12px; color: #2563eb; font-weight: 600; border-right: 1px solid #e5e7eb;">¥${freightCost.toFixed(2)}</td>
                         <td style="padding: 10px 6px; text-align: right; font-size: 11px; color: #6b7280; border-right: 1px solid #f3f4f6; background: #f9fafb;">¥${item.processPerTon}</td>
                         <td style="padding: 10px 8px; text-align: right; font-size: 12px; color: #2563eb; font-weight: 600; border-right: 1px solid #e5e7eb;">¥${processCost.toFixed(2)}</td>
-                        <td style="padding: 10px 8px; text-align: right; font-size: 14px; color: ${isProfit ? '#059669' : '#dc2626'}; font-weight: 800; background: ${isProfit ? '#ecfdf5' : '#fef2f2'};">${isProfit ? '+' : ''}¥${netProfit.toFixed(2)}</td>
+                        <td style="padding: 10px 8px; text-align: right; font-size: 14px; color: ${isProfit ? '#059669' : '#dc2626'}; font-weight: 800; background: ${isProfit ? '#ecfdf5' : '#fef2f2'};">${isProfit ? '+' : ''}¥${Math.abs(safeNetProfit).toFixed(2)}</td>
                     </tr>
                 `;
             });
@@ -7813,10 +8548,25 @@ async function exportCurrentBatchImage() {
             const totalBatches = batches.length;
             const totalRawCost = batches.reduce((a, b) => a + (b.rawCost || 0), 0);
             const totalSales = batches.reduce((a, b) => a + (b.totalSales || 0), 0);
-            const totalProfit = batches.reduce((a, b) => a + (b.items || []).reduce((sum, item) => {
-                const packCost = item.packCost !== undefined ? item.packCost : (item.pieces * ((getProfitProduct(item.productId)?.packCost) || 0.6));
-                return sum + (item.sales - (item.materialCost || 0) - (item.boxCost || 0) - packCost - (item.freightCost || 0) - (item.processCost || 0));
-            }, 0), 0);
+            const totalProfit = batches.reduce((a, batch) => {
+              let bp = 0;
+              if (batch.items && batch.items.length > 0) {
+                bp = batch.items.reduce((sum, item) => {
+                  const p = getProfitProduct(item.productId);
+                  const sales = parseFloat(item.sales) || 0;
+                  const materialCost = parseFloat(item.materialCost) || 0;
+                  const boxCost = parseFloat(item.boxCost) || 0;
+                  const freightCost = parseFloat(item.freightCost) || 0;
+                  const processCost = parseFloat(item.processCost) || 0;
+                  const packCost = item.packCost !== undefined ? (parseFloat(item.packCost) || 0) : ((parseFloat(item.pieces) || 0) * (parseFloat(p?.packCost) || 0.6));
+                  const itemProfit = sales - materialCost - boxCost - packCost - freightCost - processCost;
+                  return sum + (isNaN(itemProfit) ? 0 : itemProfit);
+                }, 0);
+              } else {
+                bp = parseFloat(batch.profit) || 0;
+              }
+              return a + (isNaN(bp) ? 0 : bp);
+            }, 0);
             const avgYield = totalBatches > 0 ? (batches.reduce((a, b) => a + (b.yieldRate || 0), 0) / totalBatches) : 0;
             const avgLoss = totalBatches > 0 ? (batches.reduce((a, b) => a + (b.lossWeight || 0), 0) / totalBatches) : 0;
 
@@ -7859,7 +8609,7 @@ async function exportCurrentBatchImage() {
                     <td class="text-right font-bold py-3 px-4" style="color: #d97706;">${(batch.lossWeight || 0).toFixed(1)}kg</td>
                     <td class="text-right font-bold py-3 px-4" style="color: #7c3aed;">${(batch.yieldRate || 0).toFixed(2)}%</td>
                     <td class="text-right text-emerald-600 py-3 px-4">¥${(batch.totalSales || 0).toFixed(0)}</td>
-                    <td class="text-right font-bold py-3 px-4 ${(batch.profit || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}">${(batch.profit || 0) >= 0 ? '+' : ''}¥${(batch.profit || 0).toFixed(0)}</td>
+                    <td class="text-right font-bold py-3 px-4 ${calcBatchProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}">${calcBatchProfit >= 0 ? '+' : ''}¥${Math.abs(calcBatchProfit).toFixed(0)}</td>
                 </tr>
             `).join('');
         }
