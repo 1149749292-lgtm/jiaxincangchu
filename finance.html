@@ -7087,14 +7087,17 @@ function renderTransactionList() {
             const totalUnpaid = orders.reduce((sum, o) => sum + o.remainingAmount, 0);
             const totalQty = orders.reduce((sum, o) => sum + (o.totalQty || 0), 0);
 
-            // 生成日期范围文本
-            const dates = orders.map(o => o.date).sort();
-            const startDate = dates[0];
-            const endDate = dates[dates.length - 1];
+            // 获取该供应商的付款记录（提前定义，用于日期范围计算）
+            const payments = data.transactions.filter(t => t.partyId === supplierId && t.type === 'expense').sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            // 生成日期范围文本（包含订单日期和支付日期，以晚的为主）
+            const orderDates = orders.map(o => o.date);
+            const paymentDates = payments.map(p => p.date);
+            const allDates = [...orderDates, ...paymentDates].sort();
+            const startDate = allDates[0];
+            const endDate = allDates[allDates.length - 1];
             const dateRangeText = startDate === endDate ? startDate : `${startDate} 至 ${endDate}`;
 
-            // 获取该客户的收付款记录
-            const payments = data.transactions.filter(t => t.partyId === customerId && t.type === 'income').sort((a, b) => new Date(b.date) - new Date(a.date));
             const totalPayments = payments.reduce((sum, p) => sum + p.amount, 0);
             const remainingAmount = totalAmount - totalPayments;
 
@@ -7382,14 +7385,17 @@ function renderTransactionList() {
             const totalUnpaid = orders.reduce((sum, o) => sum + o.remainingAmount, 0);
             const totalWeight = orders.reduce((sum, o) => sum + (o.totalWeight || 0), 0);
 
-            // 生成日期范围文本
-            const dates = orders.map(o => o.date).sort();
-            const startDate = dates[0];
-            const endDate = dates[dates.length - 1];
+            // 获取该供应商的付款记录（提前定义，用于日期范围计算）
+            const payments = data.transactions.filter(t => t.partyId === supplierId && t.type === 'expense').sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            // 生成日期范围文本（包含订单日期和支付日期，以晚的为主）
+            const orderDates = orders.map(o => o.date);
+            const paymentDates = payments.map(p => p.date);
+            const allDates = [...orderDates, ...paymentDates].sort();
+            const startDate = allDates[0];
+            const endDate = allDates[allDates.length - 1];
             const dateRangeText = startDate === endDate ? startDate : `${startDate} 至 ${endDate}`;
 
-            // 获取该供应商的付款记录
-            const payments = data.transactions.filter(t => t.partyId === supplierId && t.type === 'expense').sort((a, b) => new Date(b.date) - new Date(a.date));
             const totalPayments = payments.reduce((sum, p) => sum + p.amount, 0);
             const remainingAmount = totalAmount - totalPayments;
 
