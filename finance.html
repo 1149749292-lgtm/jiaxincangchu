@@ -7088,7 +7088,7 @@ function renderTransactionList() {
             const totalQty = orders.reduce((sum, o) => sum + (o.totalQty || 0), 0);
 
             // 获取该供应商的付款记录（提前定义，用于日期范围计算）
-            const payments = data.transactions.filter(t => t.partyId === supplierId && t.type === 'expense').sort((a, b) => new Date(b.date) - new Date(a.date));
+            const payments = data.transactions.filter(t => t.partyId === customerId && t.type === 'income').sort((a, b) => new Date(b.date) - new Date(a.date));
 
             // 生成日期范围文本（包含订单日期和支付日期，以晚的为主）
             const orderDates = orders.map(o => o.date);
