@@ -1939,46 +1939,101 @@
                         <span>新增销售单</span>
                     </button>
                 </div>
-                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-                    <div class="p-4 border-b border-gray-200 flex flex-wrap gap-4">
-                        <input type="text" id="salesSearch" placeholder="搜索单号/客户..." class="px-4 py-2 border rounded-lg flex-1 min-w-[150px]" onkeyup="renderSalesList()">
-                        <select id="salesCustomerFilter" class="px-4 py-2 border rounded-lg" onchange="renderSalesList()">
-                            <option value="">全部客户</option>
-                        </select>
-                        <div class="flex items-center gap-2">
-                            <label class="text-sm text-gray-600">日期:</label>
-                            <input type="date" id="salesStartDate" class="px-3 py-2 border rounded-lg text-sm" onchange="renderSalesList()">
-                            <span class="text-gray-400">~</span>
-                            <input type="date" id="salesEndDate" class="px-3 py-2 border rounded-lg text-sm" onchange="renderSalesList()">
-                        </div>
-                        <button onclick="resetSalesFilters()" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
-                            重置筛选
+
+                <!-- 子标签切换 -->
+                <div class="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
+                    <div class="flex border-b border-gray-200">
+                        <button onclick="switchSalesSubTab('orders')" id="sales-subtab-orders" class="sales-subtab flex-1 py-3 px-4 text-sm font-medium text-center transition-all border-b-2 border-green-500 text-green-700 bg-green-50">
+                            📋 销售管理
+                        </button>
+                        <button onclick="switchSalesSubTab('flow')" id="sales-subtab-flow" class="sales-subtab flex-1 py-3 px-4 text-sm font-medium text-center transition-all border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50">
+                            📦 出货流水
                         </button>
                     </div>
-                    <table class="w-full">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none" onclick="sortSalesList('id')">
-                                    单号 <span id="sort-sales-id" class="sort-arrow text-gray-400"></span>
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none" onclick="sortSalesList('date')">
-                                    日期 <span id="sort-sales-date" class="sort-arrow text-gray-400"></span>
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none" onclick="sortSalesList('customer')">
-                                    客户 <span id="sort-sales-customer" class="sort-arrow text-gray-400"></span>
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none" onclick="sortSalesList('amount')">
-                                    金额 <span id="sort-sales-amount" class="sort-arrow text-gray-400"></span>
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="salesList" class="divide-y divide-gray-200"></tbody>
-                    </table>
                 </div>
-            </div>
 
-            <!-- 产品库管理 -->
+                <!-- 销售管理子标签内容 -->
+                <div id="sales-content-orders" class="sales-subcontent">
+                    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                        <div class="p-4 border-b border-gray-200 flex flex-wrap gap-4">
+                            <input type="text" id="salesSearch" placeholder="搜索单号/客户..." class="px-4 py-2 border rounded-lg flex-1 min-w-[150px]" onkeyup="renderSalesList()">
+                            <select id="salesCustomerFilter" class="px-4 py-2 border rounded-lg" onchange="renderSalesList()">
+                                <option value="">全部客户</option>
+                            </select>
+                            <div class="flex items-center gap-2">
+                                <label class="text-sm text-gray-600">日期:</label>
+                                <input type="date" id="salesStartDate" class="px-3 py-2 border rounded-lg text-sm" onchange="renderSalesList()">
+                                <span class="text-gray-400">~</span>
+                                <input type="date" id="salesEndDate" class="px-3 py-2 border rounded-lg text-sm" onchange="renderSalesList()">
+                            </div>
+                            <button onclick="resetSalesFilters()" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
+                                重置筛选
+                            </button>
+                        </div>
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none" onclick="sortSalesList('id')">
+                                        单号 <span id="sort-sales-id" class="sort-arrow text-gray-400"></span>
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none" onclick="sortSalesList('date')">
+                                        日期 <span id="sort-sales-date" class="sort-arrow text-gray-400"></span>
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none" onclick="sortSalesList('customer')">
+                                        客户 <span id="sort-sales-customer" class="sort-arrow text-gray-400"></span>
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none" onclick="sortSalesList('amount')">
+                                        金额 <span id="sort-sales-amount" class="sort-arrow text-gray-400"></span>
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="salesList" class="divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 出货流水子标签内容 -->
+                <div id="sales-content-flow" class="sales-subcontent hidden">
+                    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                        <div class="p-4 border-b border-gray-200 flex flex-wrap gap-4">
+                            <input type="text" id="salesFlowSearch" placeholder="搜索品名/规格/客户/单号..." class="px-4 py-2 border rounded-lg flex-1 min-w-[150px]" onkeyup="renderSalesFlow()">
+                            <select id="salesFlowCustomerFilter" class="px-4 py-2 border rounded-lg" onchange="renderSalesFlow()">
+                                <option value="">全部客户</option>
+                            </select>
+                            <div class="flex items-center gap-2">
+                                <label class="text-sm text-gray-600">日期:</label>
+                                <input type="date" id="salesFlowStartDate" class="px-3 py-2 border rounded-lg text-sm" onchange="renderSalesFlow()">
+                                <span class="text-gray-400">~</span>
+                                <input type="date" id="salesFlowEndDate" class="px-3 py-2 border rounded-lg text-sm" onchange="renderSalesFlow()">
+                            </div>
+                            <button onclick="resetSalesFlowFilters()" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
+                                重置筛选
+                            </button>
+                        </div>
+                        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                            <table class="w-full" style="min-width: 900px;">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">日期</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">单号</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">客户</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">品名</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">规格</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">品牌</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">数量/件</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">净重/kg</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">单价</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">总价</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">备注</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="salesFlowList" class="divide-y divide-gray-200"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- 产品库管理 -->
             <div id="view-products" class="view-section hidden">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold">产品库管理</h2>
@@ -2435,11 +2490,17 @@
                             <input type="date" id="salesDate" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
                         </div>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                        <div>
+                            <label style="display: block; font-size: 14px; color: #666; margin-bottom: 4px;">销售单号</label>
+                            <input type="text" id="salesDocNumber" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-family: monospace; font-weight: 600; color: #1e40af;" placeholder="自动生成，可手动修改">
+                        </div>
                         <div>
                             <label style="display: block; font-size: 14px; color: #666; margin-bottom: 4px;">电话号码</label>
                             <input type="text" id="salesCustomerPhone" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;" placeholder="选填">
                         </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                         <div>
                             <label style="display: block; font-size: 14px; color: #666; margin-bottom: 4px;">收货地址</label>
                             <input type="text" id="salesCustomerAddress" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;" placeholder="选填">
@@ -3734,7 +3795,7 @@ async function saveData() {
             switch(viewName) {
                 case 'dashboard': updateDashboard(); break;
                 case 'purchase': renderPurchaseList(); break;
-                case 'sales': renderSalesList(); break;
+                case 'sales': initSalesFlowCustomerFilter(); renderSalesList(); renderSalesFlow(); break;
                 case 'products': renderProductList(); break;
                 case 'customers': renderCustomerList(); break;
                 case 'suppliers': renderSupplierList(); break;
@@ -5037,7 +5098,19 @@ async function saveData() {
             select.innerHTML = '<option value="">请选择客户</option>' + 
                 uniqueCustomers.map(c => `<option value="${c.id}" data-phone="${c.phone || ''}" data-address="${c.remark || ''}">${c.name}</option>`).join('');
 
+            // 生成销售单号
+            const today = new Date();
+            const year = String(today.getFullYear()).slice(-2);
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const datePrefix = year + month + day;
+            if (!data.lastSalesDocNumbers) data.lastSalesDocNumbers = {};
+            const lastSeq = data.lastSalesDocNumbers[datePrefix] || 0;
+            const newSeq = lastSeq + 1;
+            const autoDocNumber = datePrefix + String(newSeq).padStart(2, '0');
+
             document.getElementById('salesDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('salesDocNumber').value = autoDocNumber;
             document.getElementById('salesCustomerPhone').value = '';
             document.getElementById('salesCustomerAddress').value = '';
             document.getElementById('salesItems').innerHTML = '';
@@ -5236,6 +5309,7 @@ async function saveData() {
                 uniqueCustomers.map(c => `<option value="${c.id}" data-phone="${c.phone || ''}" data-address="${c.remark || ''}" ${c.id === order.customerId ? 'selected' : ''}>${c.name}</option>`).join('');
 
             document.getElementById('salesDate').value = order.date;
+            document.getElementById('salesDocNumber').value = order.docNumber || '';
             document.getElementById('salesCustomerPhone').value = order.customerPhone || '';
             document.getElementById('salesCustomerAddress').value = order.customerAddress || '';
 
@@ -5321,6 +5395,16 @@ async function saveData() {
             const newRemaining = totalAmount - order.paidAmount;
             if (newCustomer) {
                 newCustomer.balance = (newCustomer.balance || 0) + Math.max(0, newRemaining);
+            }
+
+            const newDocNumber = document.getElementById('salesDocNumber').value.trim();
+            if (newDocNumber && newDocNumber !== order.docNumber) {
+                const existingOrder = data.salesOrders.find(o => o.docNumber === newDocNumber && o.id !== order.id);
+                if (existingOrder) {
+                    showToast('⚠️ 单号 ' + newDocNumber + ' 已存在，请使用其他单号', 'warning');
+                    return;
+                }
+                order.docNumber = newDocNumber;
             }
 
             order.date = document.getElementById('salesDate').value;
@@ -5420,9 +5504,19 @@ async function saveData() {
             // 生成单号：26041601
             const docNumber = datePrefix + String(newSeq).padStart(2, '0');
 
+            const inputDocNumber = document.getElementById('salesDocNumber').value.trim();
+            const finalDocNumber = inputDocNumber || docNumber;
+
+            // 检查单号是否重复（排除自己）
+            const existingOrder = data.salesOrders.find(o => o.docNumber === finalDocNumber);
+            if (existingOrder) {
+                showToast('⚠️ 单号 ' + finalDocNumber + ' 已存在，请使用其他单号', 'warning');
+                return;
+            }
+
             const order = {
                 id: 'SO' + Date.now(),
-                docNumber: docNumber,
+                docNumber: finalDocNumber,
                 date, customerId: customerSelect.value, customerName, customerPhone: phone, customerAddress: address,
                 items, totalQty, totalAmount, chineseAmount: numberToChinese(totalAmount),
                 paymentStatus: 'unpaid', paidAmount: 0, remainingAmount: totalAmount,
@@ -8346,7 +8440,160 @@ function syncPaymentDataToOrders() {
             renderSalesList();
         }
 
-        function resetExpenseFilters() {
+        
+
+        // ==================== 销售子标签切换 ====================
+        function switchSalesSubTab(tab) {
+            document.querySelectorAll('.sales-subtab').forEach(el => {
+                el.classList.remove('border-green-500', 'text-green-700', 'bg-green-50');
+                el.classList.add('border-transparent', 'text-gray-500');
+            });
+            document.querySelectorAll('.sales-subcontent').forEach(el => el.classList.add('hidden'));
+
+            document.getElementById('sales-subtab-' + tab).classList.remove('border-transparent', 'text-gray-500');
+            document.getElementById('sales-subtab-' + tab).classList.add('border-green-500', 'text-green-700', 'bg-green-50');
+            document.getElementById('sales-content-' + tab).classList.remove('hidden');
+
+            if (tab === 'flow') {
+                initSalesFlowCustomerFilter();
+                renderSalesFlow();
+            }
+        }
+
+        // ==================== 出货流水 ====================
+        function initSalesFlowCustomerFilter() {
+            const select = document.getElementById('salesFlowCustomerFilter');
+            if (!select) return;
+            const uniqueCustomers = [];
+            const seenNames = new Set();
+            data.customers.forEach(c => {
+                if (!seenNames.has(c.name)) {
+                    seenNames.add(c.name);
+                    uniqueCustomers.push(c);
+                }
+            });
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">全部客户</option>' +
+                uniqueCustomers.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+            if (uniqueCustomers.some(c => c.name === currentValue)) {
+                select.value = currentValue;
+            }
+        }
+
+        function renderSalesFlow() {
+            const search = document.getElementById('salesFlowSearch').value.toLowerCase().trim();
+            const customerFilter = document.getElementById('salesFlowCustomerFilter').value;
+            const startDate = document.getElementById('salesFlowStartDate').value;
+            const endDate = document.getElementById('salesFlowEndDate').value;
+
+            // 从所有销售订单中提取出货明细
+            let flowItems = [];
+            (data.salesOrders || []).forEach(order => {
+                if (!order.items || !Array.isArray(order.items)) return;
+                order.items.forEach(item => {
+                    flowItems.push({
+                        orderId: order.id,
+                        docNumber: order.docNumber || order.id.slice(-6),
+                        date: order.date,
+                        customerName: order.customerName,
+                        customerId: order.customerId,
+                        name: item.name,
+                        spec: item.spec,
+                        brand: item.brand || '',
+                        qty: item.qty || 0,
+                        weight: item.weight || 0,
+                        price: item.price || 0,
+                        total: item.total || 0,
+                        remark: item.remark || '',
+                        priceType: item.priceType || 'kg'
+                    });
+                });
+            });
+
+            // 筛选
+            if (search) {
+                flowItems = flowItems.filter(f =>
+                    (f.name && f.name.toLowerCase().includes(search)) ||
+                    (f.spec && f.spec.toLowerCase().includes(search)) ||
+                    (f.brand && f.brand.toLowerCase().includes(search)) ||
+                    (f.customerName && f.customerName.toLowerCase().includes(search)) ||
+                    (f.docNumber && f.docNumber.toLowerCase().includes(search)) ||
+                    (f.remark && f.remark.toLowerCase().includes(search))
+                );
+            }
+            if (customerFilter) {
+                flowItems = flowItems.filter(f => f.customerName === customerFilter);
+            }
+            if (startDate) {
+                flowItems = flowItems.filter(f => f.date >= startDate);
+            }
+            if (endDate) {
+                flowItems = flowItems.filter(f => f.date <= endDate);
+            }
+
+            // 排序：日期倒序，同一天按单号倒序
+            flowItems.sort((a, b) => {
+                const dateDiff = new Date(b.date) - new Date(a.date);
+                if (dateDiff !== 0) return dateDiff;
+                return String(b.docNumber).localeCompare(String(a.docNumber));
+            });
+
+            // 计算汇总
+            const totalQty = flowItems.reduce((sum, f) => sum + (parseFloat(f.qty) || 0), 0);
+            const totalWeight = flowItems.reduce((sum, f) => sum + (parseFloat(f.weight) || 0), 0);
+            const totalAmount = flowItems.reduce((sum, f) => sum + (parseFloat(f.total) || 0), 0);
+
+            const tbody = document.getElementById('salesFlowList');
+            let html = flowItems.map(f => {
+                const priceUnit = f.priceType === 'piece' ? '件' : 'kg';
+                return `<tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${f.date}</td>
+                    <td class="px-3 py-3 text-xs font-medium text-blue-600 whitespace-nowrap cursor-pointer hover:underline" onclick="viewSalesReceiptById('${f.orderId}')">${f.docNumber}</td>
+                    <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">${f.customerName}</td>
+                    <td class="px-3 py-3 text-xs font-medium text-gray-900 whitespace-nowrap">${f.name}</td>
+                    <td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${f.spec}</td>
+                    <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${f.brand || '-'}</td>
+                    <td class="px-3 py-3 text-xs font-medium text-gray-900 whitespace-nowrap">${f.qty}</td>
+                    <td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${f.weight}</td>
+                    <td class="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">¥${f.price}/${priceUnit}</td>
+                    <td class="px-3 py-3 text-xs font-bold text-red-600 whitespace-nowrap">¥${parseFloat(f.total).toFixed(2)}</td>
+                    <td class="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">${f.remark || '-'}</td>
+                </tr>`;
+            }).join('');
+
+            // 汇总行
+            if (flowItems.length > 0) {
+                html += `<tr style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-top: 2px solid #f59e0b;">
+                    <td class="px-3 py-3 text-xs font-bold text-amber-800 whitespace-nowrap" colspan="2">合计 ${flowItems.length}笔</td>
+                    <td class="px-3 py-3 whitespace-nowrap" colspan="2"></td>
+                    <td class="px-3 py-3 whitespace-nowrap" colspan="2"></td>
+                    <td class="px-3 py-3 text-xs font-bold text-amber-900 whitespace-nowrap">${totalQty}件</td>
+                    <td class="px-3 py-3 text-xs font-bold text-amber-900 whitespace-nowrap">${totalWeight.toFixed(2)}kg</td>
+                    <td class="px-3 py-3 whitespace-nowrap" colspan="1"></td>
+                    <td class="px-3 py-3 text-xs font-bold text-red-700 whitespace-nowrap">¥${totalAmount.toFixed(2)}</td>
+                    <td class="px-3 py-3 whitespace-nowrap"></td>
+                </tr>`;
+            } else {
+                html = `<tr>
+                    <td colspan="11" class="px-6 py-8 text-center text-gray-500">
+                        <div class="text-4xl mb-2">📦</div>
+                        <p>暂无出货记录</p>
+                        <p class="text-xs text-gray-400 mt-2">请先在销售管理中新增销售单</p>
+                    </td>
+                </tr>`;
+            }
+
+            tbody.innerHTML = html;
+        }
+
+        function resetSalesFlowFilters() {
+            document.getElementById('salesFlowSearch').value = '';
+            document.getElementById('salesFlowCustomerFilter').value = '';
+            document.getElementById('salesFlowStartDate').value = '';
+            document.getElementById('salesFlowEndDate').value = '';
+            renderSalesFlow();
+        }
+function resetExpenseFilters() {
             document.getElementById('expenseTypeFilter').value = '';
             document.getElementById('expenseStartDate').value = '';
             document.getElementById('expenseEndDate').value = '';
@@ -9850,7 +10097,7 @@ function syncPaymentDataToOrders() {
             switch(viewName) {
                 case 'dashboard': updateDashboard(); break;
                 case 'purchase': renderPurchaseList(); break;
-                case 'sales': renderSalesList(); break;
+                case 'sales': initSalesFlowCustomerFilter(); renderSalesList(); renderSalesFlow(); break;
                 case 'products': renderProductList(); break;
                 case 'customers': renderCustomerList(); break;
                 case 'suppliers': renderSupplierList(); break;
