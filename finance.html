@@ -33,7 +33,7 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Microsoft YaHei', sans-serif;
             color: #1f2937;
             border-radius: 12px;
-            max-width: 700px;
+            max-width: 800px;
             margin: 0 auto;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             box-sizing: border-box;
@@ -2226,42 +2226,18 @@
                         </button>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-                    <div class="bg-white rounded-xl p-4 shadow-sm border-l-4 border-blue-500">
-                        <p class="text-xs text-gray-500">加工费用</p>
-                        <p class="text-lg font-bold text-gray-800" id="expenseProcessingTotal">¥0</p>
-                        <p class="text-xs text-green-600 mt-1">已付: <span id="expenseProcessingPaid">¥0</span></p>
-                        <p class="text-xs text-red-500 mt-0.5">未付: <span id="expenseProcessingUnpaid">¥0</span></p>
-                    </div>
-                    <div class="bg-white rounded-xl p-4 shadow-sm border-l-4 border-green-500">
-                        <p class="text-xs text-gray-500">包装费用</p>
-                        <p class="text-lg font-bold text-gray-800" id="expensePackagingTotal">¥0</p>
-                        <p class="text-xs text-green-600 mt-1">已付: <span id="expensePackagingPaid">¥0</span></p>
-                        <p class="text-xs text-red-500 mt-0.5">未付: <span id="expensePackagingUnpaid">¥0</span></p>
-                    </div>
-                    <div class="bg-white rounded-xl p-4 shadow-sm border-l-4 border-yellow-500">
-                        <p class="text-xs text-gray-500">纸箱费用</p>
-                        <p class="text-lg font-bold text-gray-800" id="expenseCartonTotal">¥0</p>
-                        <p class="text-xs text-green-600 mt-1">已付: <span id="expenseCartonPaid">¥0</span></p>
-                        <p class="text-xs text-red-500 mt-0.5">未付: <span id="expenseCartonUnpaid">¥0</span></p>
-                    </div>
-                    <div class="bg-white rounded-xl p-4 shadow-sm border-l-4 border-purple-500">
-                        <p class="text-xs text-gray-500">办公杂费</p>
-                        <p class="text-lg font-bold text-gray-800" id="expenseOfficeTotal">¥0</p>
-                        <p class="text-xs text-green-600 mt-1">已付: <span id="expenseOfficePaid">¥0</span></p>
-                        <p class="text-xs text-red-500 mt-0-5">未付: <span id="expenseOfficeUnpaid">¥0</span></p>
-                    </div>
-                    <div class="bg-white rounded-xl p-4 shadow-sm border-l-4 border-gray-400">
-                        <p class="text-xs text-gray-500">其他费用</p>
-                        <p class="text-lg font-bold text-gray-800" id="expenseOtherTotal">¥0</p>
-                        <p class="text-xs text-green-600 mt-1">已付: <span id="expenseOtherPaid">¥0</span></p>
-                        <p class="text-xs text-red-500 mt-0.5">未付: <span id="expenseOtherUnpaid">¥0</span></p>
-                    </div>
+                <div id="expenseStatsCards" class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                    <!-- 动态生成费用统计卡片 -->
                 </div>
 
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold">费用管理</h2>
                     <div class="flex space-x-3">
+                        <!-- 导出对账表按钮 -->
+                        <button onclick="exportExpenseStatement()" class="inventory-jump-btn" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); border: none; cursor: pointer;">
+                            <span class="btn-icon">📋</span>
+                            <span class="btn-text">导出对账表</span>
+                        </button>
                         <!-- 付款登记按钮 -->
                         <button onclick="openExpensePaymentSimpleModal()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -2384,7 +2360,7 @@
 
     <!-- 采购单录入模态框 -->
     <div id="purchaseModal" class="modal">
-        <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-content" style="max-width: 800px;">
             <div class="p-6 border-b border-gray-200 flex justify-between items-center">
                 <h3 class="text-xl font-bold">新增采购单（收购单）</h3>
                 <button onclick="closeModal('purchaseModal')" class="text-gray-400 hover:text-gray-600">✕</button>
@@ -2940,7 +2916,25 @@
     
     </div>
 
-    <!-- 加载动画 -->
+    
+    <!-- 费用对账表预览模态框 -->
+    <div id="expenseStatementModal" class="modal">
+        <div class="modal-content preview-modal-content">
+            <div class="preview-modal-header">
+                <h3 class="text-xl font-bold">📋 费用报销对账表</h3>
+                <div>
+                    <button class="btn-download" onclick="downloadExpenseStatement()">📥 保存图片</button>
+                    <button class="btn-close-modal" onclick="closeModal('expenseStatementModal')" style="margin-left: 10px;">关闭</button>
+                </div>
+            </div>
+            <div class="preview-modal-body">
+                <div id="expenseStatementContent" class="purchase-receipt-wrapper" style="max-width: 900px; background: linear-gradient(to bottom, #ffffff 0%, #f8fafc 100%);">
+                    <!-- 对账表内容将通过JS生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+<!-- 加载动画 -->
     <div class="loading-overlay" id="loading">
         <div class="loading-spinner"></div>
         <div class="loading-text">生成图片中...</div>
@@ -6877,6 +6871,281 @@ function renderTransactionList() {
             }
         }
 
+
+        // ==================== 费用对账表导出功能 ====================
+        function exportExpenseStatement() {
+            // 读取当前筛选条件（与 renderExpenseList 保持一致）
+            const typeFilter = document.getElementById('expenseTypeFilter').value;
+            const startDate = document.getElementById('expenseStartDate').value;
+            const endDate = document.getElementById('expenseEndDate').value;
+            const paymentFilter = document.getElementById('expensePaymentFilter').value;
+            const searchKeyword = document.getElementById('expenseSearch').value.toLowerCase().trim();
+            const paymentDateFilter = document.getElementById('expensePaymentDateFilter').value;
+
+            let expenses = data.expenses || [];
+            let expensePayments = data.expensePayments || [];
+
+            // 筛选费用记录
+            if (typeFilter) expenses = expenses.filter(e => e.type === typeFilter);
+            if (startDate) expenses = expenses.filter(e => e.date >= startDate);
+            if (endDate) expenses = expenses.filter(e => e.date <= endDate);
+            if (paymentFilter) {
+                if (paymentFilter === 'paid') expenses = expenses.filter(e => (e.remainingAmount || 0) <= 0);
+                else if (paymentFilter === 'unpaid') expenses = expenses.filter(e => (e.remainingAmount || 0) > 0);
+            }
+            if (searchKeyword) {
+                expenses = expenses.filter(e => {
+                    const remark = (e.remark || '').toLowerCase();
+                    const typeName = ((EXPENSE_TYPES[e.type] || {}).name || e.type || '').toLowerCase();
+                    return remark.includes(searchKeyword) || typeName.includes(searchKeyword);
+                });
+            }
+            if (paymentDateFilter) expenses = expenses.filter(e => e.lastPaymentDate === paymentDateFilter);
+
+            // 筛选付款流水
+            let filteredPayments = [...expensePayments];
+            if (typeFilter) filteredPayments = filteredPayments.filter(p => p.expenseType === typeFilter);
+            if (startDate) filteredPayments = filteredPayments.filter(p => p.date >= startDate);
+            if (endDate) filteredPayments = filteredPayments.filter(p => p.date <= endDate);
+            if (paymentDateFilter) filteredPayments = filteredPayments.filter(p => p.date === paymentDateFilter);
+            if (searchKeyword) {
+                filteredPayments = filteredPayments.filter(p => {
+                    const remark = (p.remark || '').toLowerCase();
+                    const typeName = ((EXPENSE_TYPES[p.expenseType] || {}).name || p.expenseType || '').toLowerCase();
+                    const method = (p.paymentMethod || '').toLowerCase();
+                    return remark.includes(searchKeyword) || typeName.includes(searchKeyword) || method.includes(searchKeyword);
+                });
+            }
+
+            // 合并筛选后的数据
+            let allItems = [];
+            expenses.forEach(e => {
+                const typeInfo = EXPENSE_TYPES[e.type] || { name: e.type, color: 'gray' };
+                const paid = e.paidAmount || 0;
+                const remaining = e.remainingAmount || Math.max(0, (e.totalAmount || 0) - paid);
+                allItems.push({
+                    date: e.date,
+                    type: typeInfo.name,
+                    typeColor: typeInfo.color,
+                    totalAmount: e.totalAmount || 0,
+                    paidAmount: paid,
+                    remainingAmount: remaining,
+                    status: remaining <= 0 ? '已支付' : (paid > 0 ? '部分支付' : '未支付'),
+                    remark: e.remark || '-',
+                    isPayment: false,
+                    expenseId: e.id
+                });
+            });
+            filteredPayments.forEach(p => {
+                if (!p.expenseId) {
+                    const typeInfo = EXPENSE_TYPES[p.expenseType] || { name: p.expenseType || '其他', color: 'gray' };
+                    allItems.push({
+                        date: p.date,
+                        type: typeInfo.name + '（流水）',
+                        typeColor: typeInfo.color,
+                        totalAmount: 0,  // 付款流水不计入总费用
+                        paidAmount: p.amount || 0,
+                        remainingAmount: 0,
+                        status: '已支付',
+                        remark: (p.remark || '-') + (p.paymentMethod ? ' · ' + p.paymentMethod : ''),
+                        isPayment: true
+                    });
+                }
+            });
+
+            // 按日期倒序排列
+            allItems.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (allItems.length === 0) {
+                showToast('⚠️ 当前筛选条件下无数据', 'warning');
+                return;
+            }
+
+            // 计算汇总（与系统列表 renderExpenseList 完全一致）
+            // 总费用 = 费用登记的 totalAmount 之和
+            const totalAmount = expenses.reduce((sum, e) => sum + (e.totalAmount || 0), 0);
+            // 已付 = 费用登记的 paidAmount + 付款流水的 amount
+            const totalPaidFromExpenses = expenses.reduce((sum, e) => sum + (e.paidAmount || 0), 0);
+            const totalPaidFromPayments = filteredPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+            const totalPaid = totalPaidFromExpenses + totalPaidFromPayments;
+            // 未付 = 总费用 - 已付
+            const totalUnpaid = Math.max(0, totalAmount - totalPaid);
+            const isSettled = totalUnpaid <= 0;
+
+            // 生成筛选标签
+            let filterTags = [];
+            if (typeFilter) filterTags.push('类型：' + (EXPENSE_TYPES[typeFilter]?.name || typeFilter));
+            if (paymentFilter) filterTags.push(paymentFilter === 'paid' ? '状态：已支付' : '状态：未支付');
+            if (startDate || endDate) filterTags.push('日期：' + (startDate || '...') + ' 至 ' + (endDate || '...'));
+            if (searchKeyword) filterTags.push('搜索：' + searchKeyword);
+            const filterLabel = filterTags.length > 0 ? '（' + filterTags.join(' · ') + '）' : '';
+
+            // 生成表格行
+            const rows = allItems.map((item, index) => {
+                const statusColor = item.status === '已支付' ? '#059669' : (item.status === '未支付' ? '#dc2626' : '#d97706');
+                const statusBg = item.status === '已支付' ? '#d1fae5' : (item.status === '未支付' ? '#fee2e2' : '#fef3c7');
+                const isPaymentBg = item.isPayment ? 'background: #f0fdf4;' : '';
+
+                // 查找该费用记录的付款明细
+                let paymentDetails = '';
+                if (!item.isPayment && item.expenseId) {
+                    const payments = expensePayments.filter(p => p.expenseId === item.expenseId).sort((a, b) => new Date(a.date) - new Date(b.date));
+                    if (payments.length > 0) {
+                        paymentDetails = payments.map((p, pIdx) =>
+                            `<div style="display: flex; justify-content: space-between; align-items: center; padding: 2px 0; border-bottom: 1px dashed #e5e7eb; font-size: 10px;">
+                                <span style="color: #6b7280;">${pIdx + 1}. ${p.date} · ${p.paymentMethod || '转账'}</span>
+                                <span style="color: #059669; font-weight: 600;">¥${(p.amount || 0).toFixed(2)}</span>
+                            </div>`
+                        ).join('');
+                        paymentDetails = `<div style="margin-top: 4px; background: #f0fdf4; border-radius: 4px; padding: 4px 6px;">${paymentDetails}</div>`;
+                    }
+                }
+
+                return `
+                    <tr style="border-bottom: 1px solid #e5e7eb; ${isPaymentBg}">
+                        <td style="padding: 8px 6px; text-align: center; color: #6b7280; font-size: 12px; vertical-align: top;">${index + 1}</td>
+                        <td style="padding: 8px 6px; text-align: center; color: #111827; font-size: 12px; font-weight: 500; vertical-align: top;">${item.date}</td>
+                        <td style="padding: 8px 6px; text-align: center; font-size: 12px; vertical-align: top;">
+                            <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 500; color: ${statusColor}; background: ${statusBg};">${item.type}</span>
+                        </td>
+                        <td style="padding: 8px 6px; text-align: right; color: #111827; font-size: 12px; font-weight: 600; vertical-align: top;">${item.totalAmount > 0 ? '¥' + item.totalAmount.toFixed(2) : '-'}</td>
+                        <td style="padding: 8px 6px; text-align: right; color: #059669; font-size: 12px; font-weight: 500; vertical-align: top;">${item.paidAmount > 0 ? '¥' + item.paidAmount.toFixed(2) : '-'}</td>
+                        <td style="padding: 8px 6px; text-align: right; color: ${item.remainingAmount > 0 ? '#dc2626' : '#6b7280'}; font-size: 12px; font-weight: 600; vertical-align: top;">${item.remainingAmount > 0 ? '¥' + item.remainingAmount.toFixed(2) : '-'}</td>
+                        <td style="padding: 8px 6px; text-align: center; font-size: 11px; vertical-align: top;">
+                            <span style="display: inline-block; padding: 2px 6px; border-radius: 10px; font-size: 11px; font-weight: 500; color: ${statusColor}; background: ${statusBg};">${item.status}</span>
+                        </td>
+                        <td style="padding: 8px 6px; text-align: left; color: #6b7280; font-size: 11px; vertical-align: top;">
+                            <div style="word-break: break-all; line-height: 1.4;">${item.remark}</div>
+                            ${paymentDetails}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // 组装竖版对账表HTML（类似客户对账单风格）
+            const statementHTML = `
+                <div id="expenseStatementExport" style="padding: 32px; background: white; font-family: 'Inter', 'Microsoft YaHei', sans-serif; color: #1f2937; width: 800px; box-sizing: border-box;">
+                    <!-- 头部 -->
+                    <div style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 3px solid #3b82f6;">
+                        <h1 style="font-size: 24px; font-weight: 800; color: #1e3a5f; margin-bottom: 6px; letter-spacing: 2px;">佳信水产有限公司</h1>
+                        <h2 style="font-size: 18px; font-weight: 600; color: #2563eb; margin-bottom: 12px;">费用报销对账表</h2>
+                        <div style="font-size: 12px; color: #6b7280;">
+                            <span>电话：18077761212</span> · <span>联系人：郑佳宝</span>
+                        </div>
+                        ${filterLabel ? `<div style="font-size: 11px; color: #3b82f6; margin-top: 6px; background: #eff6ff; padding: 3px 10px; border-radius: 4px; display: inline-block;">${filterLabel}</div>` : ''}
+                    </div>
+
+                    <!-- 汇总卡片 -->
+                    <div style="display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-radius: 10px; padding: 14px 20px; border: 1px solid #fecaca;">
+                            <div style="font-size: 13px; color: #991b1b; font-weight: 500;">总费用</div>
+                            <div style="font-size: 22px; font-weight: 800; color: #dc2626;">¥${totalAmount.toFixed(2)}</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 10px; padding: 14px 20px; border: 1px solid #86efac;">
+                            <div style="font-size: 13px; color: #166534; font-weight: 500;">已支付</div>
+                            <div style="font-size: 22px; font-weight: 800; color: #16a34a;">¥${totalPaid.toFixed(2)}</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, ${isSettled ? '#f0fdf4' : '#fefce8'} 0%, ${isSettled ? '#dcfce7' : '#fef9c3'} 100%); border-radius: 10px; padding: 14px 20px; border: 1px solid ${isSettled ? '#86efac' : '#fde047'};">
+                            <div style="font-size: 13px; color: ${isSettled ? '#166534' : '#854d0e'}; font-weight: 500;">${isSettled ? '✅ 已结清' : '未支付'}</div>
+                            <div style="font-size: 22px; font-weight: 800; color: ${isSettled ? '#16a34a' : '#ca8a04'};">¥${totalUnpaid.toFixed(2)}</div>
+                        </div>
+                    </div>
+
+                    <!-- 明细表格 -->
+                    <div style="margin-bottom: 16px;">
+                        <div style="font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 8px; padding-left: 6px; border-left: 3px solid #3b82f6;">费用明细（共 ${allItems.length} 笔）${filterLabel}</div>
+                        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05); font-size: 12px;">
+                            <thead>
+                                <tr style="background: #f8fafc;">
+                                    <th style="padding: 8px 6px; text-align: center; font-size: 11px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb; width: 30px;">序号</th>
+                                    <th style="padding: 8px 6px; text-align: center; font-size: 11px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">日期</th>
+                                    <th style="padding: 8px 6px; text-align: center; font-size: 11px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">类型</th>
+                                    <th style="padding: 8px 6px; text-align: right; font-size: 11px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">总费用</th>
+                                    <th style="padding: 8px 6px; text-align: right; font-size: 11px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">已付</th>
+                                    <th style="padding: 8px 6px; text-align: right; font-size: 11px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">未付</th>
+                                    <th style="padding: 8px 6px; text-align: center; font-size: 11px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">状态</th>
+                                    <th style="padding: 8px 6px; text-align: left; font-size: 11px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb; width: 220px;">备注</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rows}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 汇总公式 -->
+                    <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 10px; padding: 16px; margin: 16px 0; border: 2px solid #0ea5e9; text-align: center;">
+                        <div style="display: flex; justify-content: center; gap: 24px; align-items: center;">
+                            <div>
+                                <div style="font-size: 11px; color: #0369a1; margin-bottom: 2px;">总费用</div>
+                                <div style="font-size: 18px; font-weight: 800; color: #0369a1;">¥${totalAmount.toFixed(2)}</div>
+                            </div>
+                            <div style="font-size: 20px; color: #0ea5e9;">−</div>
+                            <div>
+                                <div style="font-size: 11px; color: #059669; margin-bottom: 2px;">已支付</div>
+                                <div style="font-size: 18px; font-weight: 800; color: #059669;">¥${totalPaid.toFixed(2)}</div>
+                            </div>
+                            <div style="font-size: 20px; color: #0ea5e9;">=</div>
+                            <div>
+                                <div style="font-size: 11px; color: ${isSettled ? '#059669' : '#dc2626'}; margin-bottom: 2px;">${isSettled ? '✅ 已结清' : '剩余未付'}</div>
+                                <div style="font-size: 20px; font-weight: 800; color: ${isSettled ? '#059669' : '#dc2626'};">¥${totalUnpaid.toFixed(2)}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 底部信息 -->
+                    <div style="background: #f8fafc; border-radius: 6px; padding: 12px; margin-top: 20px; border: 1px solid #e5e7eb;">
+                        <div style="font-size: 11px; color: #6b7280; line-height: 1.6; text-align: center;">
+                            <p style="margin-bottom: 4px;">如有疑问，请联系：郑佳宝 18077761212</p>
+                            <p>本对账单由佳信水产财务系统自动生成</p>
+                        </div>
+                    </div>
+
+                    <!-- 生成时间 -->
+                    <div style="text-align: center; margin-top: 10px; font-size: 10px; color: #9ca3af;">
+                        生成时间：${new Date().toLocaleString('zh-CN')}
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('expenseStatementContent').innerHTML = statementHTML;
+            document.getElementById('expenseStatementModal').classList.add('active');
+        }
+
+function downloadExpenseStatement() {
+            const element = document.getElementById('expenseStatementExport');
+            if (!element) {
+                showToast('❌ 未找到导出内容', 'error');
+                return;
+            }
+            document.getElementById('loading').classList.add('show');
+
+            // 计算实际高度，防止溢出截断
+            const rect = element.getBoundingClientRect();
+            const actualHeight = Math.max(rect.height, element.scrollHeight);
+
+            html2canvas(element, {
+                scale: 2,
+                backgroundColor: '#ffffff',
+                useCORS: true,
+                logging: false,
+                height: actualHeight + 50,
+                windowHeight: actualHeight + 50,
+                scrollY: -window.scrollY
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = '费用报销对账表_' + new Date().toISOString().split('T')[0] + '.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                document.getElementById('loading').classList.remove('show');
+                showToast('✅ 对账表已保存');
+            }).catch(err => {
+                console.error('生成图片失败:', err);
+                document.getElementById('loading').classList.remove('show');
+                showToast('❌ 生成图片失败', 'error');
+            });
+        }
+
         // ==================== 图片处理 ====================
 
 
@@ -7787,10 +8056,8 @@ function syncPaymentDataToOrders() {
 
             let unpaidExpenses = [];
             (data.expenses || []).forEach(expense => {
-                const paidFromRegistration = expense.paidAmount || 0;
-                const paidFromPayments = (data.expensePayments || []).filter(p => p.expenseId === expense.id).reduce((sum, p) => sum + (p.amount || 0), 0);
-                const totalPaid = paidFromRegistration + paidFromPayments;
-                const unpaid = Math.max(0, (expense.totalAmount || 0) - totalPaid);
+                // 直接使用 expense.remainingAmount，避免与 expensePayments 重复计算
+                const unpaid = expense.remainingAmount || Math.max(0, (expense.totalAmount || 0) - (expense.paidAmount || 0));
 
                 if (unpaid > 0) {
                     const typeInfo = EXPENSE_TYPES[expense.type] || { name: expense.type, color: 'gray' };
@@ -8068,21 +8335,26 @@ function syncPaymentDataToOrders() {
             const expensePayments = data.expensePayments || [];
 
             const stats = {};
+            // 初始化所有已知类型的统计
             Object.keys(EXPENSE_TYPES).forEach(key => {
                 stats[key] = { total: 0, paid: 0, unpaid: 0 };
             });
 
             // 统计费用登记的总费用和已付
             expenses.forEach(expense => {
-                if (stats[expense.type]) {
-                    stats[expense.type].total += expense.totalAmount || 0;
-                    stats[expense.type].paid += expense.paidAmount || 0;
+                if (!stats[expense.type]) {
+                    stats[expense.type] = { total: 0, paid: 0, unpaid: 0 };
                 }
+                stats[expense.type].total += expense.totalAmount || 0;
+                stats[expense.type].paid += expense.paidAmount || 0;
             });
 
-            // 加上独立付款流水的金额
+            // 只加上"直接记流水"（无expenseId）的独立付款，避免与 expense.paidAmount 重复统计
             expensePayments.forEach(payment => {
-                if (stats[payment.expenseType]) {
+                if (!payment.expenseId) {
+                    if (!stats[payment.expenseType]) {
+                        stats[payment.expenseType] = { total: 0, paid: 0, unpaid: 0 };
+                    }
                     stats[payment.expenseType].paid += payment.amount || 0;
                 }
             });
@@ -8092,17 +8364,40 @@ function syncPaymentDataToOrders() {
                 stats[key].unpaid = Math.max(0, stats[key].total - stats[key].paid);
             });
 
-            const typeKeys = ['processing', 'packaging', 'carton', 'office', 'other', 'freight'];
-            typeKeys.forEach(key => {
-                const stat = stats[key] || { total: 0, paid: 0, unpaid: 0 };
-                const totalEl = document.getElementById(`expense${key.charAt(0).toUpperCase() + key.slice(1)}Total`);
-                const paidEl = document.getElementById(`expense${key.charAt(0).toUpperCase() + key.slice(1)}Paid`);
-                const unpaidEl = document.getElementById(`expense${key.charAt(0).toUpperCase() + key.slice(1)}Unpaid`);
+            // 动态渲染统计卡片
+            const container = document.getElementById('expenseStatsCards');
+            if (!container) return;
 
-                if (totalEl) totalEl.textContent = '¥' + stat.total.toFixed(0);
-                if (paidEl) paidEl.textContent = '¥' + stat.paid.toFixed(0);
-                if (unpaidEl) unpaidEl.textContent = '¥' + stat.unpaid.toFixed(0);
+            const borderColors = {
+                blue: 'border-blue-500',
+                green: 'border-green-500',
+                yellow: 'border-yellow-500',
+                purple: 'border-purple-500',
+                gray: 'border-gray-400',
+                red: 'border-red-500',
+                orange: 'border-orange-500',
+                cyan: 'border-cyan-500',
+                pink: 'border-pink-500',
+                indigo: 'border-indigo-500'
+            };
+
+            let html = '';
+            Object.keys(EXPENSE_TYPES).forEach(key => {
+                const typeInfo = EXPENSE_TYPES[key];
+                const stat = stats[key] || { total: 0, paid: 0, unpaid: 0 };
+                // 只显示有数据的类型，或者所有类型（保持显示一致性）
+                // 这里显示所有类型，包括金额为0的，保持布局稳定
+                const borderClass = borderColors[typeInfo.color] || borderColors.gray;
+                html += `
+                    <div class="bg-white rounded-xl p-4 shadow-sm border-l-4 ${borderClass}">
+                        <p class="text-xs text-gray-500">${typeInfo.name}</p>
+                        <p class="text-lg font-bold text-gray-800">¥${stat.total.toFixed(0)}</p>
+                        <p class="text-xs text-green-600 mt-1">已付: ¥${stat.paid.toFixed(0)}</p>
+                        <p class="text-xs text-red-500 mt-0.5">未付: ¥${stat.unpaid.toFixed(0)}</p>
+                    </div>`;
             });
+
+            container.innerHTML = html;
         }
 
         // 从数据对象更新统计（供 renderExpenseList 调用）
@@ -8176,7 +8471,9 @@ function syncPaymentDataToOrders() {
             });
 
             const totalAmount = expenses.reduce((sum, e) => sum + (e.totalAmount || 0), 0);
-            const totalPaid = expenses.reduce((sum, e) => sum + (e.paidAmount || 0), 0) + filteredPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+            const totalPaidFromExpenses = expenses.reduce((sum, e) => sum + (e.paidAmount || 0), 0);
+            const totalPaidFromPayments = filteredPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+            const totalPaid = totalPaidFromExpenses + totalPaidFromPayments;
             const totalUnpaid = Math.max(0, totalAmount - totalPaid);
 
             const tbody = document.getElementById('expenseList');
