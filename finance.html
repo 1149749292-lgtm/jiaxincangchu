@@ -2261,6 +2261,7 @@
                             <option value="packaging">包装费用</option>
                             <option value="carton">纸箱</option>
                             <option value="office">办公杂费</option>
+                            <option value="purchase_payment">采购货款</option>
                             <option value="other">其他费用</option>
                         </select>
                     </div>
@@ -2821,6 +2822,7 @@
                         <option value="packaging">包装费用</option>
                         <option value="carton">纸箱</option>
                         <option value="office">办公杂费</option>
+                        <option value="purchase_payment">采购货款</option>
                         <option value="other">其他费用</option>
                     </select>
                 </div>
@@ -2875,6 +2877,7 @@
                         <option value="packaging">包装费用</option>
                         <option value="carton">纸箱</option>
                         <option value="office">办公杂费</option>
+                        <option value="purchase_payment">采购货款</option>
                         <option value="other">其他费用</option>
                     </select>
                 </div>
@@ -6557,6 +6560,7 @@ function renderTransactionList() {
         }
 
         let editingPaymentId = null;
+        let editingExpensePaymentId = null;
 
         function openPaymentModal(type) {
     editingPaymentId = null;
@@ -6610,17 +6614,42 @@ function renderTransactionList() {
             document.getElementById('paymentId').value = payment.id;
 
             const select = document.getElementById('paymentParty');
-            const parties = payment.type === 'income' ? data.customers : data.suppliers;
+
+            // 判断该笔记录实际关联的是客户还是供应商（退款记录type=expense但partyId可能是客户）
+            const isCustomer = data.customers.some(c => c.id === payment.partyId);
+            const isSupplier = data.suppliers.some(s => s.id === payment.partyId);
+
+            // 根据实际归属构建列表：主要类型 + 补充实际归属类型
+            let primaryParties = [], secondaryParties = [];
+            if (payment.type === 'income') {
+                primaryParties = data.customers;
+                secondaryParties = isSupplier ? data.suppliers : [];
+            } else {
+                primaryParties = data.suppliers;
+                secondaryParties = isCustomer ? data.customers : [];
+            }
+
+            // 合并并去重
+            const allParties = [...primaryParties, ...secondaryParties];
             const uniqueParties = [];
             const seenNames = new Set();
-            parties.forEach(p => {
+            allParties.forEach(p => {
                 if (!seenNames.has(p.name)) {
                     seenNames.add(p.name);
                     uniqueParties.push(p);
                 }
             });
+
+            // 建立ID到类型的映射
+            const partyTypeMap = {};
+            data.customers.forEach(c => partyTypeMap[c.id] = 'customer');
+            data.suppliers.forEach(s => partyTypeMap[s.id] = 'supplier');
+
             select.innerHTML = '<option value="">请选择</option>' + 
-                uniqueParties.map(p => `<option value="${p.id}" data-type="${payment.type === 'income' ? 'customer' : 'supplier'}" ${p.id === payment.partyId ? 'selected' : ''}>${p.name}</option>`).join('');
+                uniqueParties.map(p => {
+                    const pType = partyTypeMap[p.id] || (payment.type === 'income' ? 'customer' : 'supplier');
+                    return `<option value="${p.id}" data-type="${pType}" ${p.id === payment.partyId ? 'selected' : ''}>${p.name}</option>`;
+                }).join('');
 
             document.getElementById('paymentAmount').value = payment.amount;
             document.getElementById('paymentDate').value = payment.date;
@@ -6741,6 +6770,11 @@ function renderTransactionList() {
         function closePaymentModal() {
             editingPaymentId = null;
             document.getElementById('paymentModal').classList.remove('active');
+            // 重置表单
+            document.getElementById('paymentId').value = '';
+            document.getElementById('paymentAmount').value = '';
+            document.getElementById('paymentMethod').value = '';
+            document.getElementById('paymentRemark').value = '';
         }
 
         async function savePayment() {
@@ -6763,9 +6797,74 @@ function renderTransactionList() {
     const partyName = selectedOption.text;
     const partyType = selectedOption.dataset.type;
 
-    // 创建交易记录
+    // ===== 编辑模式：先回滚旧记录的影响 =====
+    if (editingPaymentId) {
+        const oldPayment = data.transactions.find(t => t.id === editingPaymentId);
+        if (oldPayment) {
+            // 回滚旧记录对订单的影响（与 deletePayment 逻辑一致）
+            if (oldPayment.type === 'income') {
+                const oldPartyId = oldPayment.partyId;
+                let orders = data.salesOrders.filter(o => o.customerId === oldPartyId)
+                    .sort((a, b) => new Date(a.date) - new Date(b.date));
+                let payments = data.transactions.filter(t => 
+                    t.partyId === oldPartyId && 
+                    t.type === 'income' && 
+                    t.id !== editingPaymentId
+                ).sort((a, b) => new Date(a.date) - new Date(b.date));
+                orders.forEach(order => {
+                    order.paidAmount = 0;
+                    order.remainingAmount = order.totalAmount;
+                    order.paymentStatus = 'unpaid';
+                });
+                payments.forEach(p => {
+                    let remaining = p.amount;
+                    orders.forEach(order => {
+                        if (remaining <= 0 || order.remainingAmount <= 0) return;
+                        const alloc = Math.min(order.remainingAmount, remaining);
+                        order.paidAmount += alloc;
+                        order.remainingAmount -= alloc;
+                        order.paymentStatus = order.remainingAmount <= 0 ? 'paid' : 'partial';
+                        remaining -= alloc;
+                    });
+                });
+                const customer = data.customers.find(c => c.id === oldPartyId);
+                if (customer) customer.balance = orders.reduce((sum, o) => sum + o.remainingAmount, 0);
+            } else {
+                const oldPartyId = oldPayment.partyId;
+                let orders = data.purchaseOrders.filter(o => o.supplierId === oldPartyId)
+                    .sort((a, b) => new Date(a.date) - new Date(b.date));
+                let payments = data.transactions.filter(t => 
+                    t.partyId === oldPartyId && 
+                    t.type === 'expense' && 
+                    t.id !== editingPaymentId
+                ).sort((a, b) => new Date(a.date) - new Date(b.date));
+                orders.forEach(order => {
+                    order.paidAmount = 0;
+                    order.remainingAmount = order.totalAmount;
+                    order.paymentStatus = 'unpaid';
+                });
+                payments.forEach(p => {
+                    let remaining = p.amount;
+                    orders.forEach(order => {
+                        if (remaining <= 0 || order.remainingAmount <= 0) return;
+                        const alloc = Math.min(order.remainingAmount, remaining);
+                        order.paidAmount += alloc;
+                        order.remainingAmount -= alloc;
+                        order.paymentStatus = order.remainingAmount <= 0 ? 'paid' : 'partial';
+                        remaining -= alloc;
+                    });
+                });
+                const supplier = data.suppliers.find(s => s.id === oldPartyId);
+                if (supplier) supplier.balance = orders.reduce((sum, o) => sum + o.remainingAmount, 0);
+            }
+            // 删除旧记录
+            data.transactions = data.transactions.filter(t => t.id !== editingPaymentId);
+        }
+    }
+
+    // 创建交易记录（编辑时保留原ID或生成新ID）
     const payment = {
-        id: 'TRX' + Date.now(),
+        id: editingPaymentId || ('TRX' + Date.now()),
         date: date,
         type: type,
         partyId: partyId,
@@ -6921,8 +7020,11 @@ function renderTransactionList() {
             let allItems = [];
             expenses.forEach(e => {
                 const typeInfo = EXPENSE_TYPES[e.type] || { name: e.type, color: 'gray' };
-                const paid = e.paidAmount || 0;
-                const remaining = e.remainingAmount || Math.max(0, (e.totalAmount || 0) - paid);
+                // 用子行付款合计计算实际已付（兼容旧数据）
+                const relatedPayments = expensePayments.filter(p => p.expenseId === e.id);
+                const childrenPaid = relatedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+                const paid = Math.max(e.paidAmount || 0, childrenPaid);
+                const remaining = Math.max(0, (e.totalAmount || 0) - paid);
                 allItems.push({
                     date: e.date,
                     type: typeInfo.name,
@@ -6961,15 +7063,26 @@ function renderTransactionList() {
                 return;
             }
 
-            // 计算汇总（与系统列表 renderExpenseList 完全一致）
-            // 总费用 = 费用登记的 totalAmount 之和
-            const totalAmount = expenses.reduce((sum, e) => sum + (e.totalAmount || 0), 0);
-            // 已付 = 费用登记的 paidAmount + 付款流水的 amount
-            const totalPaidFromExpenses = expenses.reduce((sum, e) => sum + (e.paidAmount || 0), 0);
-            const totalPaidFromPayments = filteredPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-            const totalPaid = totalPaidFromExpenses + totalPaidFromPayments;
-            // 未付 = 总费用 - 已付
-            const totalUnpaid = Math.max(0, totalAmount - totalPaid);
+            // 计算汇总：以子行付款之和作为真实已付（兼容旧数据）
+            let totalAmount = 0;
+            let totalPaid = 0;
+            let totalUnpaid = 0;
+
+            expenses.forEach(e => {
+                const relatedPayments = expensePayments.filter(p => p.expenseId === e.id);
+                const childrenPaid = relatedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+                const actualPaid = Math.max(e.paidAmount || 0, childrenPaid);
+                const actualRemaining = Math.max(0, (e.totalAmount || 0) - actualPaid);
+
+                totalAmount += (e.totalAmount || 0);
+                totalPaid += actualPaid;
+                totalUnpaid += actualRemaining;
+            });
+
+            // 加上独立流水
+            const totalPaidFromPayments = filteredPayments.filter(p => !p.expenseId).reduce((sum, p) => sum + (p.amount || 0), 0);
+            totalPaid += totalPaidFromPayments;
+
             const isSettled = totalUnpaid <= 0;
 
             // 生成筛选标签
@@ -8042,6 +8155,13 @@ function syncPaymentDataToOrders() {
 
         // ==================== 费用简化付款功能 ====================
         function openExpensePaymentSimpleModal() {
+            editingExpensePaymentId = null;
+            document.querySelector('#expensePaymentSimpleModal h3').textContent = '费用付款登记';
+            document.getElementById('directPaymentMode').checked = false;
+            document.getElementById('directPaymentType').value = '';
+            document.getElementById('directPaymentTypeArea').style.display = 'none';
+            document.getElementById('unpaidExpenseListArea').style.display = 'block';
+
             // 初始化
             document.getElementById('expensePaymentSimpleDate').value = new Date().toISOString().split('T')[0];
             document.getElementById('expensePaymentSimpleAmount').value = '';
@@ -8128,6 +8248,7 @@ function syncPaymentDataToOrders() {
         }
 
         function validatePaymentAmount() {
+            const isDirectMode = document.getElementById('directPaymentMode').checked;
             const checkedBoxes = document.querySelectorAll('.unpaid-expense-checkbox:checked');
             let totalUnpaid = 0;
             checkedBoxes.forEach(cb => {
@@ -8137,7 +8258,7 @@ function syncPaymentDataToOrders() {
             const inputAmount = parseFloat(document.getElementById('expensePaymentSimpleAmount').value) || 0;
             const msgEl = document.getElementById('paymentValidationMsg');
 
-            if (checkedBoxes.length === 0) {
+            if (!isDirectMode && checkedBoxes.length === 0) {
                 msgEl.textContent = '请至少勾选一项未付费用';
                 msgEl.style.display = 'block';
                 return false;
@@ -8149,7 +8270,7 @@ function syncPaymentDataToOrders() {
                 return false;
             }
 
-            if (inputAmount > totalUnpaid) {
+            if (!isDirectMode && checkedBoxes.length > 0 && inputAmount > totalUnpaid) {
                 msgEl.textContent = '付款金额不能超过选中费用的未付总额 ¥' + totalUnpaid.toFixed(2);
                 msgEl.style.display = 'block';
                 return false;
@@ -8165,66 +8286,161 @@ function syncPaymentDataToOrders() {
             document.getElementById('unpaidExpenseListBody').innerHTML = '';
             document.getElementById('selectedUnpaidTotal').textContent = '¥0.00';
             document.getElementById('paymentValidationMsg').style.display = 'none';
+            editingExpensePaymentId = null;
+            document.querySelector('#expensePaymentSimpleModal h3').textContent = '费用付款登记';
+            document.getElementById('directPaymentMode').checked = false;
+            document.getElementById('directPaymentType').value = '';
+            document.getElementById('directPaymentTypeArea').style.display = 'none';
+            document.getElementById('unpaidExpenseListArea').style.display = 'block';
         }
 
         async function saveExpensePaymentSimple() {
-            if (!checkEditPermission()) return;
-            const isDirectMode = document.getElementById('directPaymentMode').checked;
-            const date = document.getElementById('expensePaymentSimpleDate').value;
-            const amount = parseFloat(document.getElementById('expensePaymentSimpleAmount').value) || 0;
-            const paymentMethod = document.getElementById('expensePaymentSimpleMethod').value.trim();
-            const remark = document.getElementById('expensePaymentSimpleRemark').value.trim();
-            if (!date || amount <= 0) { showToast('⚠️ 请填写完整信息（日期和金额必填）', 'warning'); return; }
-            if (!data.expensePayments) data.expensePayments = [];
-            if (isDirectMode) {
-                const directType = document.getElementById('directPaymentType').value;
-                if (!directType) { showToast('⚠️ 请选择费用类型', 'warning'); return; }
-                data.expensePayments.push({ id: 'EXPPAY' + Date.now(), expenseId: null, expenseType: directType, date: date, amount: amount, paymentMethod: paymentMethod, remark: remark, createTime: Date.now() });
-                try {
-                    await saveData();
-                    closeExpensePaymentSimpleModal();
-                    renderExpenseList();
-                    updateExpenseStats();
-                    updateDashboard();
-                    updateCapitalOverview();
-                    showToast('✅ 已记录 ' + (EXPENSE_TYPES[directType]?.name || directType) + ' 付款流水 ¥' + amount.toFixed(2));
-                } catch (err) { console.error('保存失败:', err); showToast('❌ 保存失败: ' + (err.message || '未知错误'), 'error'); }
-                return;
+    if (!checkEditPermission()) return;
+
+    const isDirectMode = document.getElementById('directPaymentMode').checked;
+    const date = document.getElementById('expensePaymentSimpleDate').value;
+    const amount = parseFloat(document.getElementById('expensePaymentSimpleAmount').value);
+    const paymentMethod = document.getElementById('expensePaymentSimpleMethod').value.trim();
+    const remark = document.getElementById('expensePaymentSimpleRemark').value.trim();
+
+    if (!date || !amount || amount <= 0) {
+        showToast('⚠️ 请填写完整信息', 'warning');
+        return;
+    }
+
+    // 编辑模式：先删除旧记录
+    if (editingExpensePaymentId) {
+        const oldPayment = data.expensePayments.find(p => p.id === editingExpensePaymentId);
+        if (oldPayment && oldPayment.expenseId) {
+            const expense = data.expenses.find(e => e.id === oldPayment.expenseId);
+            if (expense) {
+                expense.paidAmount = Math.max(0, (expense.paidAmount || 0) - (oldPayment.amount || 0));
+                expense.remainingAmount = Math.max(0, (expense.totalAmount || 0) - expense.paidAmount);
+                const remainingPayments = data.expensePayments.filter(p => p.expenseId === expense.id && p.id !== editingExpensePaymentId).sort((a, b) => new Date(b.date) - new Date(a.date));
+                expense.lastPaymentDate = remainingPayments.length > 0 ? remainingPayments[0].date : null;
             }
-            if (!validatePaymentAmount()) return;
-            const checkedBoxes = document.querySelectorAll('.unpaid-expense-checkbox:checked');
-            if (checkedBoxes.length === 0) { showToast('⚠️ 请至少勾选一项未付费用，或勾选"直接记流水"', 'warning'); return; }
-            let remainingAmount = amount;
-            let paidCount = 0;
-            const selectedExpenses = Array.from(checkedBoxes).map(cb => ({ id: cb.value, unpaid: parseFloat(cb.dataset.unpaid) || 0 })).sort((a, b) => a.unpaid - b.unpaid);
-            for (const expenseInfo of selectedExpenses) {
-                if (remainingAmount <= 0) break;
-                const alloc = Math.min(expenseInfo.unpaid, remainingAmount);
-                remainingAmount -= alloc;
-                paidCount++;
-                const expenseRecord = data.expenses.find(e => e.id === expenseInfo.id);
-                if (expenseRecord) {
-                    expenseRecord.paidAmount = (expenseRecord.paidAmount || 0) + alloc;
-                    expenseRecord.remainingAmount = Math.max(0, (expenseRecord.totalAmount || 0) - expenseRecord.paidAmount);
-                    expenseRecord.lastPaymentDate = date;
-                    expenseRecord.lastPaymentMethod = paymentMethod;
-                    expenseRecord.lastPaymentRemark = remark;
-                    expenseRecord.lastUpdated = Date.now();
-                }
-                data.expensePayments.push({ id: 'EXPPAY' + Date.now() + '_' + paidCount, expenseId: expenseInfo.id, expenseType: expenseRecord ? expenseRecord.type : '', date: date, amount: alloc, paymentMethod: paymentMethod, remark: remark, createTime: Date.now() });
-            }
-            try {
-                await saveData();
-                closeExpensePaymentSimpleModal();
-                renderExpenseList();
-                updateExpenseStats();
-                updateDashboard();
-                updateCapitalOverview();
-                const totalUnpaid = selectedExpenses.reduce((sum, e) => sum + e.unpaid, 0);
-                if (amount >= totalUnpaid) showToast('✅ 已结清 ' + paidCount + ' 笔费用，共支付 ¥' + amount.toFixed(2));
-                else showToast('✅ 已支付 ' + paidCount + ' 笔费用共 ¥' + amount.toFixed(2) + '，还有部分未结清');
-            } catch (err) { console.error('保存失败:', err); showToast('❌ 保存失败: ' + (err.message || '未知错误'), 'error'); }
         }
+        data.expensePayments = data.expensePayments.filter(p => p.id !== editingExpensePaymentId);
+    }
+
+    if (isDirectMode) {
+        const expenseType = document.getElementById('directPaymentType').value;
+        if (!expenseType) {
+            showToast('⚠️ 请选择费用类型', 'warning');
+            return;
+        }
+        const typeInfo = EXPENSE_TYPES[expenseType] || { name: expenseType, color: 'gray' };
+
+        const payment = {
+            id: editingExpensePaymentId || ('EP' + Date.now()),
+            date: date,
+            expenseType: expenseType,
+            expenseId: null,
+            amount: amount,
+            paymentMethod: paymentMethod,
+            remark: remark
+        };
+        data.expensePayments.push(payment);
+
+        data.transactions.push({
+            id: 'TRX' + Date.now(),
+            date: date,
+            type: 'expense',
+            partyId: null,
+            partyName: typeInfo.name,
+            amount: amount,
+            paymentMethod: paymentMethod,
+            remark: remark || typeInfo.name + '付款',
+            isExpensePayment: true
+        });
+    } else {
+        const selectedExpenses = [];
+        document.querySelectorAll('.unpaid-expense-checkbox:checked').forEach(cb => {
+            const expenseId = cb.value;
+            const expense = data.expenses.find(e => e.id === expenseId);
+            if (expense) selectedExpenses.push(expense);
+        });
+
+        let paymentAmount = amount;
+
+        if (selectedExpenses.length > 0) {
+            const totalSelectedUnpaid = selectedExpenses.reduce((sum, e) => sum + (e.remainingAmount || 0), 0);
+            let remainingPayment = paymentAmount;
+
+            selectedExpenses.forEach((expense, idx) => {
+                if (remainingPayment <= 0) return;
+                const isLast = idx === selectedExpenses.length - 1;
+                let alloc;
+
+                if (isLast) {
+                    alloc = Math.min(expense.remainingAmount || 0, remainingPayment);
+                } else {
+                    const ratio = totalSelectedUnpaid > 0 ? (expense.remainingAmount || 0) / totalSelectedUnpaid : 0;
+                    alloc = Math.min(expense.remainingAmount || 0, Math.round(paymentAmount * ratio * 100) / 100);
+                }
+
+                if (alloc <= 0) return;
+
+                expense.paidAmount = (expense.paidAmount || 0) + alloc;
+                expense.remainingAmount = Math.max(0, (expense.totalAmount || 0) - expense.paidAmount);
+                expense.lastPaymentDate = date;
+                remainingPayment -= alloc;
+
+                const payment = {
+                    id: 'EP' + Date.now() + Math.random().toString(36).substr(2, 5),
+                    date: date,
+                    expenseType: expense.type,
+                    expenseId: expense.id,
+                    amount: alloc,
+                    paymentMethod: paymentMethod,
+                    remark: remark || expense.remark
+                };
+                data.expensePayments.push(payment);
+            });
+
+            paymentAmount = remainingPayment;
+        }
+
+        if (paymentAmount > 0.01) {
+            const defaultType = selectedExpenses.length > 0 ? selectedExpenses[0].type : 'other';
+            const typeInfo = EXPENSE_TYPES[defaultType] || { name: defaultType, color: 'gray' };
+
+            const payment = {
+                id: 'EP' + Date.now() + Math.random().toString(36).substr(2, 5),
+                date: date,
+                expenseType: defaultType,
+                expenseId: null,
+                amount: paymentAmount,
+                paymentMethod: paymentMethod,
+                remark: (remark ? remark + ' ' : '') + '(未匹配费用)'
+            };
+            data.expensePayments.push(payment);
+
+            data.transactions.push({
+                id: 'TRX' + Date.now(),
+                date: date,
+                type: 'expense',
+                partyId: null,
+                partyName: typeInfo.name,
+                amount: paymentAmount,
+                paymentMethod: paymentMethod,
+                remark: (remark || typeInfo.name + '付款') + ' (未匹配费用)',
+                isExpensePayment: true
+            });
+        }
+    }
+
+    try {
+        await saveData();
+        closeExpensePaymentSimpleModal();
+        renderExpenseList();
+        updateExpenseStats();
+        showToast('✅ 保存成功');
+    } catch (err) {
+        console.error('保存失败:', err);
+        showToast('❌ 保存失败', 'error');
+    }
+}
 
         function openExpenseModal() {
             document.getElementById('expenseId').value = '';
@@ -8315,6 +8531,7 @@ function syncPaymentDataToOrders() {
                 carton: { name: '纸箱', color: 'yellow', deletable: false },
                 office: { name: '办公杂费', color: 'purple', deletable: false },
                 freight: { name: '货物运费', color: 'orange', deletable: true },
+                purchase_payment: { name: '采购货款', color: 'red', deletable: false },
                 other: { name: '其他费用', color: 'gray', deletable: true }
             };
 
@@ -8334,34 +8551,48 @@ function syncPaymentDataToOrders() {
             const expenses = data.expenses || [];
             const expensePayments = data.expensePayments || [];
 
-            const stats = {};
-            // 初始化所有已知类型的统计
+            // 按 name 合并统计，防止同一 name 有多个 key 导致重复卡片
+            const nameStats = {};
+            const nameColors = {};
+
+            // 初始化所有已知类型（按 name 去重）
             Object.keys(EXPENSE_TYPES).forEach(key => {
-                stats[key] = { total: 0, paid: 0, unpaid: 0 };
+                const typeInfo = EXPENSE_TYPES[key];
+                const name = typeInfo.name;
+                if (!nameStats[name]) {
+                    nameStats[name] = { total: 0, paid: 0, unpaid: 0 };
+                    nameColors[name] = typeInfo.color;
+                }
             });
 
             // 统计费用登记的总费用和已付
             expenses.forEach(expense => {
-                if (!stats[expense.type]) {
-                    stats[expense.type] = { total: 0, paid: 0, unpaid: 0 };
+                const typeInfo = EXPENSE_TYPES[expense.type] || { name: expense.type || '其他', color: 'gray' };
+                const name = typeInfo.name;
+                if (!nameStats[name]) {
+                    nameStats[name] = { total: 0, paid: 0, unpaid: 0 };
+                    nameColors[name] = typeInfo.color;
                 }
-                stats[expense.type].total += expense.totalAmount || 0;
-                stats[expense.type].paid += expense.paidAmount || 0;
+                nameStats[name].total += expense.totalAmount || 0;
+                nameStats[name].paid += expense.paidAmount || 0;
             });
 
             // 只加上"直接记流水"（无expenseId）的独立付款，避免与 expense.paidAmount 重复统计
             expensePayments.forEach(payment => {
                 if (!payment.expenseId) {
-                    if (!stats[payment.expenseType]) {
-                        stats[payment.expenseType] = { total: 0, paid: 0, unpaid: 0 };
+                    const typeInfo = EXPENSE_TYPES[payment.expenseType] || { name: payment.expenseType || '其他', color: 'gray' };
+                    const name = typeInfo.name;
+                    if (!nameStats[name]) {
+                        nameStats[name] = { total: 0, paid: 0, unpaid: 0 };
+                        nameColors[name] = typeInfo.color;
                     }
-                    stats[payment.expenseType].paid += payment.amount || 0;
+                    nameStats[name].paid += payment.amount || 0;
                 }
             });
 
             // 计算未付金额
-            Object.keys(stats).forEach(key => {
-                stats[key].unpaid = Math.max(0, stats[key].total - stats[key].paid);
+            Object.keys(nameStats).forEach(name => {
+                nameStats[name].unpaid = Math.max(0, nameStats[name].total - nameStats[name].paid);
             });
 
             // 动态渲染统计卡片
@@ -8382,15 +8613,13 @@ function syncPaymentDataToOrders() {
             };
 
             let html = '';
-            Object.keys(EXPENSE_TYPES).forEach(key => {
-                const typeInfo = EXPENSE_TYPES[key];
-                const stat = stats[key] || { total: 0, paid: 0, unpaid: 0 };
-                // 只显示有数据的类型，或者所有类型（保持显示一致性）
-                // 这里显示所有类型，包括金额为0的，保持布局稳定
-                const borderClass = borderColors[typeInfo.color] || borderColors.gray;
+            Object.keys(nameStats).forEach(name => {
+                const stat = nameStats[name];
+                const color = nameColors[name] || 'gray';
+                const borderClass = borderColors[color] || borderColors.gray;
                 html += `
                     <div class="bg-white rounded-xl p-4 shadow-sm border-l-4 ${borderClass}">
-                        <p class="text-xs text-gray-500">${typeInfo.name}</p>
+                        <p class="text-xs text-gray-500">${name}</p>
                         <p class="text-lg font-bold text-gray-800">¥${stat.total.toFixed(0)}</p>
                         <p class="text-xs text-green-600 mt-1">已付: ¥${stat.paid.toFixed(0)}</p>
                         <p class="text-xs text-red-500 mt-0.5">未付: ¥${stat.unpaid.toFixed(0)}</p>
@@ -8416,100 +8645,190 @@ function syncPaymentDataToOrders() {
         }
 
         function renderExpenseList() {
-            const typeFilter = document.getElementById('expenseTypeFilter').value;
-            const startDate = document.getElementById('expenseStartDate').value;
-            const endDate = document.getElementById('expenseEndDate').value;
-            const paymentFilter = document.getElementById('expensePaymentFilter').value;
-            const searchKeyword = document.getElementById('expenseSearch').value.toLowerCase().trim();
-            const paymentDateFilter = document.getElementById('expensePaymentDateFilter').value;
+    const typeFilter = document.getElementById('expenseTypeFilter').value;
+    const paymentFilter = document.getElementById('expensePaymentFilter').value;
+    const startDate = document.getElementById('expenseStartDate').value;
+    const endDate = document.getElementById('expenseEndDate').value;
+    const searchKeyword = document.getElementById('expenseSearch').value.toLowerCase().trim();
+    const paymentDateFilter = document.getElementById('expensePaymentDateFilter').value;
 
-            let expenses = data.expenses || [];
-            let expensePayments = data.expensePayments || [];
+    let expenses = data.expenses || [];
+    let expensePayments = data.expensePayments || [];
 
-            if (typeFilter) expenses = expenses.filter(e => e.type === typeFilter);
-            if (startDate) expenses = expenses.filter(e => e.date >= startDate);
-            if (endDate) expenses = expenses.filter(e => e.date <= endDate);
-            if (paymentFilter) {
-                if (paymentFilter === 'paid') expenses = expenses.filter(e => (e.remainingAmount || 0) <= 0);
-                else if (paymentFilter === 'unpaid') expenses = expenses.filter(e => (e.remainingAmount || 0) > 0);
+    // 1. 筛选费用
+    let filteredExpenses = [...expenses];
+    if (typeFilter) filteredExpenses = filteredExpenses.filter(e => e.type === typeFilter);
+    if (startDate) filteredExpenses = filteredExpenses.filter(e => e.date >= startDate);
+    if (endDate) filteredExpenses = filteredExpenses.filter(e => e.date <= endDate);
+    if (paymentFilter) {
+        if (paymentFilter === 'paid') filteredExpenses = filteredExpenses.filter(e => (e.remainingAmount || 0) <= 0);
+        else if (paymentFilter === 'unpaid') filteredExpenses = filteredExpenses.filter(e => (e.remainingAmount || 0) > 0);
+    }
+
+    // 2. 搜索筛选
+    let displayExpenses = [...filteredExpenses];
+    if (searchKeyword) {
+        const matchingExpenseIds = new Set();
+        filteredExpenses.forEach(e => {
+            const remark = (e.remark || '').toLowerCase();
+            const typeName = ((EXPENSE_TYPES[e.type] || {}).name || e.type || '').toLowerCase();
+            if (remark.includes(searchKeyword) || typeName.includes(searchKeyword)) {
+                matchingExpenseIds.add(e.id);
             }
-            if (searchKeyword) {
-                expenses = expenses.filter(e => {
-                    const remark = (e.remark || '').toLowerCase();
-                    const typeName = ((EXPENSE_TYPES[e.type] || {}).name || e.type || '').toLowerCase();
-                    return remark.includes(searchKeyword) || typeName.includes(searchKeyword);
+        });
+        expensePayments.forEach(p => {
+            if (!p.expenseId) return;
+            const remark = (p.remark || '').toLowerCase();
+            const typeName = ((EXPENSE_TYPES[p.expenseType] || {}).name || p.expenseType || '').toLowerCase();
+            const method = (p.paymentMethod || '').toLowerCase();
+            if (remark.includes(searchKeyword) || typeName.includes(searchKeyword) || method.includes(searchKeyword)) {
+                matchingExpenseIds.add(p.expenseId);
+            }
+        });
+        displayExpenses = filteredExpenses.filter(e => matchingExpenseIds.has(e.id));
+    }
+
+    // 3. 支付时间筛选
+    if (paymentDateFilter) {
+        const paidExpenseIds = new Set(expensePayments.filter(p => p.date === paymentDateFilter && p.expenseId).map(p => p.expenseId));
+        displayExpenses = displayExpenses.filter(e => paidExpenseIds.has(e.id) || e.date === paymentDateFilter);
+    }
+
+    // 4. 独立流水筛选
+    let standalonePayments = expensePayments.filter(p => !p.expenseId);
+    if (typeFilter) standalonePayments = standalonePayments.filter(p => p.expenseType === typeFilter);
+    if (startDate) standalonePayments = standalonePayments.filter(p => p.date >= startDate);
+    if (endDate) standalonePayments = standalonePayments.filter(p => p.date <= endDate);
+    if (paymentDateFilter) standalonePayments = standalonePayments.filter(p => p.date === paymentDateFilter);
+    if (searchKeyword) {
+        standalonePayments = standalonePayments.filter(p => {
+            const remark = (p.remark || '').toLowerCase();
+            const typeName = ((EXPENSE_TYPES[p.expenseType] || {}).name || p.expenseType || '').toLowerCase();
+            const method = (p.paymentMethod || '').toLowerCase();
+            return remark.includes(searchKeyword) || typeName.includes(searchKeyword) || method.includes(searchKeyword);
+        });
+    }
+    if (paymentFilter === 'unpaid') standalonePayments = [];
+    if (paymentFilter === 'paid') displayExpenses = [];
+
+    // 5. 构建显示项
+    let displayItems = [];
+    displayExpenses.forEach(e => {
+        displayItems.push({ kind: 'expense', date: e.date, data: e, sortTime: new Date(e.date).getTime() });
+    });
+    standalonePayments.forEach(p => {
+        displayItems.push({ kind: 'standalone', date: p.date, data: p, sortTime: new Date(p.date).getTime() });
+    });
+    displayItems.sort((a, b) => b.sortTime - a.sortTime);
+
+    // 6. 计算合计：以子行付款之和作为真实已付
+    let totalAmount = 0;
+    let totalPaid = 0;
+    let totalUnpaid = 0;
+
+    displayExpenses.forEach(e => {
+        const relatedPayments = expensePayments.filter(p => p.expenseId === e.id);
+        const childrenPaid = relatedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+        const actualPaid = Math.max(e.paidAmount || 0, childrenPaid);
+        const actualRemaining = Math.max(0, (e.totalAmount || 0) - actualPaid);
+
+        totalAmount += (e.totalAmount || 0);
+        totalPaid += actualPaid;
+        totalUnpaid += actualRemaining;
+    });
+
+    let totalPaidStandalone = standalonePayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    totalPaid += totalPaidStandalone;
+
+    const isSettled = totalUnpaid <= 0 && displayExpenses.length > 0;
+    const expenseCount = displayExpenses.length;
+    const standaloneCount = standalonePayments.length;
+
+    const tbody = document.getElementById('expenseList');
+    let html = '';
+
+    if (displayItems.length === 0) {
+        html = `<tr><td colspan="9" class="px-6 py-8 text-center text-gray-500"><div style="font-size: 48px; margin-bottom: 8px;">📭</div><p>暂无符合条件的记录</p></td></tr>`;
+    } else {
+        displayItems.forEach(item => {
+            if (item.kind === 'expense') {
+                const e = item.data;
+                const typeInfo = EXPENSE_TYPES[e.type] || { name: e.type, color: 'gray' };
+                const relatedPayments = expensePayments.filter(p => p.expenseId === e.id).sort((a, b) => new Date(a.date) - new Date(b.date));
+                const childrenPaid = relatedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+                const paid = Math.max(e.paidAmount || 0, childrenPaid);
+                const remaining = Math.max(0, (e.totalAmount || 0) - paid);
+                const status = remaining <= 0 ? '已支付' : (paid > 0 ? '部分支付' : '未支付');
+                const statusClass = remaining <= 0 ? 'status-paid' : (paid > 0 ? 'status-partial' : 'status-pending');
+
+                html += `<tr style="background: ${paid > 0 ? '#f0fdf4' : (remaining <= 0 ? '#f0fdf4' : 'white')}; border-bottom: 1px solid #e5e7eb;">
+                    <td class="px-2 py-2 text-xs text-gray-700 whitespace-nowrap" style="font-weight: 600;">${e.date}</td>
+                    <td class="px-2 py-2 text-xs whitespace-nowrap"><span class="status-badge ${typeInfo.color === 'blue' ? 'status-partial' : typeInfo.color === 'green' ? 'status-paid' : typeInfo.color === 'purple' ? 'status-partial' : typeInfo.color === 'orange' ? 'status-pending' : 'status-pending'}">${typeInfo.name}</span></td>
+                    <td class="px-2 py-2 text-xs font-medium text-gray-900 whitespace-nowrap">¥${(e.totalAmount || 0).toFixed(2)}</td>
+                    <td class="px-2 py-2 text-xs text-green-600 whitespace-nowrap">¥${paid.toFixed(2)}</td>
+                    <td class="px-2 py-2 text-xs ${remaining > 0 ? 'text-red-600 font-medium' : 'text-gray-400'} whitespace-nowrap">¥${remaining.toFixed(2)}</td>
+                    <td class="px-2 py-2 whitespace-nowrap"><span class="status-badge ${statusClass}" style="font-size: 10px; padding: 2px 6px;">${status}</span></td>
+                    <td class="px-2 py-2 text-xs text-gray-500 whitespace-nowrap">${e.lastPaymentDate || '-'}</td>
+                    <td class="px-2 py-2 text-xs text-gray-500 whitespace-nowrap" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 245px;">${e.remark || '-'}</td>
+                    <td class="px-2 py-2 text-xs whitespace-nowrap">
+                        <button onclick="editExpense('${e.id}')" class="text-blue-600 hover:underline mr-1">编辑</button>
+                        <button onclick="deleteExpense('${e.id}')" class="text-red-600 hover:underline mr-1">删除</button>
+                        ${remaining > 0 ? `<button onclick="payExpense('${e.id}')" class="text-green-600 hover:underline">付款</button>` : ''}
+                    </td>
+                </tr>`;
+
+                relatedPayments.forEach((p, idx) => {
+                    const isLast = idx === relatedPayments.length - 1;
+                    const connector = isLast ? '└─' : '├─';
+                    html += `<tr style="background: #f8fafc; border-bottom: 1px solid #f3f4f6;">
+                        <td class="px-2 py-1.5 text-xs text-gray-500 whitespace-nowrap" style="padding-left: 24px; width: 80px;">${connector} ${p.date}</td>
+                        <td class="px-2 py-1.5 text-xs text-gray-400 whitespace-nowrap" style="padding-left: 24px; width: 65px;">付款明细</td>
+                        <td class="px-2 py-1.5 text-xs whitespace-nowrap"></td>
+                        <td class="px-2 py-1.5 text-xs text-green-600 font-medium whitespace-nowrap">¥${(p.amount || 0).toFixed(2)}</td>
+                        <td class="px-2 py-1.5 text-xs whitespace-nowrap"></td>
+                        <td class="px-2 py-1.5 whitespace-nowrap"></td>
+                        <td class="px-2 py-1.5 text-xs text-gray-500 whitespace-nowrap">${p.paymentMethod || '-'}</td>
+                        <td class="px-2 py-1.5 text-xs text-gray-500 whitespace-nowrap" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 245px;">${p.remark || '-'}</td>
+                        <td class="px-2 py-1.5 text-xs whitespace-nowrap">
+                            <button onclick="editExpensePayment('${p.id}')" class="text-blue-600 hover:underline mr-1">编辑</button>
+                            <button onclick="deleteExpensePayment('${p.id}')" class="text-red-600 hover:underline">删除</button>
+                        </td>
+                    </tr>`;
                 });
+            } else if (item.kind === 'standalone') {
+                const p = item.data;
+                const typeInfo = EXPENSE_TYPES[p.expenseType] || { name: p.expenseType || '其他', color: 'gray' };
+                html += `<tr style="background: #eff6ff; border-bottom: 1px solid #e5e7eb;">
+                    <td class="px-2 py-2 text-xs text-gray-700 whitespace-nowrap" style="font-weight: 600;">${p.date}</td>
+                    <td class="px-2 py-2 text-xs whitespace-nowrap"><span class="status-badge status-partial">${typeInfo.name}·流水</span></td>
+                    <td class="px-2 py-2 text-xs text-gray-400 whitespace-nowrap">-</td>
+                    <td class="px-2 py-2 text-xs text-green-600 font-medium whitespace-nowrap">¥${(p.amount || 0).toFixed(2)}</td>
+                    <td class="px-2 py-2 text-xs text-gray-400 whitespace-nowrap">-</td>
+                    <td class="px-2 py-2 whitespace-nowrap"><span class="status-badge status-paid" style="font-size: 10px; padding: 2px 6px;">已支付</span></td>
+                    <td class="px-2 py-2 text-xs text-gray-500 whitespace-nowrap">${p.paymentMethod || '-'}</td>
+                    <td class="px-2 py-2 text-xs text-gray-500 whitespace-nowrap" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 245px;">${p.remark || '-'}</td>
+                    <td class="px-2 py-2 text-xs whitespace-nowrap">
+                        <button onclick="editExpensePayment('${p.id}')" class="text-blue-600 hover:underline mr-1">编辑</button>
+                        <button onclick="deleteExpensePayment('${p.id}')" class="text-red-600 hover:underline">删除</button>
+                    </td>
+                </tr>`;
             }
-            if (paymentDateFilter) expenses = expenses.filter(e => e.lastPaymentDate === paymentDateFilter);
+        });
 
-            let filteredPayments = [...expensePayments];
-            if (typeFilter) filteredPayments = filteredPayments.filter(p => p.expenseType === typeFilter);
-            if (startDate) filteredPayments = filteredPayments.filter(p => p.date >= startDate);
-            if (endDate) filteredPayments = filteredPayments.filter(p => p.date <= endDate);
-            if (paymentDateFilter) filteredPayments = filteredPayments.filter(p => p.date === paymentDateFilter);
-            if (searchKeyword) {
-                filteredPayments = filteredPayments.filter(p => {
-                    const remark = (p.remark || '').toLowerCase();
-                    const typeName = ((EXPENSE_TYPES[p.expenseType] || {}).name || p.expenseType || '').toLowerCase();
-                    const method = (p.paymentMethod || '').toLowerCase();
-                    return remark.includes(searchKeyword) || typeName.includes(searchKeyword) || method.includes(searchKeyword);
-                });
-            }
+        html += `<tr style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-top: 2px solid #f59e0b;">
+            <td class="px-2 py-2 text-xs font-bold text-amber-800 whitespace-nowrap" colspan="2">合计 (${expenseCount}笔费用${standaloneCount > 0 ? ', ' + standaloneCount + '笔流水' : ''})</td>
+            <td class="px-2 py-2 text-xs font-bold text-amber-900 whitespace-nowrap">¥${totalAmount.toFixed(2)}</td>
+            <td class="px-2 py-2 text-xs font-bold text-green-700 whitespace-nowrap">¥${totalPaid.toFixed(2)}</td>
+            <td class="px-2 py-2 text-xs font-bold ${totalUnpaid > 0 ? 'text-red-700' : 'text-gray-500'} whitespace-nowrap">¥${totalUnpaid.toFixed(2)}</td>
+            <td class="px-2 py-2 whitespace-nowrap" colspan="4">
+                <span class="status-badge ${isSettled ? 'status-paid' : 'status-pending'}" style="font-size: 10px; padding: 2px 6px;">${isSettled ? '✅ 已结清' : '未结清'}</span>
+            </td>
+        </tr>`;
+    }
 
-            const displayItems = [];
-            expenses.forEach(e => {
-                displayItems.push({ isPayment: false, sortDate: e.date, sortTime: e.lastUpdated || parseInt(e.id.replace(/\D/g, '')) || 0, data: e });
-            });
-            filteredPayments.forEach(p => {
-                displayItems.push({ isPayment: true, sortDate: p.date, sortTime: p.createTime || parseInt(p.id.replace(/\D/g, '')) || 0, data: p });
-            });
-
-            displayItems.sort((a, b) => {
-                const dateDiff = new Date(b.sortDate) - new Date(a.sortDate);
-                if (dateDiff !== 0) return dateDiff;
-                return b.sortTime - a.sortTime;
-            });
-
-            const totalAmount = expenses.reduce((sum, e) => sum + (e.totalAmount || 0), 0);
-            const totalPaidFromExpenses = expenses.reduce((sum, e) => sum + (e.paidAmount || 0), 0);
-            const totalPaidFromPayments = filteredPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-            const totalPaid = totalPaidFromExpenses + totalPaidFromPayments;
-            const totalUnpaid = Math.max(0, totalAmount - totalPaid);
-
-            const tbody = document.getElementById('expenseList');
-            let html = displayItems.map(item => {
-                if (!item.isPayment) {
-                    const expense = item.data;
-                    const typeInfo = EXPENSE_TYPES[expense.type] || { name: expense.type, color: 'gray' };
-                    const totalPaidForExpense = expense.paidAmount || 0;
-                    const unpaid = Math.max(0, (expense.totalAmount || 0) - totalPaidForExpense);
-                    let paymentStatusText, paymentStatusClass;
-                    if (totalPaidForExpense <= 0) { paymentStatusText = '未支付'; paymentStatusClass = 'status-pending'; }
-                    else if (unpaid <= 0) { paymentStatusText = '已支付'; paymentStatusClass = 'status-paid'; }
-                    else { paymentStatusText = '部分支付'; paymentStatusClass = 'status-partial'; }
-                    const paidDisplay = totalPaidForExpense > 0 ? `<span class="text-green-600 font-medium">¥${totalPaidForExpense.toFixed(2)}</span>` : `<span class="text-gray-400">-</span>`;
-                    const unpaidDisplay = unpaid > 0 ? `<span class="text-red-600 font-medium">¥${unpaid.toFixed(2)}</span>` : `<span class="text-gray-400">¥0.00</span>`;
-                    const paymentTimeDisplay = expense.lastPaymentDate ? `<span class="text-blue-600">${expense.lastPaymentDate}</span>` : `<span class="text-gray-400">-</span>`;
-                    let remarkDisplay = expense.remark || '费用登记';
-                    if (expense.lastPaymentMethod) remarkDisplay += `<br><span class="text-xs text-green-600">💳 ${expense.lastPaymentMethod}</span>`;
-                    return `<tr class="hover:bg-gray-50"><td class="px-2 py-2 text-sm text-gray-600">${expense.date}</td><td class="px-2 py-2 text-sm"><span class="status-badge status-${typeInfo.color}">${typeInfo.name}</span></td><td class="px-2 py-2 text-sm font-medium">¥${(expense.totalAmount || 0).toFixed(2)}</td><td class="px-2 py-2 text-sm">${paidDisplay}</td><td class="px-2 py-2 text-sm">${unpaidDisplay}</td><td class="px-2 py-2 text-sm"><span class="status-badge ${paymentStatusClass}">${paymentStatusText}</span></td><td class="px-2 py-2 text-sm">${paymentTimeDisplay}</td><td class="px-2 py-2 text-sm text-gray-500">${remarkDisplay}</td><td class="px-2 py-2 text-sm space-x-2"><button onclick="editExpense('${expense.id}')" class="text-blue-600 hover:underline">编辑</button><button onclick="deleteExpense('${expense.id}')" class="text-red-600 hover:underline">删除</button></td></tr>`;
-                } else {
-                    const payment = item.data;
-                    const typeInfo = EXPENSE_TYPES[payment.expenseType] || { name: payment.expenseType, color: 'gray' };
-                    const isDirectPayment = !payment.expenseId;
-                    return `<tr class="hover:bg-green-50" style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);"><td class="px-2 py-2 text-sm text-gray-600">${payment.date}</td><td class="px-2 py-2 text-sm"><span class="status-badge status-paid" style="font-size: 11px;">${typeInfo.name}-付款</span></td><td class="px-2 py-2 text-sm text-gray-400">-</td><td class="px-2 py-2 text-sm text-green-600 font-bold">¥${(payment.amount || 0).toFixed(2)}</td><td class="px-2 py-2 text-sm text-gray-400">-</td><td class="px-2 py-2 text-sm"><span class="status-badge status-paid">已支付</span></td><td class="px-2 py-2 text-sm text-blue-600">${payment.date}</td><td class="px-2 py-2 text-sm text-gray-500">${payment.paymentMethod ? `<span class="text-green-600 font-medium">💳 ${payment.paymentMethod}</span>` : ''}${isDirectPayment ? '<span class="text-xs text-blue-600">【独立流水】</span>' : ''}${payment.remark ? `<div class="text-xs text-gray-500 mt-1">${payment.remark}</div>` : ''}</td><td class="px-2 py-2 text-sm space-x-2"><button onclick="deleteExpensePayment('${payment.id}')" class="text-red-600 hover:underline">删除</button></td></tr>`;
-                }
-            }).join('');
-
-            if (displayItems.length > 0) {
-                const unpaidText = totalUnpaid > 0 ? `<span style="color: #dc2626; font-weight: 800; font-size: 16px;">尚欠: ¥${totalUnpaid.toFixed(2)}</span>` : `<span style="color: #059669; font-weight: 800;">✅ 已结清</span>`;
-                html += `<tr style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-top: 2px solid #0ea5e9;"><td class="px-2 py-3 text-sm font-bold text-blue-900" colspan="2">合计 (${expenses.length}笔登记, ${filteredPayments.length}笔付款)</td><td class="px-2 py-3 text-sm font-bold text-blue-900">¥${totalAmount.toFixed(2)}</td><td class="px-2 py-3 text-sm font-bold text-green-700">¥${totalPaid.toFixed(2)}</td><td class="px-2 py-3 text-sm font-bold ${totalUnpaid > 0 ? 'text-red-700' : 'text-gray-500'}">¥${totalUnpaid.toFixed(2)}</td><td class="px-2 py-3 text-sm font-bold" colspan="4">${unpaidText}</td></tr>`;
-            } else {
-                html = `<tr><td colspan="9" class="px-6 py-8 text-center text-gray-500"><div class="text-4xl mb-2">📭</div><p>暂无符合条件的记录</p></td></tr>`;
-            }
-            tbody.innerHTML = html;
-            updateExpenseStats();
-        }async function deleteExpense(expenseId) {
+    tbody.innerHTML = html;
+    updateExpenseStats();
+}async function deleteExpense(expenseId) {
             if (!checkEditPermission()) return;
             if (!confirm('确定要删除这条费用记录吗？关联的付款记录也会被删除。')) return;
 
@@ -8684,42 +9003,92 @@ function syncPaymentDataToOrders() {
 
         // 删除费用付款记录
         async function deleteExpensePayment(paymentId) {
-            if (!checkEditPermission()) return;
-            const payment = data.expensePayments.find(p => p.id === paymentId);
-            if (!payment) return;
-            if (!payment.expenseId) {
-                if (!confirm('确定要删除这条独立付款流水吗？')) return;
-                data.expensePayments = data.expensePayments.filter(p => p.id !== paymentId);
-                try {
-                    await saveData();
-                    renderExpenseList();
-                    updateExpenseStats();
-                    updateDashboard();
-                    updateCapitalOverview();
-                    showToast('✅ 独立付款流水已删除');
-                } catch (err) { console.error('删除失败:', err); showToast('❌ 删除失败', 'error'); }
-                return;
-            }
-            if (!confirm('确定要删除这条付款记录吗？对应的费用未付金额将恢复。')) return;
-            const expense = data.expenses.find(e => e.id === payment.expenseId);
-            if (expense) {
-                expense.paidAmount = Math.max(0, (expense.paidAmount || 0) - (payment.amount || 0));
-                expense.remainingAmount = Math.min((expense.totalAmount || 0), (expense.remainingAmount || 0) + (payment.amount || 0));
-                expense.lastUpdated = Date.now();
-                if (expense.paidAmount <= 0) { expense.paymentStatus = 'unpaid'; expense.paidAmount = 0; expense.remainingAmount = expense.totalAmount || 0; expense.lastPaymentDate = null; expense.lastPaymentMethod = null; }
-                else if (expense.remainingAmount > 0) expense.paymentStatus = 'partial';
-                else expense.paymentStatus = 'paid';
-            }
-            data.expensePayments = data.expensePayments.filter(p => p.id !== paymentId);
-            try {
-                await saveData();
-                renderExpenseList();
-                updateExpenseStats();
-                updateDashboard();
-                updateCapitalOverview();
-                showToast('✅ 付款记录已删除，费用未付金额已恢复');
-            } catch (err) { console.error('删除付款记录失败:', err); showToast('❌ 删除失败', 'error'); }
+    if (!checkEditPermission()) return;
+    if (!confirm('确定要删除这条付款记录吗？')) return;
+
+    const payment = data.expensePayments.find(p => p.id === paymentId);
+    if (!payment) return;
+
+    if (payment.expenseId) {
+        const expense = data.expenses.find(e => e.id === payment.expenseId);
+        if (expense) {
+            expense.paidAmount = Math.max(0, (expense.paidAmount || 0) - (payment.amount || 0));
+            expense.remainingAmount = Math.max(0, (expense.totalAmount || 0) - expense.paidAmount);
+            const remainingPayments = data.expensePayments
+                .filter(p => p.expenseId === expense.id && p.id !== paymentId)
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
+            expense.lastPaymentDate = remainingPayments.length > 0 ? remainingPayments[0].date : null;
         }
+    }
+
+    if (!payment.expenseId) {
+        data.transactions = data.transactions.filter(t => 
+            !(t.isExpensePayment && t.date === payment.date && Math.abs(t.amount - payment.amount) < 0.01)
+        );
+    }
+
+    data.expensePayments = data.expensePayments.filter(p => p.id !== paymentId);
+
+    try {
+        await saveData();
+        renderExpenseList();
+        updateExpenseStats();
+        showToast('✅ 删除成功');
+    } catch (err) {
+        console.error('删除失败:', err);
+        showToast('❌ 删除失败', 'error');
+    }
+}
+function editExpensePayment(paymentId) {
+    if (!checkEditPermission()) return;
+    const payment = data.expensePayments.find(p => p.id === paymentId);
+    if (!payment) return;
+
+    editingExpensePaymentId = paymentId;
+
+    document.getElementById('expensePaymentSimpleModal').classList.add('active');
+    document.querySelector('#expensePaymentSimpleModal h3').textContent = '编辑付款记录';
+
+    const isDirect = !payment.expenseId;
+    document.getElementById('directPaymentMode').checked = isDirect;
+    togglePaymentMode();
+
+    if (isDirect) {
+        document.getElementById('directPaymentType').value = payment.expenseType || '';
+    } else {
+        setTimeout(() => {
+            const cb = document.querySelector(`.unpaid-expense-checkbox[value="${payment.expenseId}"]`);
+            if (cb) cb.checked = true;
+            updateSelectedUnpaidTotal();
+        }, 100);
+    }
+
+    document.getElementById('expensePaymentSimpleDate').value = payment.date;
+    document.getElementById('expensePaymentSimpleAmount').value = payment.amount;
+    document.getElementById('expensePaymentSimpleMethod').value = payment.paymentMethod || '';
+    document.getElementById('expensePaymentSimpleRemark').value = payment.remark || '';
+}
+
+function payExpense(expenseId) {
+    if (!checkEditPermission()) return;
+    const expense = data.expenses.find(e => e.id === expenseId);
+    if (!expense) return;
+
+    openExpensePaymentSimpleModal();
+
+    setTimeout(() => {
+        const cb = document.querySelector(`.unpaid-expense-checkbox[value="${expenseId}"]`);
+        if (cb) {
+            cb.checked = true;
+            toggleUnpaidExpense(cb);
+        }
+        const remaining = expense.remainingAmount || Math.max(0, (expense.totalAmount || 0) - (expense.paidAmount || 0));
+        document.getElementById('expensePaymentSimpleAmount').value = remaining > 0 ? remaining.toFixed(2) : '';
+        validatePaymentAmount();
+    }, 100);
+}
+
+
 
         function resetPurchaseFilters() {
             document.getElementById('purchaseSearch').value = '';
@@ -9182,12 +9551,26 @@ function resetExpenseFilters() {
             const totalIncome = (data.transactions || []).filter(t => t.type === 'income' && !t.isExpensePayment).reduce((sum, t) => sum + (t.amount || 0), 0);
             // 供应商付款（收付款板块）
             const totalSupplierPayment = (data.transactions || []).filter(t => t.type === 'expense' && !t.isExpensePayment).reduce((sum, t) => sum + (t.amount || 0), 0);
-            // 费用支出 = 所有费用板块的已支付金额（登记已付 + 付款流水）
-            const totalExpensePayment = (data.expenses || []).reduce((sum, e) => sum + (e.paidAmount || 0), 0)
-                + (data.expensePayments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
-
-            // 获取费用付款记录，用于明细展示
+            // 费用实际已支付 = 付款流水合计（有流水的费用）+ 登记已付（无流水的费用）+ 独立流水
             const expensePayments = data.expensePayments || [];
+            const expensesWithPaymentIds = new Set(expensePayments.map(p => p.expenseId).filter(Boolean));
+            let totalExpensePayment = 0;
+            (data.expenses || []).forEach(e => {
+                if (expensesWithPaymentIds.has(e.id)) {
+                    // 有付款流水的，用流水合计（最准确）
+                    const payments = expensePayments.filter(p => p.expenseId === e.id);
+                    totalExpensePayment += payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+                } else {
+                    // 无付款流水的旧数据，用登记时的已付金额
+                    totalExpensePayment += (e.paidAmount || 0);
+                }
+            });
+            // 加上没有关联费用ID的独立付款流水
+            totalExpensePayment += expensePayments
+                .filter(p => !p.expenseId)
+                .reduce((sum, p) => sum + (p.amount || 0), 0);
+
+            // 获取费用付款记录，用于明细展示（复用上面已声明的 expensePayments）
             const expensesWithPayments = new Set(expensePayments.map(p => p.expenseId).filter(Boolean));
             const expensePaidFromRegistration = (data.expenses || []).reduce((sum, e) => {
                 return sum + (expensesWithPayments.has(e.id) ? 0 : (e.paidAmount || 0));
@@ -9994,8 +10377,15 @@ function resetExpenseFilters() {
             const expensePaidFromRegistration = expenses.reduce((sum, e) => sum + (e.paidAmount || 0), 0);
             // 费用付款流水
             const expensePaidFromPayments = expensePayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-            // 费用总已付：直接用 expense.paidAmount（付款登记已同步更新）
-            let expenseTotalPaid = expenses.reduce((sum, e) => sum + (e.paidAmount || 0), 0);
+            // 费用总已付：根据子行付款合计计算（兼容旧数据）
+            let expenseTotalPaid = 0;
+            expenses.forEach(e => {
+                if (expensesWithPayments.has(e.id)) {
+                    expenseTotalPaid += expensePayments.filter(p => p.expenseId === e.id).reduce((s, p) => s + (p.amount || 0), 0);
+                } else {
+                    expenseTotalPaid += (e.paidAmount || 0);
+                }
+            });
             const unpaidExpense = Math.max(0, expenseTotalRegistered - expenseTotalPaid);
 
             // 5. 纸箱费用（选中月份）
@@ -10037,12 +10427,18 @@ function resetExpenseFilters() {
                 .filter(t => t.type === 'income' && !t.isExpensePayment && inMonths(t.date))
                 .reduce((sum, t) => sum + (t.amount || 0), 0);
 
-            // 费用支出 = 所有费用板块的已支付金额（登记已付 + 付款流水）
-            const monthlyExpensePayment = (data.expenses || [])
-                .filter(e => inMonths(e.date))
-                .reduce((sum, e) => sum + (e.paidAmount || 0), 0)
-                + (data.expensePayments || [])
-                .filter(p => inMonths(p.date))
+            // 费用支出 = 实际已支付（有流水的用流水合计，无流水的用登记已付）+ 独立流水
+            let monthlyExpensePayment = 0;
+            (data.expenses || []).filter(e => inMonths(e.date)).forEach(e => {
+                if (expensesWithPayments.has(e.id)) {
+                    monthlyExpensePayment += expensePayments.filter(p => p.expenseId === e.id && inMonths(p.date)).reduce((s, p) => s + (p.amount || 0), 0);
+                } else {
+                    monthlyExpensePayment += (e.paidAmount || 0);
+                }
+            });
+            // 加上没有关联费用ID的独立付款流水
+            monthlyExpensePayment += (data.expensePayments || [])
+                .filter(p => inMonths(p.date) && !p.expenseId)
                 .reduce((sum, p) => sum + (p.amount || 0), 0);
 
             const cashBalance = initialCapital + customerIncome - supplierPayments - monthlyExpensePayment;
