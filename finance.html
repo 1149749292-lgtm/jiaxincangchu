@@ -7066,18 +7066,17 @@ function renderTransactionList() {
             // 计算汇总：以子行付款之和作为真实已付（兼容旧数据）
             let totalAmount = 0;
             let totalPaid = 0;
-            let totalUnpaid = 0;
 
             expenses.forEach(e => {
                 const relatedPayments = expensePayments.filter(p => p.expenseId === e.id);
                 const childrenPaid = relatedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
                 const actualPaid = Math.max(e.paidAmount || 0, childrenPaid);
-                const actualRemaining = Math.max(0, (e.totalAmount || 0) - actualPaid);
 
                 totalAmount += (e.totalAmount || 0);
                 totalPaid += actualPaid;
-                totalUnpaid += actualRemaining;
             });
+
+            const totalUnpaid = Math.max(0, totalAmount - totalPaid);
 
             // 加上独立流水
             const totalPaidFromPayments = filteredPayments.filter(p => !p.expenseId).reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -8308,16 +8307,17 @@ function syncPaymentDataToOrders() {
         return;
     }
 
-    // 编辑模式：先删除旧记录
     if (editingExpensePaymentId) {
         const oldPayment = data.expensePayments.find(p => p.id === editingExpensePaymentId);
         if (oldPayment && oldPayment.expenseId) {
             const expense = data.expenses.find(e => e.id === oldPayment.expenseId);
             if (expense) {
-                expense.paidAmount = Math.max(0, (expense.paidAmount || 0) - (oldPayment.amount || 0));
-                expense.remainingAmount = Math.max(0, (expense.totalAmount || 0) - expense.paidAmount);
-                const remainingPayments = data.expensePayments.filter(p => p.expenseId === expense.id && p.id !== editingExpensePaymentId).sort((a, b) => new Date(b.date) - new Date(a.date));
-                expense.lastPaymentDate = remainingPayments.length > 0 ? remainingPayments[0].date : null;
+                const remainingPayments = data.expensePayments.filter(p => p.expenseId === expense.id && p.id !== editingExpensePaymentId);
+                const childrenPaid = remainingPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+                expense.paidAmount = childrenPaid;
+                expense.remainingAmount = Math.max(0, (expense.totalAmount || 0) - childrenPaid);
+                const lastPayment = remainingPayments.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+                expense.lastPaymentDate = lastPayment ? lastPayment.date : null;
             }
         }
         data.expensePayments = data.expensePayments.filter(p => p.id !== editingExpensePaymentId);
@@ -8364,24 +8364,18 @@ function syncPaymentDataToOrders() {
         let paymentAmount = amount;
 
         if (selectedExpenses.length > 0) {
-            const totalSelectedUnpaid = selectedExpenses.reduce((sum, e) => sum + (e.remainingAmount || 0), 0);
+            selectedExpenses.sort((a, b) => new Date(a.date) - new Date(b.date));
             let remainingPayment = paymentAmount;
 
-            selectedExpenses.forEach((expense, idx) => {
+            selectedExpenses.forEach(expense => {
                 if (remainingPayment <= 0) return;
-                const isLast = idx === selectedExpenses.length - 1;
-                let alloc;
-
-                if (isLast) {
-                    alloc = Math.min(expense.remainingAmount || 0, remainingPayment);
-                } else {
-                    const ratio = totalSelectedUnpaid > 0 ? (expense.remainingAmount || 0) / totalSelectedUnpaid : 0;
-                    alloc = Math.min(expense.remainingAmount || 0, Math.round(paymentAmount * ratio * 100) / 100);
-                }
-
+                const relatedPayments = data.expensePayments.filter(p => p.expenseId === expense.id);
+                const childrenPaid = relatedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+                const actualRemaining = Math.max(0, (expense.totalAmount || 0) - childrenPaid);
+                const alloc = Math.min(actualRemaining, remainingPayment);
                 if (alloc <= 0) return;
 
-                expense.paidAmount = (expense.paidAmount || 0) + alloc;
+                expense.paidAmount = childrenPaid + alloc;
                 expense.remainingAmount = Math.max(0, (expense.totalAmount || 0) - expense.paidAmount);
                 expense.lastPaymentDate = date;
                 remainingPayment -= alloc;
@@ -8430,16 +8424,15 @@ function syncPaymentDataToOrders() {
         }
     }
 
-    try {
-        await saveData();
+    saveData().then(() => {
         closeExpensePaymentSimpleModal();
         renderExpenseList();
         updateExpenseStats();
         showToast('✅ 保存成功');
-    } catch (err) {
+    }).catch(err => {
         console.error('保存失败:', err);
         showToast('❌ 保存失败', 'error');
-    }
+    });
 }
 
         function openExpenseModal() {
@@ -8548,86 +8541,61 @@ function syncPaymentDataToOrders() {
         }
 
         function updateExpenseStats() {
-            const expenses = data.expenses || [];
-            const expensePayments = data.expensePayments || [];
+    const expenses = data.expenses || [];
+    const expensePayments = data.expensePayments || [];
+    const nameStats = {};
+    const nameColors = {};
 
-            // 按 name 合并统计，防止同一 name 有多个 key 导致重复卡片
-            const nameStats = {};
-            const nameColors = {};
-
-            // 初始化所有已知类型（按 name 去重）
-            Object.keys(EXPENSE_TYPES).forEach(key => {
-                const typeInfo = EXPENSE_TYPES[key];
-                const name = typeInfo.name;
-                if (!nameStats[name]) {
-                    nameStats[name] = { total: 0, paid: 0, unpaid: 0 };
-                    nameColors[name] = typeInfo.color;
-                }
-            });
-
-            // 统计费用登记的总费用和已付
-            expenses.forEach(expense => {
-                const typeInfo = EXPENSE_TYPES[expense.type] || { name: expense.type || '其他', color: 'gray' };
-                const name = typeInfo.name;
-                if (!nameStats[name]) {
-                    nameStats[name] = { total: 0, paid: 0, unpaid: 0 };
-                    nameColors[name] = typeInfo.color;
-                }
-                nameStats[name].total += expense.totalAmount || 0;
-                nameStats[name].paid += expense.paidAmount || 0;
-            });
-
-            // 只加上"直接记流水"（无expenseId）的独立付款，避免与 expense.paidAmount 重复统计
-            expensePayments.forEach(payment => {
-                if (!payment.expenseId) {
-                    const typeInfo = EXPENSE_TYPES[payment.expenseType] || { name: payment.expenseType || '其他', color: 'gray' };
-                    const name = typeInfo.name;
-                    if (!nameStats[name]) {
-                        nameStats[name] = { total: 0, paid: 0, unpaid: 0 };
-                        nameColors[name] = typeInfo.color;
-                    }
-                    nameStats[name].paid += payment.amount || 0;
-                }
-            });
-
-            // 计算未付金额
-            Object.keys(nameStats).forEach(name => {
-                nameStats[name].unpaid = Math.max(0, nameStats[name].total - nameStats[name].paid);
-            });
-
-            // 动态渲染统计卡片
-            const container = document.getElementById('expenseStatsCards');
-            if (!container) return;
-
-            const borderColors = {
-                blue: 'border-blue-500',
-                green: 'border-green-500',
-                yellow: 'border-yellow-500',
-                purple: 'border-purple-500',
-                gray: 'border-gray-400',
-                red: 'border-red-500',
-                orange: 'border-orange-500',
-                cyan: 'border-cyan-500',
-                pink: 'border-pink-500',
-                indigo: 'border-indigo-500'
-            };
-
-            let html = '';
-            Object.keys(nameStats).forEach(name => {
-                const stat = nameStats[name];
-                const color = nameColors[name] || 'gray';
-                const borderClass = borderColors[color] || borderColors.gray;
-                html += `
-                    <div class="bg-white rounded-xl p-4 shadow-sm border-l-4 ${borderClass}">
-                        <p class="text-xs text-gray-500">${name}</p>
-                        <p class="text-lg font-bold text-gray-800">¥${stat.total.toFixed(0)}</p>
-                        <p class="text-xs text-green-600 mt-1">已付: ¥${stat.paid.toFixed(0)}</p>
-                        <p class="text-xs text-red-500 mt-0.5">未付: ¥${stat.unpaid.toFixed(0)}</p>
-                    </div>`;
-            });
-
-            container.innerHTML = html;
+    Object.keys(EXPENSE_TYPES).forEach(key => {
+        const name = EXPENSE_TYPES[key].name;
+        if (!nameStats[name]) {
+            nameStats[name] = { total: 0, paid: 0, unpaid: 0 };
+            nameColors[name] = EXPENSE_TYPES[key].color;
         }
+    });
+
+    expenses.forEach(expense => {
+        const typeInfo = EXPENSE_TYPES[expense.type] || { name: expense.type || '其他', color: 'gray' };
+        const name = typeInfo.name;
+        if (!nameStats[name]) {
+            nameStats[name] = { total: 0, paid: 0, unpaid: 0 };
+            nameColors[name] = typeInfo.color;
+        }
+        const relatedPayments = expensePayments.filter(p => p.expenseId === expense.id);
+        const childrenPaid = relatedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+        const actualPaid = Math.max(expense.paidAmount || 0, childrenPaid);
+        nameStats[name].total += expense.totalAmount || 0;
+        nameStats[name].paid += actualPaid;
+    });
+
+    Object.keys(nameStats).forEach(name => {
+        nameStats[name].unpaid = Math.max(0, nameStats[name].total - nameStats[name].paid);
+    });
+
+    const container = document.getElementById('expenseStatsCards');
+    if (!container) return;
+
+    const borderColors = {
+        blue: 'border-blue-500', green: 'border-green-500', yellow: 'border-yellow-500',
+        purple: 'border-purple-500', gray: 'border-gray-400', red: 'border-red-500',
+        orange: 'border-orange-500', cyan: 'border-cyan-500', pink: 'border-pink-500', indigo: 'border-indigo-500'
+    };
+
+    let html = '';
+    Object.keys(nameStats).forEach(name => {
+        const stat = nameStats[name];
+        const color = nameColors[name] || 'gray';
+        const borderClass = borderColors[color] || borderColors.gray;
+        html += `
+            <div class="bg-white rounded-xl p-4 shadow-sm border-l-4 ${borderClass}">
+                <p class="text-xs text-gray-500">${name}</p>
+                <p class="text-lg font-bold text-gray-800">¥${stat.total.toFixed(0)}</p>
+                <p class="text-xs text-green-600 mt-1">已付: ¥${stat.paid.toFixed(0)}</p>
+                <p class="text-xs text-red-500 mt-0.5">未付: ¥${stat.unpaid.toFixed(0)}</p>
+            </div>`;
+    });
+    container.innerHTML = html;
+}
 
         // 从数据对象更新统计（供 renderExpenseList 调用）
         function updateExpenseStatsFromData(stats) {
@@ -8655,173 +8623,123 @@ function syncPaymentDataToOrders() {
     let expenses = data.expenses || [];
     let expensePayments = data.expensePayments || [];
 
-    // 1. 筛选费用
     let filteredExpenses = [...expenses];
     if (typeFilter) filteredExpenses = filteredExpenses.filter(e => e.type === typeFilter);
     if (startDate) filteredExpenses = filteredExpenses.filter(e => e.date >= startDate);
     if (endDate) filteredExpenses = filteredExpenses.filter(e => e.date <= endDate);
+
     if (paymentFilter) {
-        if (paymentFilter === 'paid') filteredExpenses = filteredExpenses.filter(e => (e.remainingAmount || 0) <= 0);
-        else if (paymentFilter === 'unpaid') filteredExpenses = filteredExpenses.filter(e => (e.remainingAmount || 0) > 0);
+        filteredExpenses = filteredExpenses.filter(e => {
+            const relatedPayments = expensePayments.filter(p => p.expenseId === e.id);
+            const childrenPaid = relatedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+            const actualPaid = Math.max(e.paidAmount || 0, childrenPaid);
+            const actualRemaining = Math.max(0, (e.totalAmount || 0) - actualPaid);
+            if (paymentFilter === 'paid') return actualRemaining <= 0;
+            if (paymentFilter === 'unpaid') return actualRemaining > 0;
+            return true;
+        });
     }
 
-    // 2. 搜索筛选
-    let displayExpenses = [...filteredExpenses];
     if (searchKeyword) {
-        const matchingExpenseIds = new Set();
+        const matchingIds = new Set();
         filteredExpenses.forEach(e => {
             const remark = (e.remark || '').toLowerCase();
             const typeName = ((EXPENSE_TYPES[e.type] || {}).name || e.type || '').toLowerCase();
-            if (remark.includes(searchKeyword) || typeName.includes(searchKeyword)) {
-                matchingExpenseIds.add(e.id);
-            }
+            if (remark.includes(searchKeyword) || typeName.includes(searchKeyword)) matchingIds.add(e.id);
+            const relatedPayments = expensePayments.filter(p => p.expenseId === e.id);
+            relatedPayments.forEach(p => {
+                const pRemark = (p.remark || '').toLowerCase();
+                const pMethod = (p.paymentMethod || '').toLowerCase();
+                if (pRemark.includes(searchKeyword) || pMethod.includes(searchKeyword)) matchingIds.add(e.id);
+            });
         });
-        expensePayments.forEach(p => {
-            if (!p.expenseId) return;
-            const remark = (p.remark || '').toLowerCase();
-            const typeName = ((EXPENSE_TYPES[p.expenseType] || {}).name || p.expenseType || '').toLowerCase();
-            const method = (p.paymentMethod || '').toLowerCase();
-            if (remark.includes(searchKeyword) || typeName.includes(searchKeyword) || method.includes(searchKeyword)) {
-                matchingExpenseIds.add(p.expenseId);
-            }
-        });
-        displayExpenses = filteredExpenses.filter(e => matchingExpenseIds.has(e.id));
+        filteredExpenses = filteredExpenses.filter(e => matchingIds.has(e.id));
     }
 
-    // 3. 支付时间筛选
     if (paymentDateFilter) {
-        const paidExpenseIds = new Set(expensePayments.filter(p => p.date === paymentDateFilter && p.expenseId).map(p => p.expenseId));
-        displayExpenses = displayExpenses.filter(e => paidExpenseIds.has(e.id) || e.date === paymentDateFilter);
-    }
-
-    // 4. 独立流水筛选
-    let standalonePayments = expensePayments.filter(p => !p.expenseId);
-    if (typeFilter) standalonePayments = standalonePayments.filter(p => p.expenseType === typeFilter);
-    if (startDate) standalonePayments = standalonePayments.filter(p => p.date >= startDate);
-    if (endDate) standalonePayments = standalonePayments.filter(p => p.date <= endDate);
-    if (paymentDateFilter) standalonePayments = standalonePayments.filter(p => p.date === paymentDateFilter);
-    if (searchKeyword) {
-        standalonePayments = standalonePayments.filter(p => {
-            const remark = (p.remark || '').toLowerCase();
-            const typeName = ((EXPENSE_TYPES[p.expenseType] || {}).name || p.expenseType || '').toLowerCase();
-            const method = (p.paymentMethod || '').toLowerCase();
-            return remark.includes(searchKeyword) || typeName.includes(searchKeyword) || method.includes(searchKeyword);
+        filteredExpenses = filteredExpenses.filter(e => {
+            if (e.lastPaymentDate === paymentDateFilter) return true;
+            const relatedPayments = expensePayments.filter(p => p.expenseId === e.id);
+            return relatedPayments.some(p => p.date === paymentDateFilter);
         });
     }
-    if (paymentFilter === 'unpaid') standalonePayments = [];
-    if (paymentFilter === 'paid') displayExpenses = [];
 
-    // 5. 构建显示项
-    let displayItems = [];
-    displayExpenses.forEach(e => {
-        displayItems.push({ kind: 'expense', date: e.date, data: e, sortTime: new Date(e.date).getTime() });
-    });
-    standalonePayments.forEach(p => {
-        displayItems.push({ kind: 'standalone', date: p.date, data: p, sortTime: new Date(p.date).getTime() });
-    });
-    displayItems.sort((a, b) => b.sortTime - a.sortTime);
-
-    // 6. 计算合计：以子行付款之和作为真实已付
-    let totalAmount = 0;
-    let totalPaid = 0;
-    let totalUnpaid = 0;
-
-    displayExpenses.forEach(e => {
-        const relatedPayments = expensePayments.filter(p => p.expenseId === e.id);
-        const childrenPaid = relatedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-        const actualPaid = Math.max(e.paidAmount || 0, childrenPaid);
-        const actualRemaining = Math.max(0, (e.totalAmount || 0) - actualPaid);
-
-        totalAmount += (e.totalAmount || 0);
-        totalPaid += actualPaid;
-        totalUnpaid += actualRemaining;
-    });
-
-    let totalPaidStandalone = standalonePayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-    totalPaid += totalPaidStandalone;
-
-    const isSettled = totalUnpaid <= 0 && displayExpenses.length > 0;
-    const expenseCount = displayExpenses.length;
-    const standaloneCount = standalonePayments.length;
+    filteredExpenses.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     const tbody = document.getElementById('expenseList');
     let html = '';
 
-    if (displayItems.length === 0) {
+    let totalAmount = 0;
+    let totalPaid = 0;
+
+    filteredExpenses.forEach(e => {
+        const relatedPayments = expensePayments.filter(p => p.expenseId === e.id);
+        const childrenPaid = relatedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+        const actualPaid = Math.max(e.paidAmount || 0, childrenPaid);
+        totalAmount += (e.totalAmount || 0);
+        totalPaid += actualPaid;
+    });
+
+    const totalUnpaid = Math.max(0, totalAmount - totalPaid);
+
+    if (filteredExpenses.length === 0) {
         html = `<tr><td colspan="9" class="px-6 py-8 text-center text-gray-500"><div style="font-size: 48px; margin-bottom: 8px;">📭</div><p>暂无符合条件的记录</p></td></tr>`;
     } else {
-        displayItems.forEach(item => {
-            if (item.kind === 'expense') {
-                const e = item.data;
-                const typeInfo = EXPENSE_TYPES[e.type] || { name: e.type, color: 'gray' };
-                const relatedPayments = expensePayments.filter(p => p.expenseId === e.id).sort((a, b) => new Date(a.date) - new Date(b.date));
-                const childrenPaid = relatedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-                const paid = Math.max(e.paidAmount || 0, childrenPaid);
-                const remaining = Math.max(0, (e.totalAmount || 0) - paid);
-                const status = remaining <= 0 ? '已支付' : (paid > 0 ? '部分支付' : '未支付');
-                const statusClass = remaining <= 0 ? 'status-paid' : (paid > 0 ? 'status-partial' : 'status-pending');
+        filteredExpenses.forEach(e => {
+            const typeInfo = EXPENSE_TYPES[e.type] || { name: e.type || '其他', color: 'gray' };
+            const relatedPayments = expensePayments.filter(p => p.expenseId === e.id).sort((a, b) => new Date(a.date) - new Date(b.date));
+            const childrenPaid = relatedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+            const actualPaid = Math.max(e.paidAmount || 0, childrenPaid);
+            const actualRemaining = Math.max(0, (e.totalAmount || 0) - actualPaid);
 
-                html += `<tr style="background: ${paid > 0 ? '#f0fdf4' : (remaining <= 0 ? '#f0fdf4' : 'white')}; border-bottom: 1px solid #e5e7eb;">
-                    <td class="px-2 py-2 text-xs text-gray-700 whitespace-nowrap" style="font-weight: 600;">${e.date}</td>
-                    <td class="px-2 py-2 text-xs whitespace-nowrap"><span class="status-badge ${typeInfo.color === 'blue' ? 'status-partial' : typeInfo.color === 'green' ? 'status-paid' : typeInfo.color === 'purple' ? 'status-partial' : typeInfo.color === 'orange' ? 'status-pending' : 'status-pending'}">${typeInfo.name}</span></td>
-                    <td class="px-2 py-2 text-xs font-medium text-gray-900 whitespace-nowrap">¥${(e.totalAmount || 0).toFixed(2)}</td>
-                    <td class="px-2 py-2 text-xs text-green-600 whitespace-nowrap">¥${paid.toFixed(2)}</td>
-                    <td class="px-2 py-2 text-xs ${remaining > 0 ? 'text-red-600 font-medium' : 'text-gray-400'} whitespace-nowrap">¥${remaining.toFixed(2)}</td>
-                    <td class="px-2 py-2 whitespace-nowrap"><span class="status-badge ${statusClass}" style="font-size: 10px; padding: 2px 6px;">${status}</span></td>
-                    <td class="px-2 py-2 text-xs text-gray-500 whitespace-nowrap">${e.lastPaymentDate || '-'}</td>
-                    <td class="px-2 py-2 text-xs text-gray-500 whitespace-nowrap" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 245px;">${e.remark || '-'}</td>
-                    <td class="px-2 py-2 text-xs whitespace-nowrap">
-                        <button onclick="editExpense('${e.id}')" class="text-blue-600 hover:underline mr-1">编辑</button>
-                        <button onclick="deleteExpense('${e.id}')" class="text-red-600 hover:underline mr-1">删除</button>
-                        ${remaining > 0 ? `<button onclick="payExpense('${e.id}')" class="text-green-600 hover:underline">付款</button>` : ''}
-                    </td>
-                </tr>`;
+            const status = actualRemaining <= 0 ? '已支付' : (actualPaid > 0 ? '部分支付' : '未支付');
+            const statusClass = actualRemaining <= 0 ? 'status-paid' : (actualPaid > 0 ? 'status-partial' : 'status-pending');
 
-                relatedPayments.forEach((p, idx) => {
-                    const isLast = idx === relatedPayments.length - 1;
-                    const connector = isLast ? '└─' : '├─';
-                    html += `<tr style="background: #f8fafc; border-bottom: 1px solid #f3f4f6;">
-                        <td class="px-2 py-1.5 text-xs text-gray-500 whitespace-nowrap" style="padding-left: 24px; width: 80px;">${connector} ${p.date}</td>
-                        <td class="px-2 py-1.5 text-xs text-gray-400 whitespace-nowrap" style="padding-left: 24px; width: 65px;">付款明细</td>
-                        <td class="px-2 py-1.5 text-xs whitespace-nowrap"></td>
-                        <td class="px-2 py-1.5 text-xs text-green-600 font-medium whitespace-nowrap">¥${(p.amount || 0).toFixed(2)}</td>
-                        <td class="px-2 py-1.5 text-xs whitespace-nowrap"></td>
-                        <td class="px-2 py-1.5 whitespace-nowrap"></td>
-                        <td class="px-2 py-1.5 text-xs text-gray-500 whitespace-nowrap">${p.paymentMethod || '-'}</td>
-                        <td class="px-2 py-1.5 text-xs text-gray-500 whitespace-nowrap" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 245px;">${p.remark || '-'}</td>
-                        <td class="px-2 py-1.5 text-xs whitespace-nowrap">
-                            <button onclick="editExpensePayment('${p.id}')" class="text-blue-600 hover:underline mr-1">编辑</button>
+            html += `<tr style="border-bottom: 1px solid #e5e7eb; ${actualRemaining <= 0 ? 'background: #f0fdf4;' : (actualPaid > 0 ? 'background: #fffbeb;' : '')}">
+                <td class="px-2 py-2 text-xs whitespace-nowrap">${e.date}</td>
+                <td class="px-2 py-2 text-xs whitespace-nowrap"><span class="status-badge ${statusClass}" style="font-size: 10px; padding: 2px 6px;">${typeInfo.name}</span></td>
+                <td class="px-2 py-2 text-xs font-bold whitespace-nowrap">¥${(e.totalAmount || 0).toFixed(2)}</td>
+                <td class="px-2 py-2 text-xs whitespace-nowrap" style="color: #059669; font-weight: 600;">¥${actualPaid.toFixed(2)}</td>
+                <td class="px-2 py-2 text-xs whitespace-nowrap" style="color: ${actualRemaining > 0 ? '#dc2626' : '#6b7280'}; font-weight: ${actualRemaining > 0 ? '700' : '400'};">¥${actualRemaining.toFixed(2)}</td>
+                <td class="px-2 py-2 text-xs whitespace-nowrap"><span class="status-badge ${statusClass}" style="font-size: 10px; padding: 2px 6px;">${status}</span></td>
+                <td class="px-2 py-2 text-xs whitespace-nowrap">${e.lastPaymentDate || '-'}</td>
+                <td class="px-2 py-2 text-xs whitespace-nowrap" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis;" title="${e.remark || ''}">${e.remark || '-'}</td>
+                <td class="px-2 py-2 text-xs whitespace-nowrap space-x-1">
+                    <button onclick="editExpense('${e.id}')" class="text-blue-600 hover:underline">编辑</button>
+                    <button onclick="deleteExpense('${e.id}')" class="text-red-600 hover:underline">删除</button>
+                    ${actualRemaining > 0 ? `<button onclick="payExpense('${e.id}')" class="text-green-600 hover:underline">付款</button>` : ''}
+                </td>
+            </tr>`;
+
+            if (relatedPayments.length > 0) {
+                relatedPayments.forEach((p, pIdx) => {
+                    const isLast = pIdx === relatedPayments.length - 1;
+                    html += `<tr style="border-bottom: 1px ${isLast ? 'solid' : 'dashed'} #e5e7eb; background: #fafafa;">
+                        <td class="px-2 py-1 text-xs whitespace-nowrap" style="color: #6b7280; padding-left: 20px;">${isLast ? '└─' : '├─'} ${p.date}</td>
+                        <td class="px-2 py-1 text-xs whitespace-nowrap" style="color: #6b7280;">付款明细</td>
+                        <td class="px-2 py-1 text-xs whitespace-nowrap">-</td>
+                        <td class="px-2 py-1 text-xs whitespace-nowrap" style="color: #059669; font-weight: 600;">¥${(p.amount || 0).toFixed(2)}</td>
+                        <td class="px-2 py-1 text-xs whitespace-nowrap">-</td>
+                        <td class="px-2 py-1 text-xs whitespace-nowrap"><span class="status-badge status-paid" style="font-size: 10px; padding: 2px 6px;">已付</span></td>
+                        <td class="px-2 py-1 text-xs whitespace-nowrap">${p.paymentMethod || '-'}</td>
+                        <td class="px-2 py-1 text-xs whitespace-nowrap" style="color: #6b7280;" title="${p.remark || ''}">${p.remark || '-'}</td>
+                        <td class="px-2 py-1 text-xs whitespace-nowrap space-x-1">
+                            <button onclick="editExpensePayment('${p.id}')" class="text-blue-600 hover:underline">编辑</button>
                             <button onclick="deleteExpensePayment('${p.id}')" class="text-red-600 hover:underline">删除</button>
                         </td>
                     </tr>`;
                 });
-            } else if (item.kind === 'standalone') {
-                const p = item.data;
-                const typeInfo = EXPENSE_TYPES[p.expenseType] || { name: p.expenseType || '其他', color: 'gray' };
-                html += `<tr style="background: #eff6ff; border-bottom: 1px solid #e5e7eb;">
-                    <td class="px-2 py-2 text-xs text-gray-700 whitespace-nowrap" style="font-weight: 600;">${p.date}</td>
-                    <td class="px-2 py-2 text-xs whitespace-nowrap"><span class="status-badge status-partial">${typeInfo.name}·流水</span></td>
-                    <td class="px-2 py-2 text-xs text-gray-400 whitespace-nowrap">-</td>
-                    <td class="px-2 py-2 text-xs text-green-600 font-medium whitespace-nowrap">¥${(p.amount || 0).toFixed(2)}</td>
-                    <td class="px-2 py-2 text-xs text-gray-400 whitespace-nowrap">-</td>
-                    <td class="px-2 py-2 whitespace-nowrap"><span class="status-badge status-paid" style="font-size: 10px; padding: 2px 6px;">已支付</span></td>
-                    <td class="px-2 py-2 text-xs text-gray-500 whitespace-nowrap">${p.paymentMethod || '-'}</td>
-                    <td class="px-2 py-2 text-xs text-gray-500 whitespace-nowrap" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 245px;">${p.remark || '-'}</td>
-                    <td class="px-2 py-2 text-xs whitespace-nowrap">
-                        <button onclick="editExpensePayment('${p.id}')" class="text-blue-600 hover:underline mr-1">编辑</button>
-                        <button onclick="deleteExpensePayment('${p.id}')" class="text-red-600 hover:underline">删除</button>
-                    </td>
-                </tr>`;
             }
         });
 
+        const isSettled = totalUnpaid <= 0;
         html += `<tr style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-top: 2px solid #f59e0b;">
-            <td class="px-2 py-2 text-xs font-bold text-amber-800 whitespace-nowrap" colspan="2">合计 (${expenseCount}笔费用${standaloneCount > 0 ? ', ' + standaloneCount + '笔流水' : ''})</td>
-            <td class="px-2 py-2 text-xs font-bold text-amber-900 whitespace-nowrap">¥${totalAmount.toFixed(2)}</td>
-            <td class="px-2 py-2 text-xs font-bold text-green-700 whitespace-nowrap">¥${totalPaid.toFixed(2)}</td>
-            <td class="px-2 py-2 text-xs font-bold ${totalUnpaid > 0 ? 'text-red-700' : 'text-gray-500'} whitespace-nowrap">¥${totalUnpaid.toFixed(2)}</td>
-            <td class="px-2 py-2 whitespace-nowrap" colspan="4">
-                <span class="status-badge ${isSettled ? 'status-paid' : 'status-pending'}" style="font-size: 10px; padding: 2px 6px;">${isSettled ? '✅ 已结清' : '未结清'}</span>
+            <td class="px-2 py-3 text-xs font-bold whitespace-nowrap" colspan="2">合计(${filteredExpenses.length}笔费用)</td>
+            <td class="px-2 py-3 text-xs font-bold whitespace-nowrap">¥${totalAmount.toFixed(2)}</td>
+            <td class="px-2 py-3 text-xs font-bold whitespace-nowrap" style="color: #059669;">¥${totalPaid.toFixed(2)}</td>
+            <td class="px-2 py-3 text-xs font-bold whitespace-nowrap" style="color: ${isSettled ? '#059669' : '#dc2626'};">¥${totalUnpaid.toFixed(2)}</td>
+            <td class="px-2 py-3 text-xs whitespace-nowrap" colspan="4">
+                <span class="status-badge ${isSettled ? 'status-paid' : 'status-partial'}" style="font-size: 11px; padding: 3px 10px;">${isSettled ? '✅ 已结清' : '未结清'}</span>
             </td>
         </tr>`;
     }
@@ -9004,40 +8922,39 @@ function syncPaymentDataToOrders() {
         // 删除费用付款记录
         async function deleteExpensePayment(paymentId) {
     if (!checkEditPermission()) return;
-    if (!confirm('确定要删除这条付款记录吗？')) return;
+    if (!confirm('确定要删除这条付款记录吗？将自动重新计算费用的已付金额。')) return;
 
     const payment = data.expensePayments.find(p => p.id === paymentId);
     if (!payment) return;
 
+    data.expensePayments = data.expensePayments.filter(p => p.id !== paymentId);
+
     if (payment.expenseId) {
         const expense = data.expenses.find(e => e.id === payment.expenseId);
         if (expense) {
-            expense.paidAmount = Math.max(0, (expense.paidAmount || 0) - (payment.amount || 0));
-            expense.remainingAmount = Math.max(0, (expense.totalAmount || 0) - expense.paidAmount);
-            const remainingPayments = data.expensePayments
-                .filter(p => p.expenseId === expense.id && p.id !== paymentId)
-                .sort((a, b) => new Date(b.date) - new Date(a.date));
-            expense.lastPaymentDate = remainingPayments.length > 0 ? remainingPayments[0].date : null;
+            const relatedPayments = data.expensePayments.filter(p => p.expenseId === expense.id);
+            const childrenPaid = relatedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+            expense.paidAmount = childrenPaid;
+            expense.remainingAmount = Math.max(0, (expense.totalAmount || 0) - childrenPaid);
+
+            if (relatedPayments.length > 0) {
+                const lastPayment = relatedPayments.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+                expense.lastPaymentDate = lastPayment.date;
+            } else {
+                expense.lastPaymentDate = null;
+            }
         }
     }
 
-    if (!payment.expenseId) {
-        data.transactions = data.transactions.filter(t => 
-            !(t.isExpensePayment && t.date === payment.date && Math.abs(t.amount - payment.amount) < 0.01)
-        );
-    }
-
-    data.expensePayments = data.expensePayments.filter(p => p.id !== paymentId);
-
-    try {
-        await saveData();
+    saveData().then(() => {
         renderExpenseList();
         updateExpenseStats();
-        showToast('✅ 删除成功');
-    } catch (err) {
+        updateCapitalOverview();
+        showToast('✅ 删除成功，已重新计算费用状态');
+    }).catch(err => {
         console.error('删除失败:', err);
         showToast('❌ 删除失败', 'error');
-    }
+    });
 }
 function editExpensePayment(paymentId) {
     if (!checkEditPermission()) return;
