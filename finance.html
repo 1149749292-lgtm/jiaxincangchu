@@ -7066,17 +7066,18 @@ function renderTransactionList() {
             // 计算汇总：以子行付款之和作为真实已付（兼容旧数据）
             let totalAmount = 0;
             let totalPaid = 0;
+            let totalUnpaid = 0;
 
             expenses.forEach(e => {
                 const relatedPayments = expensePayments.filter(p => p.expenseId === e.id);
                 const childrenPaid = relatedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
                 const actualPaid = Math.max(e.paidAmount || 0, childrenPaid);
+                const actualRemaining = Math.max(0, (e.totalAmount || 0) - actualPaid);
 
                 totalAmount += (e.totalAmount || 0);
                 totalPaid += actualPaid;
+                totalUnpaid += actualRemaining;
             });
-
-            const totalUnpaid = Math.max(0, totalAmount - totalPaid);
 
             // 加上独立流水
             const totalPaidFromPayments = filteredPayments.filter(p => !p.expenseId).reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -8641,19 +8642,12 @@ function syncPaymentDataToOrders() {
     }
 
     if (searchKeyword) {
-        const matchingIds = new Set();
-        filteredExpenses.forEach(e => {
+        // 只匹配父行自身的 remark/类型名，子行匹配不导致父行显示
+        filteredExpenses = filteredExpenses.filter(e => {
             const remark = (e.remark || '').toLowerCase();
             const typeName = ((EXPENSE_TYPES[e.type] || {}).name || e.type || '').toLowerCase();
-            if (remark.includes(searchKeyword) || typeName.includes(searchKeyword)) matchingIds.add(e.id);
-            const relatedPayments = expensePayments.filter(p => p.expenseId === e.id);
-            relatedPayments.forEach(p => {
-                const pRemark = (p.remark || '').toLowerCase();
-                const pMethod = (p.paymentMethod || '').toLowerCase();
-                if (pRemark.includes(searchKeyword) || pMethod.includes(searchKeyword)) matchingIds.add(e.id);
-            });
+            return remark.includes(searchKeyword) || typeName.includes(searchKeyword);
         });
-        filteredExpenses = filteredExpenses.filter(e => matchingIds.has(e.id));
     }
 
     if (paymentDateFilter) {
@@ -8680,6 +8674,33 @@ function syncPaymentDataToOrders() {
         totalPaid += actualPaid;
     });
 
+    // 搜索模式下，显示父行被过滤但子行匹配的独立子行
+    if (searchKeyword) {
+        const shownParentIds = new Set(filteredExpenses.map(e => e.id));
+        expensePayments.forEach(p => {
+            if (p.expenseId && shownParentIds.has(p.expenseId)) return;
+            const pRemark = (p.remark || '').toLowerCase();
+            const pMethod = (p.paymentMethod || '').toLowerCase();
+            if (!pRemark.includes(searchKeyword) && !pMethod.includes(searchKeyword)) return;
+            html += `<tr style="border-bottom: 1px solid #e5e7eb; background: #fafafa;">
+                <td class="px-2 py-2 text-xs whitespace-nowrap" style="color: #6b7280;">${p.date}</td>
+                <td class="px-2 py-2 text-xs whitespace-nowrap"><span class="status-badge status-paid" style="font-size: 10px; padding: 2px 6px;">付款明细</span></td>
+                <td class="px-2 py-2 text-xs whitespace-nowrap">-</td>
+                <td class="px-2 py-2 text-xs whitespace-nowrap" style="color: #059669; font-weight: 600;">¥${(p.amount || 0).toFixed(2)}</td>
+                <td class="px-2 py-2 text-xs whitespace-nowrap">-</td>
+                <td class="px-2 py-2 text-xs whitespace-nowrap"><span class="status-badge status-paid" style="font-size: 10px; padding: 2px 6px;">已付</span></td>
+                <td class="px-2 py-2 text-xs whitespace-nowrap">${p.paymentMethod || '-'}</td>
+                <td class="px-2 py-2 text-xs whitespace-nowrap" style="min-width: 200px; white-space: nowrap;" title="${p.remark || ''}">${p.remark || '-'}</td>
+                <td class="px-2 py-2 text-xs whitespace-nowrap space-x-1">
+                    <button onclick="editExpensePayment('${p.id}')" class="text-blue-600 hover:underline">编辑</button>
+                    <button onclick="deleteExpensePayment('${p.id}')" class="text-red-600 hover:underline">删除</button>
+                </td>
+            </tr>`;
+            totalPaid += p.amount || 0;
+        });
+    }
+
+
     const totalUnpaid = Math.max(0, totalAmount - totalPaid);
 
     if (filteredExpenses.length === 0) {
@@ -8703,7 +8724,7 @@ function syncPaymentDataToOrders() {
                 <td class="px-2 py-2 text-xs whitespace-nowrap" style="color: ${actualRemaining > 0 ? '#dc2626' : '#6b7280'}; font-weight: ${actualRemaining > 0 ? '700' : '400'};">¥${actualRemaining.toFixed(2)}</td>
                 <td class="px-2 py-2 text-xs whitespace-nowrap"><span class="status-badge ${statusClass}" style="font-size: 10px; padding: 2px 6px;">${status}</span></td>
                 <td class="px-2 py-2 text-xs whitespace-nowrap">${e.lastPaymentDate || '-'}</td>
-                <td class="px-2 py-2 text-xs whitespace-nowrap" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis;" title="${e.remark || ''}">${e.remark || '-'}</td>
+                <td class="px-2 py-2 text-xs whitespace-nowrap" style="min-width: 200px; white-space: nowrap;" title="${e.remark || ''}">${e.remark || '-'}</td>
                 <td class="px-2 py-2 text-xs whitespace-nowrap space-x-1">
                     <button onclick="editExpense('${e.id}')" class="text-blue-600 hover:underline">编辑</button>
                     <button onclick="deleteExpense('${e.id}')" class="text-red-600 hover:underline">删除</button>
@@ -8713,6 +8734,12 @@ function syncPaymentDataToOrders() {
 
             if (relatedPayments.length > 0) {
                 relatedPayments.forEach((p, pIdx) => {
+                    // 搜索模式下，只显示包含关键词的子行
+                    if (searchKeyword) {
+                        const pRemark = (p.remark || '').toLowerCase();
+                        const pMethod = (p.paymentMethod || '').toLowerCase();
+                        if (!pRemark.includes(searchKeyword) && !pMethod.includes(searchKeyword)) return;
+                    }
                     const isLast = pIdx === relatedPayments.length - 1;
                     html += `<tr style="border-bottom: 1px ${isLast ? 'solid' : 'dashed'} #e5e7eb; background: #fafafa;">
                         <td class="px-2 py-1 text-xs whitespace-nowrap" style="color: #6b7280; padding-left: 20px;">${isLast ? '└─' : '├─'} ${p.date}</td>
