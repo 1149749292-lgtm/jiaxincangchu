@@ -8615,165 +8615,223 @@ function syncPaymentDataToOrders() {
 
         function renderExpenseList() {
     const typeFilter = document.getElementById('expenseTypeFilter').value;
-    const paymentFilter = document.getElementById('expensePaymentFilter').value;
     const startDate = document.getElementById('expenseStartDate').value;
     const endDate = document.getElementById('expenseEndDate').value;
+    const paymentFilter = document.getElementById('expensePaymentFilter').value;
     const searchKeyword = document.getElementById('expenseSearch').value.toLowerCase().trim();
     const paymentDateFilter = document.getElementById('expensePaymentDateFilter').value;
 
     let expenses = data.expenses || [];
     let expensePayments = data.expensePayments || [];
 
-    let filteredExpenses = [...expenses];
-    if (typeFilter) filteredExpenses = filteredExpenses.filter(e => e.type === typeFilter);
-    if (startDate) filteredExpenses = filteredExpenses.filter(e => e.date >= startDate);
-    if (endDate) filteredExpenses = filteredExpenses.filter(e => e.date <= endDate);
-
+    // 筛选费用记录
+    if (typeFilter) expenses = expenses.filter(e => e.type === typeFilter);
+    if (startDate) expenses = expenses.filter(e => e.date >= startDate);
+    if (endDate) expenses = expenses.filter(e => e.date <= endDate);
     if (paymentFilter) {
-        filteredExpenses = filteredExpenses.filter(e => {
-            const relatedPayments = expensePayments.filter(p => p.expenseId === e.id);
-            const childrenPaid = relatedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-            const actualPaid = Math.max(e.paidAmount || 0, childrenPaid);
-            const actualRemaining = Math.max(0, (e.totalAmount || 0) - actualPaid);
-            if (paymentFilter === 'paid') return actualRemaining <= 0;
-            if (paymentFilter === 'unpaid') return actualRemaining > 0;
-            return true;
-        });
+        if (paymentFilter === 'paid') expenses = expenses.filter(e => (e.remainingAmount || 0) <= 0);
+        else if (paymentFilter === 'unpaid') expenses = expenses.filter(e => (e.remainingAmount || 0) > 0);
     }
-
     if (searchKeyword) {
-        // 只匹配父行自身的 remark/类型名，子行匹配不导致父行显示
-        filteredExpenses = filteredExpenses.filter(e => {
+        expenses = expenses.filter(e => {
             const remark = (e.remark || '').toLowerCase();
             const typeName = ((EXPENSE_TYPES[e.type] || {}).name || e.type || '').toLowerCase();
             return remark.includes(searchKeyword) || typeName.includes(searchKeyword);
         });
     }
+    if (paymentDateFilter) expenses = expenses.filter(e => e.lastPaymentDate === paymentDateFilter);
 
-    if (paymentDateFilter) {
-        filteredExpenses = filteredExpenses.filter(e => {
-            if (e.lastPaymentDate === paymentDateFilter) return true;
-            const relatedPayments = expensePayments.filter(p => p.expenseId === e.id);
-            return relatedPayments.some(p => p.date === paymentDateFilter);
+    // 筛选付款流水（用于子行显示和独立流水）
+    let filteredPayments = [...expensePayments];
+    if (typeFilter) filteredPayments = filteredPayments.filter(p => p.expenseType === typeFilter);
+    if (startDate) filteredPayments = filteredPayments.filter(p => p.date >= startDate);
+    if (endDate) filteredPayments = filteredPayments.filter(p => p.date <= endDate);
+    if (paymentDateFilter) filteredPayments = filteredPayments.filter(p => p.date === paymentDateFilter);
+    if (searchKeyword) {
+        filteredPayments = filteredPayments.filter(p => {
+            const remark = (p.remark || '').toLowerCase();
+            const typeName = ((EXPENSE_TYPES[p.expenseType] || {}).name || p.expenseType || '').toLowerCase();
+            const method = (p.paymentMethod || '').toLowerCase();
+            return remark.includes(searchKeyword) || typeName.includes(searchKeyword) || method.includes(searchKeyword);
         });
     }
 
-    filteredExpenses.sort((a, b) => new Date(b.date) - new Date(a.date));
+    // 合并筛选后的数据：费用登记 + 独立流水
+    let allItems = [];
 
-    const tbody = document.getElementById('expenseList');
-    let html = '';
+    // 1. 添加费用登记（父行）
+    expenses.forEach(e => {
+        const typeInfo = EXPENSE_TYPES[e.type] || { name: e.type, color: 'gray' };
+        // 用子行付款合计计算实际已付（兼容旧数据）
+        const relatedPayments = expensePayments.filter(p => p.expenseId === e.id);
+        const childrenPaid = relatedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+        const paid = Math.max(e.paidAmount || 0, childrenPaid);
+        const remaining = Math.max(0, (e.totalAmount || 0) - paid);
+        const status = remaining <= 0 ? '已支付' : (paid > 0 ? '部分支付' : '未支付');
+        const statusColor = remaining <= 0 ? '#059669' : (paid > 0 ? '#d97706' : '#dc2626');
+        const statusBg = remaining <= 0 ? '#d1fae5' : (paid > 0 ? '#fef3c7' : '#fee2e2');
+        const lastPaymentDate = relatedPayments.length > 0 
+            ? relatedPayments.sort((a, b) => new Date(b.date) - new Date(a.date))[0].date 
+            : (e.lastPaymentDate || null);
 
+        allItems.push({
+            date: e.date,
+            type: typeInfo.name,
+            typeColor: typeInfo.color,
+            totalAmount: e.totalAmount || 0,
+            paidAmount: paid,
+            remainingAmount: remaining,
+            status: status,
+            statusColor: statusColor,
+            statusBg: statusBg,
+            lastPaymentDate: lastPaymentDate,
+            remark: e.remark || '-',
+            isPayment: false,
+            expenseId: e.id,
+            itemId: e.id
+        });
+    });
+
+    // 2. 添加独立流水（没有关联费用ID的付款记录）
+    filteredPayments.forEach(p => {
+        if (!p.expenseId) {
+            const typeInfo = EXPENSE_TYPES[p.expenseType] || { name: p.expenseType || '其他', color: 'gray' };
+            allItems.push({
+                date: p.date,
+                type: typeInfo.name + '（流水）',
+                typeColor: typeInfo.color,
+                totalAmount: p.amount || 0,  // 独立流水显示付款金额作为总费用
+                paidAmount: p.amount || 0,
+                remainingAmount: 0,
+                status: '已支付',
+                statusColor: '#059669',
+                statusBg: '#d1fae5',
+                lastPaymentDate: p.date,
+                remark: (p.remark || '-') + (p.paymentMethod ? ' · ' + p.paymentMethod : ''),
+                isPayment: true,
+                expenseId: null,
+                itemId: p.id,
+                paymentMethod: p.paymentMethod
+            });
+        }
+    });
+
+    // 按日期倒序排列
+    allItems.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    // 计算汇总：以子行付款之和作为真实已付（兼容旧数据）
     let totalAmount = 0;
     let totalPaid = 0;
+    let totalUnpaid = 0;
 
-    filteredExpenses.forEach(e => {
+    expenses.forEach(e => {
         const relatedPayments = expensePayments.filter(p => p.expenseId === e.id);
         const childrenPaid = relatedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
         const actualPaid = Math.max(e.paidAmount || 0, childrenPaid);
+        const actualRemaining = Math.max(0, (e.totalAmount || 0) - actualPaid);
+
         totalAmount += (e.totalAmount || 0);
         totalPaid += actualPaid;
+        totalUnpaid += actualRemaining;
     });
 
-    // 搜索模式下，显示父行被过滤但子行匹配的独立子行
-    if (searchKeyword) {
-        const shownParentIds = new Set(filteredExpenses.map(e => e.id));
-        expensePayments.forEach(p => {
-            if (p.expenseId && shownParentIds.has(p.expenseId)) return;
-            const pRemark = (p.remark || '').toLowerCase();
-            const pMethod = (p.paymentMethod || '').toLowerCase();
-            if (!pRemark.includes(searchKeyword) && !pMethod.includes(searchKeyword)) return;
-            html += `<tr style="border-bottom: 1px solid #e5e7eb; background: #fafafa;">
-                <td class="px-2 py-2 text-xs whitespace-nowrap" style="color: #6b7280;">${p.date}</td>
-                <td class="px-2 py-2 text-xs whitespace-nowrap"><span class="status-badge status-paid" style="font-size: 10px; padding: 2px 6px;">付款明细</span></td>
-                <td class="px-2 py-2 text-xs whitespace-nowrap">-</td>
-                <td class="px-2 py-2 text-xs whitespace-nowrap" style="color: #059669; font-weight: 600;">¥${(p.amount || 0).toFixed(2)}</td>
-                <td class="px-2 py-2 text-xs whitespace-nowrap">-</td>
-                <td class="px-2 py-2 text-xs whitespace-nowrap"><span class="status-badge status-paid" style="font-size: 10px; padding: 2px 6px;">已付</span></td>
-                <td class="px-2 py-2 text-xs whitespace-nowrap">${p.paymentMethod || '-'}</td>
-                <td class="px-2 py-2 text-xs whitespace-nowrap" style="min-width: 200px; white-space: nowrap;" title="${p.remark || ''}">${p.remark || '-'}</td>
-                <td class="px-2 py-2 text-xs whitespace-nowrap space-x-1">
-                    <button onclick="editExpensePayment('${p.id}')" class="text-blue-600 hover:underline">编辑</button>
-                    <button onclick="deleteExpensePayment('${p.id}')" class="text-red-600 hover:underline">删除</button>
+    // 加上独立流水
+    const totalPaidFromPayments = filteredPayments.filter(p => !p.expenseId).reduce((sum, p) => sum + (p.amount || 0), 0);
+    totalPaid += totalPaidFromPayments;
+    totalAmount += totalPaidFromPayments;
+
+    const isSettled = totalUnpaid <= 0;
+
+    // 生成表格行
+    const tbody = document.getElementById('expenseList');
+
+    if (allItems.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="9" class="px-6 py-8 text-center text-gray-500">
+                    <div class="text-4xl mb-2">📭</div>
+                    <p>暂无符合条件的记录</p>
                 </td>
-            </tr>`;
-            totalPaid += p.amount || 0;
-        });
+            </tr>
+        `;
+        return;
     }
 
+    const rows = allItems.map((item, index) => {
+        const statusColor = item.status === '已支付' ? '#059669' : (item.status === '未支付' ? '#dc2626' : '#d97706');
+        const statusBg = item.status === '已支付' ? '#d1fae5' : (item.status === '未支付' ? '#fee2e2' : '#fef3c7');
+        const isPaymentBg = item.isPayment ? 'background: #f0fdf4;' : '';
 
-    const totalUnpaid = Math.max(0, totalAmount - totalPaid);
-
-    if (filteredExpenses.length === 0) {
-        html = `<tr><td colspan="9" class="px-6 py-8 text-center text-gray-500"><div style="font-size: 48px; margin-bottom: 8px;">📭</div><p>暂无符合条件的记录</p></td></tr>`;
-    } else {
-        filteredExpenses.forEach(e => {
-            const typeInfo = EXPENSE_TYPES[e.type] || { name: e.type || '其他', color: 'gray' };
-            const relatedPayments = expensePayments.filter(p => p.expenseId === e.id).sort((a, b) => new Date(a.date) - new Date(b.date));
-            const childrenPaid = relatedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-            const actualPaid = Math.max(e.paidAmount || 0, childrenPaid);
-            const actualRemaining = Math.max(0, (e.totalAmount || 0) - actualPaid);
-
-            const status = actualRemaining <= 0 ? '已支付' : (actualPaid > 0 ? '部分支付' : '未支付');
-            const statusClass = actualRemaining <= 0 ? 'status-paid' : (actualPaid > 0 ? 'status-partial' : 'status-pending');
-
-            html += `<tr style="border-bottom: 1px solid #e5e7eb; ${actualRemaining <= 0 ? 'background: #f0fdf4;' : (actualPaid > 0 ? 'background: #fffbeb;' : '')}">
-                <td class="px-2 py-2 text-xs whitespace-nowrap">${e.date}</td>
-                <td class="px-2 py-2 text-xs whitespace-nowrap"><span class="status-badge ${statusClass}" style="font-size: 10px; padding: 2px 6px;">${typeInfo.name}</span></td>
-                <td class="px-2 py-2 text-xs font-bold whitespace-nowrap">¥${(e.totalAmount || 0).toFixed(2)}</td>
-                <td class="px-2 py-2 text-xs whitespace-nowrap" style="color: #059669; font-weight: 600;">¥${actualPaid.toFixed(2)}</td>
-                <td class="px-2 py-2 text-xs whitespace-nowrap" style="color: ${actualRemaining > 0 ? '#dc2626' : '#6b7280'}; font-weight: ${actualRemaining > 0 ? '700' : '400'};">¥${actualRemaining.toFixed(2)}</td>
-                <td class="px-2 py-2 text-xs whitespace-nowrap"><span class="status-badge ${statusClass}" style="font-size: 10px; padding: 2px 6px;">${status}</span></td>
-                <td class="px-2 py-2 text-xs whitespace-nowrap">${e.lastPaymentDate || '-'}</td>
-                <td class="px-2 py-2 text-xs whitespace-nowrap" style="min-width: 200px; white-space: nowrap;" title="${e.remark || ''}">${e.remark || '-'}</td>
-                <td class="px-2 py-2 text-xs whitespace-nowrap space-x-1">
-                    <button onclick="editExpense('${e.id}')" class="text-blue-600 hover:underline">编辑</button>
-                    <button onclick="deleteExpense('${e.id}')" class="text-red-600 hover:underline">删除</button>
-                    ${actualRemaining > 0 ? `<button onclick="payExpense('${e.id}')" class="text-green-600 hover:underline">付款</button>` : ''}
-                </td>
-            </tr>`;
-
-            if (relatedPayments.length > 0) {
-                relatedPayments.forEach((p, pIdx) => {
-                    // 搜索模式下，只显示包含关键词的子行
-                    if (searchKeyword) {
-                        const pRemark = (p.remark || '').toLowerCase();
-                        const pMethod = (p.paymentMethod || '').toLowerCase();
-                        if (!pRemark.includes(searchKeyword) && !pMethod.includes(searchKeyword)) return;
-                    }
-                    const isLast = pIdx === relatedPayments.length - 1;
-                    html += `<tr style="border-bottom: 1px ${isLast ? 'solid' : 'dashed'} #e5e7eb; background: #fafafa;">
-                        <td class="px-2 py-1 text-xs whitespace-nowrap" style="color: #6b7280; padding-left: 20px;">${isLast ? '└─' : '├─'} ${p.date}</td>
-                        <td class="px-2 py-1 text-xs whitespace-nowrap" style="color: #6b7280;">付款明细</td>
-                        <td class="px-2 py-1 text-xs whitespace-nowrap">-</td>
-                        <td class="px-2 py-1 text-xs whitespace-nowrap" style="color: #059669; font-weight: 600;">¥${(p.amount || 0).toFixed(2)}</td>
-                        <td class="px-2 py-1 text-xs whitespace-nowrap">-</td>
-                        <td class="px-2 py-1 text-xs whitespace-nowrap"><span class="status-badge status-paid" style="font-size: 10px; padding: 2px 6px;">已付</span></td>
-                        <td class="px-2 py-1 text-xs whitespace-nowrap">${p.paymentMethod || '-'}</td>
-                        <td class="px-2 py-1 text-xs whitespace-nowrap" style="color: #6b7280;" title="${p.remark || ''}">${p.remark || '-'}</td>
-                        <td class="px-2 py-1 text-xs whitespace-nowrap space-x-1">
-                            <button onclick="editExpensePayment('${p.id}')" class="text-blue-600 hover:underline">编辑</button>
-                            <button onclick="deleteExpensePayment('${p.id}')" class="text-red-600 hover:underline">删除</button>
-                        </td>
-                    </tr>`;
-                });
+        // 查找该费用记录的付款明细（仅对费用登记显示）
+        let paymentDetails = '';
+        if (!item.isPayment && item.expenseId) {
+            const payments = expensePayments.filter(p => p.expenseId === item.expenseId).sort((a, b) => new Date(a.date) - new Date(b.date));
+            if (payments.length > 0) {
+                paymentDetails = payments.map((p, pIdx) =>
+                    `<div style="display: flex; justify-content: space-between; align-items: center; padding: 2px 0; border-bottom: 1px dashed #e5e7eb; font-size: 10px;">
+                        <span style="color: #6b7280;">${pIdx + 1}. ${p.date} ${p.paymentMethod ? '· ' + p.paymentMethod : ''}</span>
+                        <span style="color: #059669; font-weight: 600;">¥${(p.amount || 0).toFixed(2)}</span>
+                    </div>`
+                ).join('');
+                paymentDetails = `<div style="margin-top: 4px; background: #f0fdf4; border-radius: 4px; padding: 4px 6px;">${paymentDetails}</div>`;
             }
-        });
+        }
 
-        const isSettled = totalUnpaid <= 0;
-        html += `<tr style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-top: 2px solid #f59e0b;">
-            <td class="px-2 py-3 text-xs font-bold whitespace-nowrap" colspan="2">合计(${filteredExpenses.length}笔费用)</td>
-            <td class="px-2 py-3 text-xs font-bold whitespace-nowrap">¥${totalAmount.toFixed(2)}</td>
-            <td class="px-2 py-3 text-xs font-bold whitespace-nowrap" style="color: #059669;">¥${totalPaid.toFixed(2)}</td>
-            <td class="px-2 py-3 text-xs font-bold whitespace-nowrap" style="color: ${isSettled ? '#059669' : '#dc2626'};">¥${totalUnpaid.toFixed(2)}</td>
-            <td class="px-2 py-3 text-xs whitespace-nowrap" colspan="4">
-                <span class="status-badge ${isSettled ? 'status-paid' : 'status-partial'}" style="font-size: 11px; padding: 3px 10px;">${isSettled ? '✅ 已结清' : '未结清'}</span>
+        // 操作按钮
+        let actionButtons = '';
+        if (item.isPayment) {
+            // 独立流水：编辑 + 删除
+            actionButtons = `
+                <button onclick="editExpensePayment('${item.itemId}')" class="text-blue-600 hover:text-blue-800 text-xs mr-2">编辑</button>
+                <button onclick="deleteExpensePayment('${item.itemId}')" class="text-red-600 hover:text-red-800 text-xs">删除</button>
+            `;
+        } else {
+            // 费用登记：编辑 + 删除 + 付款
+            actionButtons = `
+                <button onclick="editExpense('${item.itemId}')" class="text-blue-600 hover:text-blue-800 text-xs mr-2">编辑</button>
+                <button onclick="deleteExpense('${item.itemId}')" class="text-red-600 hover:text-red-800 text-xs mr-2">删除</button>
+                ${item.remainingAmount > 0 ? `<button onclick="payExpense('${item.itemId}')" class="text-green-600 hover:text-green-800 text-xs">付款</button>` : ''}
+            `;
+        }
+
+        return `
+            <tr style="border-bottom: 1px solid #e5e7eb; ${isPaymentBg}">
+                <td class="px-2 py-2 text-xs text-gray-700 whitespace-nowrap">${item.date}</td>
+                <td class="px-2 py-2 whitespace-nowrap">
+                    <span class="status-badge" style="background: ${statusBg}; color: ${statusColor}; font-size: 10px; padding: 2px 8px;">${item.type}</span>
+                </td>
+                <td class="px-2 py-2 text-xs font-medium text-gray-900 whitespace-nowrap text-right">${item.totalAmount > 0 ? '¥' + item.totalAmount.toFixed(2) : '-'}</td>
+                <td class="px-2 py-2 text-xs font-medium whitespace-nowrap text-right" style="color: #059669;">${item.paidAmount > 0 ? '¥' + item.paidAmount.toFixed(2) : '-'}</td>
+                <td class="px-2 py-2 text-xs font-medium whitespace-nowrap text-right" style="color: ${item.remainingAmount > 0 ? '#dc2626' : '#6b7280'};">${item.remainingAmount > 0 ? '¥' + item.remainingAmount.toFixed(2) : '-'}</td>
+                <td class="px-2 py-2 whitespace-nowrap text-center">
+                    <span class="status-badge" style="background: ${statusBg}; color: ${statusColor}; font-size: 10px; padding: 2px 8px;">${item.status}</span>
+                </td>
+                <td class="px-2 py-2 text-xs text-gray-500 whitespace-nowrap text-center">${item.lastPaymentDate || '-'}</td>
+                <td class="px-2 py-2 text-xs text-gray-500 whitespace-nowrap" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">
+                    <div style="word-break: break-all; line-height: 1.4;">${item.remark}</div>
+                    ${paymentDetails}
+                </td>
+                <td class="px-2 py-2 text-xs whitespace-nowrap">${actionButtons}</td>
+            </tr>
+        `;
+    }).join('');
+
+    // 汇总行
+    const summaryRow = `
+        <tr style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-top: 2px solid #f59e0b;">
+            <td class="px-2 py-3 text-xs font-bold text-amber-800 whitespace-nowrap" colspan="2">合计（${allItems.length}笔）</td>
+            <td class="px-2 py-3 text-xs font-bold text-amber-900 whitespace-nowrap text-right">¥${totalAmount.toFixed(2)}</td>
+            <td class="px-2 py-3 text-xs font-bold text-amber-900 whitespace-nowrap text-right">¥${totalPaid.toFixed(2)}</td>
+            <td class="px-2 py-3 text-xs font-bold text-amber-900 whitespace-nowrap text-right" style="color: ${totalUnpaid > 0 ? '#dc2626' : '#059669'};">¥${totalUnpaid.toFixed(2)}</td>
+            <td class="px-2 py-3 whitespace-nowrap" colspan="4">
+                <span style="color: ${isSettled ? '#059669' : '#d97706'}; font-weight: 600;">${isSettled ? '✅ 已结清' : '未结清'}</span>
             </td>
-        </tr>`;
-    }
+        </tr>
+    `;
 
-    tbody.innerHTML = html;
-    updateExpenseStats();
-}async function deleteExpense(expenseId) {
+    tbody.innerHTML = rows + summaryRow;
+}
+async function deleteExpense(expenseId) {
             if (!checkEditPermission()) return;
             if (!confirm('确定要删除这条费用记录吗？关联的付款记录也会被删除。')) return;
 
