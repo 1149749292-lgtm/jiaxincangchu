@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="timestamp" content="2026-05-26 15:41">
-  <title>佳信水产仓库系统 v6.0.5 · GitHub存储</title>
+  <title>佳信水产仓库系统 v6.0.6 · GitHub存储</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js?v=20260502_1130"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js?v=20260502_1130"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter&v=20260502_1130:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
@@ -363,24 +363,49 @@
       #cartonTable th { padding: 3px 2px; font-size: 9px; }
     }
 
+    /* 产品表格 - 最小宽度确保不挤压 */
+    #productTable { min-width: 1100px; }
+    #productTable th { padding: 12px 8px; font-size: 13px; }
+    #productTable td { padding: 10px 8px; font-size: 13px; }
+
+    /* 产品表格列宽 */
+    #productTable th:nth-child(1), #productTable td:nth-child(1) { width: 80px; min-width: 80px; }   /* 品牌 */
+    #productTable th:nth-child(2), #productTable td:nth-child(2) { width: 130px; min-width: 130px; }  /* 品名 */
+    #productTable th:nth-child(3), #productTable td:nth-child(3) { width: 70px; min-width: 70px; }   /* 规格 */
+    #productTable th:nth-child(4), #productTable td:nth-child(4) { width: 60px; min-width: 60px; }   /* 净重 */
+    #productTable th:nth-child(5), #productTable td:nth-child(5) { width: 60px; min-width: 60px; }   /* 毛重 */
+    #productTable th:nth-child(6), #productTable td:nth-child(6) { width: 70px; min-width: 70px; }   /* 售价 */
+    #productTable th:nth-child(7), #productTable td:nth-child(7) { width: 70px; min-width: 70px; }   /* 加工费 */
+    #productTable th:nth-child(8), #productTable td:nth-child(8) { width: 70px; min-width: 70px; }   /* 纸箱费 */
+    #productTable th:nth-child(9), #productTable td:nth-child(9) { width: 70px; min-width: 70px; }   /* 包装费 */
+    #productTable th:nth-child(10), #productTable td:nth-child(10) { width: 80px; min-width: 80px; }  /* 备注 */
+    #productTable th:nth-child(11), #productTable td:nth-child(11) { width: 80px; min-width: 80px; white-space: nowrap; padding-left: 6px; padding-right: 6px; border-left: 2px solid var(--border); } /* 操作 */
+
     /* 响应式适配 */
     @media (max-width: 640px) {
       #products .stats-grid {
         grid-template-columns: repeat(2, 1fr);
       }
 
-      #productTable {
-        font-size: 11px;
-      }
+      #productTable { min-width: 900px; }
+      #productTable th { padding: 8px 5px; font-size: 11px; }
+      #productTable td { padding: 8px 5px; font-size: 11px; }
 
-      #productTable th,
-      #productTable td {
-        padding: 8px 4px;
-      }
+      #productTable th:nth-child(1), #productTable td:nth-child(1) { width: 65px; min-width: 65px; }
+      #productTable th:nth-child(2), #productTable td:nth-child(2) { width: 110px; min-width: 110px; font-size: 10px; }
+      #productTable th:nth-child(3), #productTable td:nth-child(3) { width: 55px; min-width: 55px; }
+      #productTable th:nth-child(4), #productTable td:nth-child(4) { width: 50px; min-width: 50px; }
+      #productTable th:nth-child(5), #productTable td:nth-child(5) { width: 50px; min-width: 50px; }
+      #productTable th:nth-child(6), #productTable td:nth-child(6) { width: 55px; min-width: 55px; }
+      #productTable th:nth-child(7), #productTable td:nth-child(7) { width: 55px; min-width: 55px; }
+      #productTable th:nth-child(8), #productTable td:nth-child(8) { width: 55px; min-width: 55px; }
+      #productTable th:nth-child(9), #productTable td:nth-child(9) { width: 55px; min-width: 55px; }
+      #productTable th:nth-child(10), #productTable td:nth-child(10) { width: 60px; min-width: 60px; }
+      #productTable th:nth-child(11), #productTable td:nth-child(11) { width: 65px; min-width: 65px; padding-left: 3px; padding-right: 3px; border-left: 1px solid var(--border); }
 
       #productTable td button {
-        padding: 4px 8px;
-        font-size: 11px;
+        padding: 3px 6px;
+        font-size: 10px;
       }
     }
 </style>
@@ -405,7 +430,7 @@
         </div>
       <div style="position: relative; z-index: 1;">
         <h1>🦐 佳信水产</h1>
-        <p>佳信水产仓库系统 v6.0.5 · GitHub存储 · 微信缓存已优化</p>
+        <p>佳信水产仓库系统 v6.0.6 · GitHub存储 · 微信缓存已优化</p>
       </div>
     </div>
 
@@ -800,7 +825,7 @@
       </div>
 
       <!-- 产品列表 -->
-      <div class="table-wrapper">
+      <div class="table-wrapper" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
         <table id="productTable" style="width: 100%; border-collapse: collapse;">
           <thead>
             <tr style="background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);">
@@ -811,6 +836,7 @@
               <th style="padding: 12px; text-align: center; font-weight: 600; font-size: 13px; border-bottom: 2px solid var(--border);">毛重</th>
               <th style="padding: 12px; text-align: center; font-weight: 600; font-size: 13px; border-bottom: 2px solid var(--border);">售价(元)</th>
               <th style="padding: 12px; text-align: center; font-weight: 600; font-size: 13px; border-bottom: 2px solid var(--border);">加工费<br><span style="font-size:10px;color:var(--text-tertiary)">元/吨</span></th>
+              <th style="padding: 12px; text-align: center; font-weight: 600; font-size: 13px; border-bottom: 2px solid var(--border);">纸箱费<br><span style="font-size:10px;color:var(--text-tertiary)">元/件</span></th>
               <th style="padding: 12px; text-align: center; font-weight: 600; font-size: 13px; border-bottom: 2px solid var(--border);">包装费<br><span style="font-size:10px;color:var(--text-tertiary)">元/件</span></th>
               <th style="padding: 12px; text-align: center; font-weight: 600; font-size: 13px; border-bottom: 2px solid var(--border);">备注</th>
               <th style="padding: 12px; text-align: center; font-weight: 600; font-size: 13px; border-bottom: 2px solid var(--border); width: 120px;">操作</th>
@@ -928,6 +954,14 @@
                 加工费 <span style="font-size: 11px; color: var(--text-tertiary);">(元/吨)</span>
               </label>
               <input type="number" id="productProcessFee" placeholder="如：3300" step="100" min="0"
+                     style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px;">
+              <p style="font-size: 11px; color: var(--text-tertiary); margin-top: 4px; margin-bottom: 0;">留空则使用系统默认值</p>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">
+                纸箱费 <span style="font-size: 11px; color: var(--text-tertiary);">(元/件)</span>
+              </label>
+              <input type="number" id="productCartonCost" placeholder="如：0.3" step="0.1" min="0"
                      style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px;">
               <p style="font-size: 11px; color: var(--text-tertiary); margin-top: 4px; margin-bottom: 0;">留空则使用系统默认值</p>
             </div>
@@ -1175,9 +1209,9 @@
               <th style="width: 32%; min-width: 80px; padding: 4px 2px; font-size: 10px;">纸箱名称</th>
               <th style="width: 65px; padding: 4px 2px; font-size: 10px;">规格</th>
               <th style="width: 40px; padding: 4px 2px; font-size: 10px;">品牌</th>
-              <th style="width: 50px; padding: 4px 2px; font-size: 10px;">库存</th>
+              <th style="width: 55px; padding: 4px 2px; font-size: 10px;">库存</th>
               <th style="width: 36px; padding: 4px 2px; font-size: 10px;">状态</th>
-              <th style="width: 50px; padding: 4px 2px; font-size: 10px;">操作</th>
+              <th style="width: 55px; padding: 4px 2px; font-size: 10px;">操作</th>
             </tr>
           </thead>
           <tbody id="cartonTableBody"></tbody>
@@ -4620,6 +4654,7 @@ async function doExecuteImport() {
           '售价(元)': p.price,
           '加工费(元/吨)': p.processFee,
           '包装费(元/件)': p.packCost,
+          '纸箱费(元/件)': p.cartonCost,
           '单位': p.unit,
           '备注': p.remark,
           '当前库存': stock[p.id] || 0
@@ -5223,7 +5258,7 @@ function confirmCartonCheckContinue() {
       if (filteredProductList.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="10" style="padding: 60px 20px; text-align: center; color: var(--text-secondary);">
+            <td colspan="11" style="padding: 60px 20px; text-align: center; color: var(--text-secondary);">
               <div style="font-size: 48px; margin-bottom: 16px;">📦</div>
               <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">暂无产品数据</div>
               <div style="font-size: 14px; color: var(--text-tertiary);">点击"新增产品"按钮添加第一个产品</div>
@@ -5264,40 +5299,45 @@ function confirmCartonCheckContinue() {
                      onchange="markProductModified('${p.id}')" onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 2px rgba(37,99,235,0.1)';" onblur="this.style.borderColor='var(--border)'; this.style.boxShadow='none';">
             </td>
             <td style="padding: 8px 4px; text-align: center;">
+              <input type="number" id="cartonCost_${p.id}" value="${p.cartonCost || ''}" placeholder="-" step="0.1" min="0"
+                     style="width: 55px; padding: 4px 2px; border: 1.5px solid var(--border); border-radius: 6px; text-align: center; font-size: 13px;"
+                     onchange="markProductModified('${p.id}')" onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 2px rgba(37,99,235,0.1)';" onblur="this.style.borderColor='var(--border)'; this.style.boxShadow='none';">
+            </td>
+            <td style="padding: 8px 4px; text-align: center;">
               <input type="number" id="packCost_${p.id}" value="${p.packCost || ''}" placeholder="-" step="0.1" min="0"
                      style="width: 55px; padding: 4px 2px; border: 1.5px solid var(--border); border-radius: 6px; text-align: center; font-size: 13px;"
                      onchange="markProductModified('${p.id}')" onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 2px rgba(37,99,235,0.1)';" onblur="this.style.borderColor='var(--border)'; this.style.boxShadow='none';">
             </td>
             <td style="padding: 8px 4px; text-align: center;">
               <input type="text" id="remark_${p.id}" value="${escapeHtml(p.remark || '')}" placeholder="-"
-                     style="width: 80px; padding: 4px 2px; border: 1.5px solid var(--border); border-radius: 6px; text-align: center; font-size: 12px;"
+                     style="width: 60px; padding: 4px 2px; border: 1.5px solid var(--border); border-radius: 6px; text-align: center; font-size: 12px;"
                      onchange="markProductModified('${p.id}')" onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 2px rgba(37,99,235,0.1)';" onblur="this.style.borderColor='var(--border)'; this.style.boxShadow='none';">
             </td>
             <td style="padding: 12px; text-align: center;">
               <div style="display: flex; gap: 6px; justify-content: center;">
                 <button onclick="saveSingleProduct('${p.id}')" 
                         id="saveBtn_${p.id}"
-                        style="padding: 6px 12px; background: var(--success-light); color: var(--success); 
-                               border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;
+                        style="padding: 4px 6px; background: transparent; color: var(--success); 
+                               border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;
                                transition: all 0.2s; display: none;"
-                        onmouseover="this.style.background='var(--success)'; this.style.color='white';"
-                        onmouseout="this.style.background='var(--success-light)'; this.style.color='var(--success)';">
-                  💾 保存
+                        onmouseover="this.style.background='var(--success-light)';"
+                        onmouseout="this.style.background='transparent';">
+                  💾
                 </button>
                 <button onclick="editProduct('${p.id}')" 
-                        style="padding: 6px 12px; background: var(--primary-light); color: var(--primary); 
-                               border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;
+                        style="padding: 4px 6px; background: transparent; color: var(--primary); 
+                               border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;
                                transition: all 0.2s;"
-                        onmouseover="this.style.background='var(--primary)'; this.style.color='white';"
-                        onmouseout="this.style.background='var(--primary-light)'; this.style.color='var(--primary)';">
+                        onmouseover="this.style.background='var(--primary-light)';"
+                        onmouseout="this.style.background='transparent';">
                   ✏️
                 </button>
                 <button onclick="deleteProduct('${p.id}')" 
-                        style="padding: 6px 12px; background: var(--danger-light); color: var(--danger); 
-                               border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;
+                        style="padding: 4px 6px; background: transparent; color: var(--danger); 
+                               border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;
                                transition: all 0.2s;"
-                        onmouseover="this.style.background='var(--danger)'; this.style.color='white';"
-                        onmouseout="this.style.background='var(--danger-light)'; this.style.color='var(--danger)';">
+                        onmouseover="this.style.background='var(--danger-light)';"
+                        onmouseout="this.style.background='transparent';">
                   🗑️
                 </button>
               </div>
@@ -5391,6 +5431,7 @@ function confirmCartonCheckContinue() {
         const grossVal = document.getElementById('gross_' + productId)?.value;
         const processFeeVal = document.getElementById('processFee_' + productId)?.value;
         const packCostVal = document.getElementById('packCost_' + productId)?.value;
+        const cartonCostVal = document.getElementById('cartonCost_' + productId)?.value;
         const remarkVal = document.getElementById('remark_' + productId)?.value;
 
         if (priceVal !== undefined && priceVal !== '') p.price = parseFloat(priceVal) || 0;
@@ -5400,6 +5441,8 @@ function confirmCartonCheckContinue() {
         else if (processFeeVal === '') delete p.processFee;
         if (packCostVal !== undefined && packCostVal !== '') p.packCost = parseFloat(packCostVal) || 0;
         else if (packCostVal === '') delete p.packCost;
+        if (cartonCostVal !== undefined && cartonCostVal !== '') p.cartonCost = parseFloat(cartonCostVal) || 0;
+        else if (cartonCostVal === '') delete p.cartonCost;
         if (remarkVal !== undefined) p.remark = remarkVal.trim();
 
         // 同步更新批次
@@ -5474,6 +5517,7 @@ function confirmCartonCheckContinue() {
       document.getElementById('productPrice').value = p.price || '';
       document.getElementById('productProcessFee').value = p.processFee || '';
       document.getElementById('productPackCost').value = p.packCost || '';
+      document.getElementById('productCartonCost').value = p.cartonCost || '';
       document.getElementById('productRemark').value = p.remark || '';
       document.getElementById('productIsBLevel').checked = p.isBLevel || false;
       document.getElementById('productEditWarning').style.display = 'block';
@@ -5499,6 +5543,7 @@ function confirmCartonCheckContinue() {
       const price = parseFloat(document.getElementById('productPrice').value) || 0;
       const processFee = parseFloat(document.getElementById('productProcessFee').value);
       const packCost = parseFloat(document.getElementById('productPackCost').value);
+      const cartonCost = parseFloat(document.getElementById('productCartonCost').value);
       const remark = document.getElementById('productRemark').value.trim();
       const isBLevel = document.getElementById('productIsBLevel').checked;
 
@@ -5527,6 +5572,8 @@ function confirmCartonCheckContinue() {
           else delete p.processFee;
           if (!isNaN(packCost)) p.packCost = packCost;
           else delete p.packCost;
+          if (!isNaN(cartonCost)) p.cartonCost = cartonCost;
+          else delete p.cartonCost;
           p.remark = remark;
           p.isBLevel = isBLevel;
 
@@ -5573,6 +5620,8 @@ function confirmCartonCheckContinue() {
         };
         if (!isNaN(processFee)) newProduct.processFee = processFee;
         if (!isNaN(packCost)) newProduct.packCost = packCost;
+        if (!isNaN(cartonCost)) newProduct.cartonCost = cartonCost;
+        if (!isNaN(cartonCost)) newProduct.cartonCost = cartonCost;
         products.push(newProduct);
 
         // 初始化库存为0
@@ -5700,6 +5749,7 @@ function confirmCartonCheckContinue() {
         'price': ['售价', 'price', '单价', '销售价格', '出厂价', '元'],
         'processFee': ['加工费', 'processfee', '加工', '加工费元/吨', '加工费(元/吨)'],
         'packCost': ['包装费', 'packcost', '包装', '包装费元/件', '包装费(元/件)'],
+        'cartonCost': ['纸箱费', 'cartoncost', '纸箱费用', '纸箱费元/件', '纸箱费(元/件)'],
         'unit': ['单位', 'unit', '计量单位'],
         'remark': ['备注', 'remark', '说明', '注释']
       };
@@ -5751,6 +5801,9 @@ function confirmCartonCheckContinue() {
         const packCostVal = row[colMap['packCost']];
         const packCost = packCostVal !== undefined ? parseFloat(String(packCostVal).replace(/[¥,]/g, '').trim()) : 0;
 
+        const cartonCostVal = row[colMap['cartonCost']];
+        const cartonCost = cartonCostVal !== undefined ? parseFloat(String(cartonCostVal).replace(/[¥,]/g, '').trim()) : 0;
+
         const unit = colMap['unit'] !== undefined ? String(row[colMap['unit']] || '件').trim() : '件';
         const remark = colMap['remark'] !== undefined ? String(row[colMap['remark']] || '').trim() : '';
 
@@ -5788,6 +5841,7 @@ function confirmCartonCheckContinue() {
           price: isNaN(price) ? 0 : price,
           processFee: isNaN(processFee) ? 0 : processFee,
           packCost: isNaN(packCost) ? 0 : packCost,
+          cartonCost: isNaN(cartonCost) ? 0 : cartonCost,
           unit, remark,
           isNew, existingProduct, hasChanges,
           rowIndex: rowIdx + 1
@@ -5836,6 +5890,7 @@ function confirmCartonCheckContinue() {
           <td style="color:var(--primary);font-weight:600;">${item.price > 0 ? '¥' + item.price : '-'}</td>
           <td>${item.processFee > 0 ? item.processFee : '-'}</td>
           <td>${item.packCost > 0 ? '¥' + item.packCost : '-'}</td>
+          <td>${item.cartonCost > 0 ? '¥' + item.cartonCost : '-'}</td>
           <td>${statusBadge}</td>
         </tr>`;
       }).join('');
@@ -5902,6 +5957,7 @@ function confirmCartonCheckContinue() {
           if (item.price > 0) p.price = item.price;
           if (item.processFee > 0) p.processFee = item.processFee;
           if (item.packCost > 0) p.packCost = item.packCost;
+          if (item.cartonCost > 0) p.cartonCost = item.cartonCost;
           if (item.remark) p.remark = item.remark;
           if (item.unit && item.unit !== '件') p.unit = item.unit;
           updated++;
@@ -5928,9 +5984,9 @@ function confirmCartonCheckContinue() {
     }
 
     function downloadProductTemplate() {
-      const headers = ['品牌', '品名', '规格', '净重(kg)', '毛重(kg)', '售价(元)', '加工费(元/吨)', '包装费(元/件)', '单位', '备注'];
+      const headers = ['品牌', '品名', '规格', '净重(kg)', '毛重(kg)', '售价(元)', '加工费(元/吨)', '包装费(元/件)', '纸箱费(元/件)', '单位', '备注'];
       const sampleData = [
-        ['佳信', '干冰熟虾', '特大', 2.5, 5.0, 112, 3300, 0.6, '件', '示例数据'],
+        ['佳信', '干冰熟虾', '特大', 2.5, 5.0, 112, 3300, 0.6, 0.3, '件', '示例数据'],
         ['大富肴', '白灼黑虎熟虾', '21-25', 2.5, 5.0, 174, 4300, 0.6, '件', ''],
         ['蓝琼', '白灼黑虎熟虾', '8-10', 2.8, 5.0, 64.5, 3700, 0.3, '件', '']
       ];
@@ -5940,7 +5996,7 @@ function confirmCartonCheckContinue() {
 
       ws['!cols'] = [
         { wch: 12 }, { wch: 20 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, 
-        { wch: 10 }, { wch: 14 }, { wch: 14 }, { wch: 8 }, { wch: 15 }
+        { wch: 10 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 8 }, { wch: 15 }
       ];
 
       const wb = XLSX.utils.book_new();
@@ -5970,7 +6026,7 @@ function confirmCartonCheckContinue() {
 
       // 设置列宽
       ws['!cols'] = [
-        { wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 12 }
+        { wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 14 }, { wch: 12 }
       ];
 
       const wb = XLSX.utils.book_new();
@@ -7812,9 +7868,9 @@ function renderProfitBatchItems() {
       <tr>
         <td colspan="8" style="padding: 8px 12px; background: #f8fafc;">
           <div style="display: flex; flex-wrap: wrap; gap: 8px; font-size: 11px; color: #64748b;">
-            <span>📦纸箱: <input type="number" value="${item.boxPerPiece}" step="0.01" style="width: 50px; padding: 2px 4px; border: 1px solid #e2e8f0; border-radius: 4px; text-align: right;" onchange="updateProfitBatchItem(${idx}, 'boxPerPiece', this.value)">×${item.pieces}=<strong style="color: #2563eb;">¥${boxCostTotal.toFixed(2)}</strong></span>
+            <span>📦纸箱: <input type="number" value="${item.boxPerPiece}" step="0.01" style="width: 55px; padding: 2px 4px; border: 1px solid #e2e8f0; border-radius: 4px; text-align: right;" onchange="updateProfitBatchItem(${idx}, 'boxPerPiece', this.value)">×${item.pieces}=<strong style="color: #2563eb;">¥${boxCostTotal.toFixed(2)}</strong></span>
             <span>🎁包装: ¥${(p.packCost || 0).toFixed(2)}×${item.pieces}=<strong style="color: #2563eb;">¥${packCostTotal.toFixed(2)}</strong></span>
-            <span>🚚运费: <input type="number" value="${item.freightPerPiece}" step="0.1" style="width: 50px; padding: 2px 4px; border: 1px solid #e2e8f0; border-radius: 4px; text-align: right;" onchange="updateProfitBatchItem(${idx}, 'freightPerPiece', this.value)">×${item.pieces}=<strong style="color: #2563eb;">¥${freightCostTotal.toFixed(2)}</strong></span>
+            <span>🚚运费: <input type="number" value="${item.freightPerPiece}" step="0.1" style="width: 55px; padding: 2px 4px; border: 1px solid #e2e8f0; border-radius: 4px; text-align: right;" onchange="updateProfitBatchItem(${idx}, 'freightPerPiece', this.value)">×${item.pieces}=<strong style="color: #2563eb;">¥${freightCostTotal.toFixed(2)}</strong></span>
             <span>⚙️加工: <input type="number" value="${item.processPerTon}" step="100" style="width: 55px; padding: 2px 4px; border: 1px solid #e2e8f0; border-radius: 4px; text-align: right;" onchange="updateProfitBatchItem(${idx}, 'processPerTon', this.value)">元/吨×${netWeight.toFixed(2)}kg=<strong style="color: #2563eb;">¥${processCostTotal.toFixed(2)}</strong></span>
             <span style="margin-left: auto; background: #fff7ed; padding: 2px 8px; border-radius: 6px; border: 1px solid #fed7aa;">原料分摊: <strong style="color: #ea580c;">¥${materialCost.toFixed(2)}</strong></span>
           </div>
