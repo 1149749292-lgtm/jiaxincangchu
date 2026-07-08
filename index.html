@@ -408,6 +408,18 @@
         font-size: 10px;
       }
     }
+
+    .product-filter-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    @media (min-width: 768px) {
+      .product-filter-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+      }
+    }
 </style>
 <base target="_blank">
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js?v=20260502_1130"></script>
@@ -796,11 +808,17 @@
       </div>
 
       <!-- 筛选栏 -->
-      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
+      <div class="product-filter-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;">
         <div class="form-group" style="margin-bottom: 0;">
           <label style="font-size: 12px; margin-bottom: 4px;">品牌筛选</label>
-          <select id="productFilterBrand" onchange="filterProducts()" style="min-height: 38px; font-size: 13px;">
+          <select id="productFilterBrand" onchange="updateProductNameFilter(); filterProducts()" style="min-height: 38px; font-size: 13px;">
             <option value="">全部品牌</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label style="font-size: 12px; margin-bottom: 4px;">品名筛选</label>
+          <select id="productFilterName" onchange="filterProducts()" style="min-height: 38px; font-size: 13px;">
+            <option value="">全部品名</option>
           </select>
         </div>
         <div class="form-group" style="margin-bottom: 0;">
@@ -5164,6 +5182,7 @@ function confirmCartonCheckContinue() {
     function initProductPage() {
       updateProductStats();
       updateProductBrandFilter();
+      updateProductNameFilter();
       filterProducts();
     }
 
@@ -5190,6 +5209,30 @@ function confirmCartonCheckContinue() {
       if (brands.includes(currentVal)) select.value = currentVal;
     }
 
+    // 更新品名筛选下拉菜单
+    function updateProductNameFilter() {
+      const brandFilter = document.getElementById('productFilterBrand').value;
+      const nameSelect = document.getElementById('productFilterName');
+      const currentVal = nameSelect.value;
+
+      let filteredProducts = products;
+      if (brandFilter) {
+        filteredProducts = products.filter(p => p.brand === brandFilter);
+      }
+
+      const names = [...new Set(filteredProducts.map(p => p.name).filter(n => n && n !== 'undefined' && String(n).trim() !== ''))].sort();
+
+      nameSelect.innerHTML = '<option value="">全部品名</option>' +
+        names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+
+      // 如果当前值在新列表中，保留选择
+      if (names.includes(currentVal)) {
+        nameSelect.value = currentVal;
+      } else {
+        nameSelect.value = '';
+      }
+    }
+
     // 搜索产品
     function searchProducts() {
       filterProducts();
@@ -5199,6 +5242,7 @@ function confirmCartonCheckContinue() {
     function filterProducts() {
       const searchTerm = normalizeString(document.getElementById('productSearch').value);
       const brandFilter = document.getElementById('productFilterBrand').value;
+      const nameFilter = document.getElementById('productFilterName').value;
       const stockFilter = document.getElementById('productFilterStock').value;
       const sortType = document.getElementById('productSort').value;
 
@@ -5213,6 +5257,9 @@ function confirmCartonCheckContinue() {
 
         // 品牌筛选
         if (brandFilter && p.brand !== brandFilter) return false;
+
+        // 品名筛选
+        if (nameFilter && p.name !== nameFilter) return false;
 
         // 库存状态筛选
         const currentStock = stock[p.id] || 0;
