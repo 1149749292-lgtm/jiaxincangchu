@@ -7156,7 +7156,7 @@ function getProfitProduct(productId) {
       pack: brand,
       weight: parseFloat(p.net) || 0,
       price: currentPrice,
-      boxCost: parseFloat(p.boxCost) || 0,
+      boxCost: parseFloat(p.cartonCost) || parseFloat(p.boxCost) || 0,
       packCost: parseFloat(p.packCost) || getDefaultPackCost(brand, p.name, p.sku, p.isBLevel),
       processFee: parseFloat(p.processFee) || getDefaultProcessFee(brand, p.name, p.sku, p.net),
       freight: parseFloat(p.freight) || 0,
