@@ -754,6 +754,98 @@
   </div>
 
   
+
+  <!-- 已开单管理页面 -->
+  <div class="page" id="invoiced">
+    <!-- 统计卡片 -->
+    <div class="stats-grid" style="margin-bottom: 20px;">
+      <div class="stat-card">
+        <div class="stat-label">📤 总出库单</div>
+        <div class="stat-value" id="invoicedTotalOut" style="color: var(--primary);">0</div>
+        <div class="stat-unit">单</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">✅ 已开单</div>
+        <div class="stat-value" id="invoicedDoneCount" style="color: var(--success);">0</div>
+        <div class="stat-unit">单</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">⏳ 待开单</div>
+        <div class="stat-value" id="invoicedPendingCount" style="color: var(--warning);">0</div>
+        <div class="stat-unit">单</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">📦 出库总件数</div>
+        <div class="stat-value" id="invoicedTotalQty" style="color: var(--danger);">0</div>
+        <div class="stat-unit">件</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>📝 已开单管理</span>
+        <span id="invoicedListCount" style="font-size: 13px; color: var(--text-tertiary); font-weight: 500;">共 0 单</span>
+      </div>
+
+      <!-- 筛选栏 -->
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label style="font-size: 12px; margin-bottom: 4px;">开单状态</label>
+          <select id="invoicedFilterStatus" onchange="filterInvoicedList()" style="min-height: 38px; font-size: 13px;">
+            <option value="">全部</option>
+            <option value="pending">⏳ 待开单</option>
+            <option value="done">✅ 已开单</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label style="font-size: 12px; margin-bottom: 4px;">日期范围</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="date" id="invoicedFilterStart" onchange="filterInvoicedList()" style="min-height: 38px; font-size: 13px; flex: 1;">
+            <span style="display: flex; align-items: center; color: var(--text-tertiary); font-size: 12px;">至</span>
+            <input type="date" id="invoicedFilterEnd" onchange="filterInvoicedList()" style="min-height: 38px; font-size: 13px; flex: 1;">
+          </div>
+        </div>
+      </div>
+
+      <!-- 搜索栏 -->
+      <div style="margin-bottom: 20px;">
+        <input type="text" id="invoicedSearchInput" placeholder="🔍 搜索批次号、产品名称、客户名称、销售单号..." 
+               style="width: 100%; padding: 12px 16px; border: 1.5px solid var(--border); border-radius: var(--radius); 
+                      font-size: 14px; transition: all 0.2s;" 
+               onkeyup="filterInvoicedList()"
+               onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
+               onblur="this.style.borderColor='var(--border)'; this.style.boxShadow='none';">
+      </div>
+
+      <!-- 批量操作栏 -->
+      <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+        <button class="btn btn-success" onclick="batchMarkInvoicedDone()" style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+          <span>✅</span> 批量标记已开单
+        </button>
+        <button class="btn btn-secondary" onclick="batchMarkInvoicedPending()" style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+          <span>⏳</span> 批量标记待开单
+        </button>
+        <button class="btn btn-primary" onclick="exportInvoicedList()" style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+          <span>📊</span> 导出Excel
+        </button>
+        <div style="flex: 1;"></div>
+        <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); cursor: pointer; user-select: none; padding: 8px 12px; background: var(--bg); border-radius: var(--radius);">
+          <input type="checkbox" id="invoicedSelectAll" onchange="toggleInvoicedSelectAll()" style="width: 16px; height: 16px; cursor: pointer;">
+          <span>全选</span>
+        </label>
+      </div>
+
+      <!-- 出库单列表 -->
+      <div id="invoicedList" style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="text-align: center; padding: 60px 20px; color: var(--text-tertiary);">
+          <div style="font-size: 64px; margin-bottom: 16px; opacity: 0.5;">📝</div>
+          <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">暂无出库记录</div>
+          <div style="font-size: 14px;">在「手动出入库」或「流水」页面进行出库操作后，此处会显示待开单记录</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 产品管理页面 -->
   <div class="page" id="products">
     <div class="card">
@@ -1170,6 +1262,12 @@
       <button class="btn btn-success" onclick="showCartonAddModal()" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; font-size: 14px;">
         <span>📦</span> 入库补货
       </button>
+      <button class="btn btn-primary" onclick="exportAllInBatchesToExcel()" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; font-size: 14px; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+        <span>📊</span> 导出入库清单
+      </button>
+      <button class="btn btn-danger" onclick="showResetCartonSystemModal()" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; font-size: 14px;">
+        <span>🔄</span> 重置纸箱系统
+      </button>
     </div>
 
     <!-- 产品关联设置区域（默认折叠） -->
@@ -1227,7 +1325,7 @@
               <th style="width: 32%; min-width: 80px; padding: 4px 2px; font-size: 10px;">纸箱名称</th>
               <th style="width: 65px; padding: 4px 2px; font-size: 10px;">规格</th>
               <th style="width: 40px; padding: 4px 2px; font-size: 10px;">品牌</th>
-              <th style="width: 55px; padding: 4px 2px; font-size: 10px;">库存</th>
+              <th style="width: 55px; padding: 4px 2px; font-size: 10px; cursor: pointer; user-select: none;" onclick="sortCartonTableByStock()" title="点击按库存排序">库存 <span id="cartonSortIcon">↕️</span></th>
               <th style="width: 36px; padding: 4px 2px; font-size: 10px;">状态</th>
               <th style="width: 55px; padding: 4px 2px; font-size: 10px;">操作</th>
             </tr>
@@ -1326,6 +1424,7 @@
     <div class="nav-item" data-page="flow" onclick="switchPage('flow')"><span class="icon">📋</span><span>流水</span></div>
     <div class="nav-item" data-page="batch" onclick="switchPage('batch')"><span class="icon">📦</span><span>批次</span></div>
     <div class="nav-item" data-page="manual" onclick="switchPage('manual')"><span class="icon">⚡</span><span>手动出入库</span></div>
+    <div class="nav-item" data-page="invoiced" onclick="switchPage('invoiced')"><span class="icon">📝</span><span>已开单</span></div>
     <div class="nav-item" data-page="products" onclick="switchPage('products')"><span class="icon">📦</span><span>产品</span></div>
     <div class="nav-item" data-page="carton" onclick="switchPage('carton')"><span class="icon">📦</span><span>纸箱</span></div>
   </div>
@@ -2451,6 +2550,7 @@ function updateStats() {
       if (page === 'stock') { updateStats(); renderStockTable(); }
       else if (page === 'flow') { renderFlow(); updateFlowCascadeOptions(); }
       else if (page === 'manual') { initManualPage(); }
+    else if (page === 'invoiced') { initInvoicedPage(); }
     else if (page === 'products') { initProductPage(); }
     else if (page === 'batch') { initProfitBatchPage(); }
     else if (page === 'carton') { initCartonModule(); }
@@ -3602,7 +3702,7 @@ async function doExecuteImport() {
 
         // 入库时自动扣减纸箱库存
         if (type === 'in') {
-          deductCartonStockOnImport(batch.items, date, batch.id);
+          recordPendingDeduct(batch.items, date, batch.id);
         }
       }
     });
@@ -4466,7 +4566,7 @@ async function doExecuteImport() {
     // ==================== 数据备份导出功能 ====================
     function exportAllDataJSON() {
       const exportData = {
-        _exportVersion: '2.0',
+        _exportVersion: '2.1',
         _exportTime: new Date().toISOString(),
         _systemName: '佳信水产仓库系统',
         products: products || [],
@@ -4692,6 +4792,9 @@ async function doExecuteImport() {
             '规格': item.sku,
             '净重(kg)': item.net,
             '数量(件)': item.qty,
+            '已开单': batch.type === 'out' ? (batch.invoiced === true ? '是' : '否') : '-',
+            '销售单号': batch.type === 'out' ? (batch.invoiceNo || '') : '-',
+            '客户': batch.type === 'out' ? (batch.customer || '') : '-',
             '备注': item.remark || ''
           }))
         );
@@ -6719,8 +6822,8 @@ function showLoading(text) {
         };
         batches.unshift(batch);
 
-        // 入库时自动扣减纸箱库存
-        await deductCartonStockOnImport(batch.items, batch.dateRange.min, batch.id);
+        // 记录待扣减纸箱（手动扣减模式）
+        recordPendingDeduct(batch.items, batch.dateRange.min, batch.id);
 
         // 保存数据
         await saveData();
@@ -6863,6 +6966,359 @@ function showLoading(text) {
       }, 500);
     });
   
+
+
+// ==================== 已开单管理模块 ====================
+
+let selectedInvoicedIds = new Set();
+
+function initInvoicedPage() {
+  updateInvoicedStats();
+  filterInvoicedList();
+}
+
+function updateInvoicedStats() {
+  const outBatches = batches.filter(b => b.type === 'out');
+  const totalOut = outBatches.length;
+  const doneCount = outBatches.filter(b => b.invoiced === true).length;
+  const pendingCount = totalOut - doneCount;
+  const totalQty = outBatches.reduce((sum, b) => sum + (b.totalQty || 0), 0);
+
+  document.getElementById('invoicedTotalOut').textContent = totalOut;
+  document.getElementById('invoicedDoneCount').textContent = doneCount;
+  document.getElementById('invoicedPendingCount').textContent = pendingCount;
+  document.getElementById('invoicedTotalQty').textContent = totalQty.toLocaleString();
+}
+
+function filterInvoicedList() {
+  const statusFilter = document.getElementById('invoicedFilterStatus').value;
+  const start = document.getElementById('invoicedFilterStart').value;
+  const end = document.getElementById('invoicedFilterEnd').value;
+  const search = normalizeString(document.getElementById('invoicedSearchInput').value);
+
+  let filtered = batches.filter(b => b.type === 'out');
+
+  // 状态筛选
+  if (statusFilter === 'pending') {
+    filtered = filtered.filter(b => b.invoiced !== true);
+  } else if (statusFilter === 'done') {
+    filtered = filtered.filter(b => b.invoiced === true);
+  }
+
+  // 日期筛选
+  if (start) filtered = filtered.filter(b => (b.dateRange?.min || b.date?.split('T')[0] || '') >= start);
+  if (end) filtered = filtered.filter(b => (b.dateRange?.min || b.date?.split('T')[0] || '') <= end);
+
+  // 搜索筛选
+  if (search) {
+    filtered = filtered.filter(b => {
+      if (normalizeString(b.id || '').includes(search)) return true;
+      if (normalizeString(b.invoiceNo || '').includes(search)) return true;
+      if (normalizeString(b.customer || '').includes(search)) return true;
+      if (normalizeString(b.remark || '').includes(search)) return true;
+      return (b.items || []).some(item =>
+        normalizeString(item.name || '').includes(search) ||
+        normalizeString(item.brand || '').includes(search) ||
+        normalizeString(item.sku || '').includes(search)
+      );
+    });
+  }
+
+  // 按日期倒序
+  filtered.sort((a, b) => {
+    const dateA = a.dateRange?.min || a.date?.split('T')[0] || '';
+    const dateB = b.dateRange?.min || b.date?.split('T')[0] || '';
+    return dateB.localeCompare(dateA);
+  });
+
+  renderInvoicedList(filtered);
+  document.getElementById('invoicedListCount').textContent = `共 ${filtered.length} 单`;
+}
+
+function renderInvoicedList(batchList) {
+  const container = document.getElementById('invoicedList');
+
+  if (batchList.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 60px 20px; color: var(--text-tertiary);">
+        <div style="font-size: 64px; margin-bottom: 16px; opacity: 0.5;">📝</div>
+        <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">暂无出库记录</div>
+        <div style="font-size: 14px;">在「手动出入库」或「流水」页面进行出库操作后，此处会显示待开单记录</div>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = batchList.map(batch => {
+    const isInvoiced = batch.invoiced === true;
+    const dateStr = batch.dateRange?.min || batch.date?.split('T')[0] || '-';
+    const isSelected = selectedInvoicedIds.has(batch.id);
+
+    // 产品明细
+    const itemsHtml = (batch.items || []).map(item => {
+      return `<span style="display: inline-block; padding: 2px 8px; background: #f1f5f9; border-radius: 4px; font-size: 12px; margin: 2px; color: #475569;">${escapeHtml(item.brand || '')} ${escapeHtml(item.name || '')} ${escapeHtml(item.sku || '')} x${item.qty || 0}</span>`;
+    }).join('');
+
+    return `
+      <div style="background: white; border-radius: 12px; border: 2px solid ${isInvoiced ? '#bbf7d0' : '#fef3c7'}; overflow: hidden; transition: all 0.2s;"
+           onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)'; this.style.transform='translateY(-1px)';"
+           onmouseout="this.style.boxShadow='none'; this.style.transform='translateY(0)';">
+        <div style="padding: 16px 20px; background: ${isInvoiced ? '#f0fdf4' : '#fffbeb'}; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; flex: 1;">
+            <input type="checkbox" class="invoiced-checkbox" data-batch-id="${batch.id}" 
+                   ${isSelected ? 'checked' : ''} onchange="updateInvoicedSelection('${batch.id}', this.checked); event.stopPropagation();"
+                   style="width: 18px; height: 18px; cursor: pointer; margin-top: 2px; flex-shrink: 0;">
+            <div>
+              <div style="font-weight: 700; font-size: 16px; color: #0f172a; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                📤 出库单 #${(batch.id || '').toString().slice(-6)}
+                <span style="display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; background: ${isInvoiced ? '#d1fae5' : '#fef3c7'}; color: ${isInvoiced ? '#059669' : '#d97706'};">
+                  ${isInvoiced ? '✅ 已开单' : '⏳ 待开单'}
+                </span>
+              </div>
+              <div style="font-size: 13px; color: #64748b; margin-top: 4px;">
+                📅 ${dateStr} · 📦 ${batch.totalQty || 0} 件 · ${(batch.items || []).length} 种商品
+                ${batch.remark ? ' · 📝 ' + escapeHtml(batch.remark) : ''}
+              </div>
+              <div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px;">
+                ${itemsHtml}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 开单信息编辑区 -->
+        <div style="padding: 16px 20px; border-top: 1px solid ${isInvoiced ? '#bbf7d0' : '#fde68a'};">
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <label style="font-size: 13px; color: #475569; font-weight: 600; white-space: nowrap;">✅ 已开单:</label>
+              <input type="checkbox" id="invoiced_${batch.id}" ${isInvoiced ? 'checked' : ''}
+                     onchange="toggleInvoicedStatus('${batch.id}', this.checked)"
+                     style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--success);">
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <label style="font-size: 13px; color: #475569; font-weight: 600; white-space: nowrap;">📝 销售单号:</label>
+              <input type="text" id="invoiceNo_${batch.id}" value="${escapeHtml(batch.invoiceNo || '')}" placeholder="请输入销售单号"
+                     onchange="updateInvoiceInfo('${batch.id}')"
+                     style="flex: 1; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px; min-width: 80px;">
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <label style="font-size: 13px; color: #475569; font-weight: 600; white-space: nowrap;">👤 客户:</label>
+              <input type="text" id="customer_${batch.id}" value="${escapeHtml(batch.customer || '')}" placeholder="请输入客户名称"
+                     onchange="updateInvoiceInfo('${batch.id}')"
+                     style="flex: 1; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px; min-width: 80px;">
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function updateInvoicedSelection(batchId, checked) {
+  if (checked) {
+    selectedInvoicedIds.add(batchId);
+  } else {
+    selectedInvoicedIds.delete(batchId);
+  }
+  updateInvoicedSelectAllState();
+}
+
+function toggleInvoicedSelectAll() {
+  const selectAllCheckbox = document.getElementById('invoicedSelectAll');
+  const checkboxes = document.querySelectorAll('.invoiced-checkbox');
+  const isChecked = selectAllCheckbox ? selectAllCheckbox.checked : false;
+
+  checkboxes.forEach(cb => {
+    cb.checked = isChecked;
+    const batchId = cb.getAttribute('data-batch-id');
+    if (isChecked) {
+      selectedInvoicedIds.add(batchId);
+    } else {
+      selectedInvoicedIds.delete(batchId);
+    }
+  });
+}
+
+function updateInvoicedSelectAllState() {
+  const checkboxes = document.querySelectorAll('.invoiced-checkbox');
+  const selectAllCheckbox = document.getElementById('invoicedSelectAll');
+  if (!selectAllCheckbox) return;
+
+  const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
+  selectAllCheckbox.checked = allChecked;
+}
+
+async function toggleInvoicedStatus(batchId, checked) {
+  if (!editPermissionVerified) {
+    checkEditPermission(() => toggleInvoicedStatus(batchId, checked));
+    return;
+  }
+
+  const batch = batches.find(b => b.id === batchId);
+  if (!batch) return;
+
+  batch.invoiced = checked;
+
+  // 同步更新复选框
+  const checkbox = document.getElementById('invoiced_' + batchId);
+  if (checkbox) checkbox.checked = checked;
+
+  try {
+    await saveData();
+    showToast(checked ? '✅ 已标记为已开单' : '⏳ 已标记为待开单');
+    updateInvoicedStats();
+    filterInvoicedList();
+  } catch (err) {
+    showError('保存失败', err.message);
+  }
+}
+
+async function updateInvoiceInfo(batchId) {
+  if (!editPermissionVerified) {
+    checkEditPermission(() => updateInvoiceInfo(batchId));
+    return;
+  }
+
+  const batch = batches.find(b => b.id === batchId);
+  if (!batch) return;
+
+  const invoiceNoEl = document.getElementById('invoiceNo_' + batchId);
+  const customerEl = document.getElementById('customer_' + batchId);
+
+  if (invoiceNoEl) batch.invoiceNo = invoiceNoEl.value.trim();
+  if (customerEl) batch.customer = customerEl.value.trim();
+
+  try {
+    await saveData();
+    showToast('💾 信息已保存');
+  } catch (err) {
+    showError('保存失败', err.message);
+  }
+}
+
+async function batchMarkInvoicedDone() {
+  if (!editPermissionVerified) {
+    checkEditPermission(() => batchMarkInvoicedDone());
+    return;
+  }
+
+  if (selectedInvoicedIds.size === 0) {
+    showToast('⚠️ 请先勾选要标记的出库单', 'warning');
+    return;
+  }
+
+  showLoading(`正在标记 ${selectedInvoicedIds.size} 单为已开单...`);
+
+  selectedInvoicedIds.forEach(id => {
+    const batch = batches.find(b => b.id === id);
+    if (batch) batch.invoiced = true;
+  });
+
+  try {
+    await saveData();
+    selectedInvoicedIds.clear();
+    document.getElementById('invoicedSelectAll').checked = false;
+    hideLoading();
+    showToast(`✅ 已标记 ${selectedInvoicedIds.size} 单为已开单`);
+    updateInvoicedStats();
+    filterInvoicedList();
+  } catch (err) {
+    hideLoading();
+    showError('保存失败', err.message);
+  }
+}
+
+async function batchMarkInvoicedPending() {
+  if (!editPermissionVerified) {
+    checkEditPermission(() => batchMarkInvoicedPending());
+    return;
+  }
+
+  if (selectedInvoicedIds.size === 0) {
+    showToast('⚠️ 请先勾选要标记的出库单', 'warning');
+    return;
+  }
+
+  showLoading(`正在标记 ${selectedInvoicedIds.size} 单为待开单...`);
+
+  selectedInvoicedIds.forEach(id => {
+    const batch = batches.find(b => b.id === id);
+    if (batch) {
+      batch.invoiced = false;
+      batch.invoiceNo = '';
+      batch.customer = '';
+    }
+  });
+
+  try {
+    await saveData();
+    selectedInvoicedIds.clear();
+    document.getElementById('invoicedSelectAll').checked = false;
+    hideLoading();
+    showToast(`✅ 已标记 ${selectedInvoicedIds.size} 单为待开单`);
+    updateInvoicedStats();
+    filterInvoicedList();
+  } catch (err) {
+    hideLoading();
+    showError('保存失败', err.message);
+  }
+}
+
+function exportInvoicedList() {
+  const statusFilter = document.getElementById('invoicedFilterStatus').value;
+  const start = document.getElementById('invoicedFilterStart').value;
+  const end = document.getElementById('invoicedFilterEnd').value;
+  const search = normalizeString(document.getElementById('invoicedSearchInput').value);
+
+  let filtered = batches.filter(b => b.type === 'out');
+  if (statusFilter === 'pending') filtered = filtered.filter(b => b.invoiced !== true);
+  if (statusFilter === 'done') filtered = filtered.filter(b => b.invoiced === true);
+  if (start) filtered = filtered.filter(b => (b.dateRange?.min || b.date?.split('T')[0] || '') >= start);
+  if (end) filtered = filtered.filter(b => (b.dateRange?.min || b.date?.split('T')[0] || '') <= end);
+  if (search) {
+    filtered = filtered.filter(b => {
+      if (normalizeString(b.id || '').includes(search)) return true;
+      if (normalizeString(b.invoiceNo || '').includes(search)) return true;
+      if (normalizeString(b.customer || '').includes(search)) return true;
+      return (b.items || []).some(item =>
+        normalizeString(item.name || '').includes(search) ||
+        normalizeString(item.brand || '').includes(search)
+      );
+    });
+  }
+
+  if (filtered.length === 0) {
+    showToast('⚠️ 没有数据可导出', 'warning');
+    return;
+  }
+
+  const exportData = filtered.flatMap(batch => {
+    return (batch.items || []).map(item => ({
+      '批次ID': batch.id || '',
+      '日期': batch.dateRange?.min || batch.date?.split('T')[0] || '',
+      '开单状态': batch.invoiced === true ? '已开单' : '待开单',
+      '销售单号': batch.invoiceNo || '',
+      '客户': batch.customer || '',
+      '品牌': item.brand || '',
+      '品名': item.name || '',
+      '规格': item.sku || '',
+      '净重(kg)': item.net || 0,
+      '数量(件)': item.qty || 0,
+      '备注': batch.remark || ''
+    }));
+  });
+
+  const ws = XLSX.utils.json_to_sheet(exportData);
+  ws['!cols'] = [
+    { wch: 20 }, { wch: 12 }, { wch: 10 }, { wch: 15 }, { wch: 15 },
+    { wch: 12 }, { wch: 20 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 15 }
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '已开单明细');
+  XLSX.writeFile(wb, `已开单明细_${new Date().toISOString().split('T')[0]}.xlsx`);
+  showToast('✅ 已开单明细导出成功');
+}
 
 // ==================== 纸箱管理模块 ====================
 
@@ -9022,64 +9478,65 @@ function showImportFromBatchModal() {
     }
 
     // 入库时扣减纸箱
-    async function deductCartonStockOnImport(batchItems, batchDate, batchId) {
-        let deducted = false;
+    async function recordPendingDeduct(batchItems, batchDate, batchId) {
+        // 手动扣减模式：只记录批次为待扣减，不实际扣减库存
+        // 批次会自动显示在"待扣减入库记录"中，等待用户手动确认
+        console.log('批次 ' + batchId + ' 已标记为待扣减纸箱');
+
+        saveCartonDataLocal();
+
+        // 如果当前在纸箱页面，刷新显示
+        if (document.getElementById('carton').classList.contains('show')) {
+            renderCartonTable();
+            updateCartonStats();
+            checkCartonAlerts();
+            renderCartonHistory();
+            renderPendingDeductBatches();
+        }
+    }
+
+    // 手动执行纸箱扣减（用户确认后）
+    async function executeManualDeduct(batchId, deductConfig) {
+        // deductConfig: [{productId, cartonId, qty, productName, productSku}]
+        const batch = batches.find(b => b.id === batchId);
+        if (!batch) return;
+
         const deductedCartons = [];
         const shortageCartons = [];
-        batchItems.forEach(item => {
-            const product = products.find(p => p.id === item.productId);
-            if (!product) return;
-            const config = getProductCartonConfig(product);
-            if (!config) return;
-            deducted = true;
-            if (config.carton1) {
-                const current = cartonStockData[config.carton1] || 0;
-                const deductQty = item.qty * config.ratio1;
-                cartonStockData[config.carton1] = current - deductQty;
-                deductedCartons.push({
-                    cartonId: config.carton1,
-                    qty: deductQty,
-                    productName: product.name,
-                    productSku: product.sku
+        const batchDate = batch.dateRange?.min || (batch.date || '').split('T')[0];
+
+        deductConfig.forEach(cfg => {
+            if (!cfg.cartonId || cfg.qty <= 0) return;
+
+            const current = cartonStockData[cfg.cartonId] || 0;
+            cartonStockData[cfg.cartonId] = current - cfg.qty;
+
+            deductedCartons.push({
+                cartonId: cfg.cartonId,
+                qty: cfg.qty,
+                productName: cfg.productName,
+                productSku: cfg.productSku
+            });
+
+            if (cartonStockData[cfg.cartonId] < 0) {
+                shortageCartons.push({
+                    cartonId: cfg.cartonId,
+                    shortageQty: Math.abs(cartonStockData[cfg.cartonId]),
+                    productName: cfg.productName,
+                    productSku: cfg.productSku
                 });
-                if (cartonStockData[config.carton1] < 0) {
-                    shortageCartons.push({
-                        cartonId: config.carton1,
-                        shortageQty: Math.abs(cartonStockData[config.carton1]),
-                        productName: product.name,
-                        productSku: product.sku
-                    });
-                }
-            }
-            if (config.carton2 && config.ratio2 > 0) {
-                const current = cartonStockData[config.carton2] || 0;
-                const deductQty = item.qty * config.ratio2;
-                cartonStockData[config.carton2] = current - deductQty;
-                deductedCartons.push({
-                    cartonId: config.carton2,
-                    qty: deductQty,
-                    productName: product.name,
-                    productSku: product.sku
-                });
-                if (cartonStockData[config.carton2] < 0) {
-                    shortageCartons.push({
-                        cartonId: config.carton2,
-                        shortageQty: Math.abs(cartonStockData[config.carton2]),
-                        productName: product.name,
-                        productSku: product.sku
-                    });
-                }
             }
         });
-        if (deducted) {
-            // 记录历史
+
+        if (deductedCartons.length > 0) {
             const timestamp = new Date().toISOString();
+
             deductedCartons.forEach(d => {
                 const carton = CARTON_TYPES.find(c => c.id === d.cartonId);
                 const afterStock = cartonStockData[d.cartonId] || 0;
                 cartonHistory.unshift({
                     id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-                    type: 'auto_deduct',
+                    type: 'manual_deduct',
                     cartonId: d.cartonId,
                     cartonName: carton ? carton.name : d.cartonId,
                     qty: d.qty,
@@ -9087,11 +9544,12 @@ function showImportFromBatchModal() {
                     productSku: d.productSku,
                     date: batchDate || timestamp.split('T')[0],
                     timestamp: timestamp,
-                    remark: afterStock < 0 ? '入库自动扣减（库存不足，已记欠货）' : '入库自动扣减',
-                    afterStock: afterStock
+                    remark: afterStock < 0 ? '手动扣减（库存不足，已记欠货）' : '手动扣减',
+                    afterStock: afterStock,
+                    batchId: batchId
                 });
             });
-            // 记录欠货
+
             if (shortageCartons.length > 0) {
                 shortageCartons.forEach(s => {
                     const carton = CARTON_TYPES.find(c => c.id === s.cartonId);
@@ -9105,12 +9563,13 @@ function showImportFromBatchModal() {
                         productSku: s.productSku,
                         date: batchDate || timestamp.split('T')[0],
                         timestamp: timestamp,
-                        remark: '纸箱库存不足，自动标记欠货',
-                        afterStock: cartonStockData[s.cartonId] || 0
+                        remark: '纸箱库存不足，手动标记欠货',
+                        afterStock: cartonStockData[s.cartonId] || 0,
+                        batchId: batchId
                     });
                 });
             }
-            // 限制历史数量
+
             if (cartonHistory.length > 200) cartonHistory = cartonHistory.slice(0, 200);
 
             // 标记批次为已扣减
@@ -9120,9 +9579,10 @@ function showImportFromBatchModal() {
 
             saveCartonDataLocal();
 
-            // 同步到云端
-            if (isOnline) {
+            try {
                 await saveData();
+            } catch (e) {
+                console.error('云端同步失败:', e);
             }
 
             if (document.getElementById('carton').classList.contains('show')) {
@@ -9132,20 +9592,235 @@ function showImportFromBatchModal() {
                 renderCartonHistory();
                 renderPendingDeductBatches();
             }
+
             if (shortageCartons.length > 0) {
-                showToast('⚠️ 纸箱库存不足，已扣减至负数并记录欠货', 'warning');
+                showToast('⚠️ 部分纸箱库存不足，已扣减至负数并记录欠货', 'warning');
             } else {
-                showToast('📦 纸箱库存已自动扣减');
+                showToast('✅ 纸箱库存手动扣减成功');
             }
         }
     }
 
+    // 跳过纸箱扣减（标记为已处理但不扣减）
+    function skipCartonDeduct(batchId) {
+        if (!confirm('确定跳过此批次的纸箱扣减吗？\n\n跳过后该批次将不再显示在待扣减列表中。')) return;
+
+        if (batchId && !cartonDeductedBatchIds.includes(batchId)) {
+            cartonDeductedBatchIds.push(batchId);
+        }
+
+        saveCartonDataLocal();
+
+        if (document.getElementById('carton').classList.contains('show')) {
+            renderPendingDeductBatches();
+        }
+
+        showToast('⏭️ 已跳过纸箱扣减');
+    }
+
+    // 显示手动扣减弹窗
+    let currentDeductBatchId = null;
+    let currentDeductItems = [];
+
+    function showManualDeductModal(batchId) {
+        const batch = batches.find(b => b.id === batchId);
+        if (!batch) return;
+
+        currentDeductBatchId = batchId;
+        currentDeductItems = [];
+
+        const modal = document.getElementById('manualDeductModal');
+        const container = document.getElementById('manualDeductItems');
+        const batchInfo = document.getElementById('manualDeductBatchInfo');
+
+        const batchDate = batch.dateRange?.min || (batch.date || '').split('T')[0];
+        batchInfo.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <div>
+                    <span style="font-weight: 700; font-size: 16px; color: #0f172a;">📦 入库批次 #${batch.id.substr(-6)}</span>
+                    <span style="font-size: 13px; color: #64748b; margin-left: 12px;">📅 ${batchDate} · ${batch.items.length} 种产品</span>
+                </div>
+                <div style="font-size: 13px; color: #92400e; background: #fef3c7; padding: 4px 12px; border-radius: 20px; font-weight: 600;">
+                    ⚠️ 请确认每个产品的纸箱扣减
+                </div>
+            </div>
+        `;
+
+        container.innerHTML = batch.items.map((item, idx) => {
+            const product = products.find(p => p.id === item.productId);
+            const config = product ? getProductCartonConfig(product) : null;
+            const cartonOptions = CARTON_TYPES.map(c => 
+                `<option value="${c.id}" ${config && (c.id === config.carton1 || c.id === config.carton2) ? 'selected' : ''}>${escapeHtml(c.name)} (${c.spec})</option>`
+            ).join('');
+
+            const suggestedQty1 = config ? Math.ceil(item.qty * (config.ratio1 || 1)) : item.qty;
+
+            return `
+            <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 12px;" data-item-idx="${idx}">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+                    <div>
+                        <div style="font-weight: 700; font-size: 15px; color: #0f172a;">
+                            ${escapeHtml(item.brand || '')} ${escapeHtml(item.name || '')} ${escapeHtml(item.sku || '')}
+                        </div>
+                        <div style="font-size: 13px; color: #64748b; margin-top: 4px;">
+                            入库数量: <strong style="color: #0284c7;">${item.qty}</strong> 件 · 净重: ${item.net}kg
+                        </div>
+                    </div>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: #475569; font-weight: 500;">
+                        <input type="checkbox" id="deductCheck_${idx}" checked onchange="toggleDeductItem(${idx})" style="width: 18px; height: 18px; accent-color: #f59e0b;">
+                        <span>扣减纸箱</span>
+                    </label>
+                </div>
+
+                <div id="deductConfig_${idx}" style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; align-items: end;">
+                    <div>
+                        <label style="font-size: 12px; color: #64748b; font-weight: 600; display: block; margin-bottom: 4px;">📦 选择纸箱</label>
+                        <select id="deductCarton_${idx}" style="width: 100%; padding: 10px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: white;">
+                            <option value="">-- 请选择纸箱 --</option>
+                            ${cartonOptions}
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; color: #64748b; font-weight: 600; display: block; margin-bottom: 4px;">扣减数量</label>
+                        <input type="number" id="deductQty_${idx}" value="${suggestedQty1}" min="0" step="1" 
+                               style="width: 100%; padding: 10px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 14px; text-align: center; font-weight: 600;">
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; color: #64748b; font-weight: 600; display: block; margin-bottom: 4px;">单位</label>
+                        <div style="padding: 10px; background: #f1f5f9; border-radius: 8px; font-size: 14px; text-align: center; color: #475569; font-weight: 500;">个/套</div>
+                    </div>
+                </div>
+
+                ${config && config.carton2 ? `
+                <div id="deductConfig2_${idx}" style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; align-items: end; margin-top: 8px;">
+                    <div>
+                        <label style="font-size: 12px; color: #64748b; font-weight: 600; display: block; margin-bottom: 4px;">📦 第二纸箱（可选）</label>
+                        <select id="deductCarton2_${idx}" style="width: 100%; padding: 10px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: white;">
+                            <option value="">-- 不扣减 --</option>
+                            ${CARTON_TYPES.map(c => `<option value="${c.id}" ${c.id === config.carton2 ? 'selected' : ''}>${escapeHtml(c.name)} (${c.spec})</option>`).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; color: #64748b; font-weight: 600; display: block; margin-bottom: 4px;">扣减数量</label>
+                        <input type="number" id="deductQty2_${idx}" value="${Math.ceil(item.qty * (config.ratio2 || 0))}" min="0" step="1" 
+                               style="width: 100%; padding: 10px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 14px; text-align: center; font-weight: 600;">
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; color: #64748b; font-weight: 600; display: block; margin-bottom: 4px;">单位</label>
+                        <div style="padding: 10px; background: #f1f5f9; border-radius: 8px; font-size: 14px; text-align: center; color: #475569; font-weight: 500;">个/套</div>
+                    </div>
+                </div>
+                ` : ''}
+
+                <div id="deductSkip_${idx}" style="display: none; padding: 12px; background: #fef2f2; border-radius: 8px; margin-top: 8px; text-align: center; color: #dc2626; font-size: 13px; font-weight: 600;">
+                    ⏭️ 此产品将跳过纸箱扣减
+                </div>
+            </div>
+            `;
+        }).join('');
+
+        modal.classList.add('show');
+    }
+
+    function toggleDeductItem(idx) {
+        const checked = document.getElementById('deductCheck_' + idx).checked;
+        const configDiv = document.getElementById('deductConfig_' + idx);
+        const configDiv2 = document.getElementById('deductConfig2_' + idx);
+        const skipDiv = document.getElementById('deductSkip_' + idx);
+
+        if (configDiv) configDiv.style.display = checked ? 'grid' : 'none';
+        if (configDiv2) configDiv2.style.display = checked ? 'grid' : 'none';
+        if (skipDiv) skipDiv.style.display = checked ? 'none' : 'block';
+    }
+
+    function closeManualDeductModal() {
+        document.getElementById('manualDeductModal').classList.remove('show');
+        currentDeductBatchId = null;
+        currentDeductItems = [];
+    }
+
+    async function confirmManualDeduct() {
+        if (!currentDeductBatchId) return;
+
+        const batch = batches.find(b => b.id === currentDeductBatchId);
+        if (!batch) return;
+
+        const deductConfig = [];
+
+        batch.items.forEach((item, idx) => {
+            const checked = document.getElementById('deductCheck_' + idx);
+            if (!checked || !checked.checked) return;
+
+            const cartonSelect = document.getElementById('deductCarton_' + idx);
+            const qtyInput = document.getElementById('deductQty_' + idx);
+
+            if (cartonSelect && cartonSelect.value && qtyInput && parseInt(qtyInput.value) > 0) {
+                deductConfig.push({
+                    productId: item.productId,
+                    cartonId: cartonSelect.value,
+                    qty: parseInt(qtyInput.value),
+                    productName: item.name || item.brand,
+                    productSku: item.sku
+                });
+            }
+
+            // 第二纸箱
+            const cartonSelect2 = document.getElementById('deductCarton2_' + idx);
+            const qtyInput2 = document.getElementById('deductQty2_' + idx);
+            if (cartonSelect2 && cartonSelect2.value && qtyInput2 && parseInt(qtyInput2.value) > 0) {
+                deductConfig.push({
+                    productId: item.productId,
+                    cartonId: cartonSelect2.value,
+                    qty: parseInt(qtyInput2.value),
+                    productName: item.name || item.brand,
+                    productSku: item.sku
+                });
+            }
+        });
+
+        if (deductConfig.length === 0) {
+            showToast('⚠️ 请至少选择一个产品并配置纸箱扣减', 'warning');
+            return;
+        }
+
+        closeManualDeductModal();
+        showLoading('正在扣减纸箱库存...');
+
+        try {
+            await executeManualDeduct(currentDeductBatchId, deductConfig);
+            hideLoading();
+        } catch (err) {
+            hideLoading();
+            showError('扣减失败', err.message);
+        }
+    }
+
     // 渲染纸箱表格
+    // 纸箱库存排序状态
+    let cartonSortOrder = 'desc'; // 'desc' = 从高到低, 'asc' = 从低到高
+
+    function sortCartonTableByStock() {
+        cartonSortOrder = cartonSortOrder === 'desc' ? 'asc' : 'desc';
+        const icon = document.getElementById('cartonSortIcon');
+        if (icon) icon.textContent = cartonSortOrder === 'desc' ? '↓' : '↑';
+        renderCartonTable();
+    }
+
     function renderCartonTable() {
         const tbody = document.getElementById('cartonTableBody');
         if (!tbody) return;
         let html = '';
-        CARTON_TYPES.forEach((carton, index) => {
+        // 按库存排序
+        let sortedCartons = [...CARTON_TYPES];
+        if (cartonSortOrder) {
+            sortedCartons.sort((a, b) => {
+                const stockA = cartonStockData[a.id] || 0;
+                const stockB = cartonStockData[b.id] || 0;
+                return cartonSortOrder === 'desc' ? stockB - stockA : stockA - stockB;
+            });
+        }
+
+        sortedCartons.forEach((carton, index) => {
             const stock = cartonStockData[carton.id] || 0;
             const isWarning = stock > 0 && stock <= cartonAlertThreshold;
             const isDanger = stock === 0;
@@ -9184,6 +9859,9 @@ function showImportFromBatchModal() {
                 <td style="padding: 2px 2px; text-align: center; white-space: nowrap;">
                     <button onclick="showCartonAddModal('${carton.id}')" title="补货" style="padding: 1px 4px; font-size: 10px; background: var(--primary); color: white; border: none; border-radius: 3px; cursor: pointer;">
                         ＋
+                    </button>
+                    <button onclick="showRenameCartonModal('${carton.id}')" title="改名" style="margin-left: 2px; padding: 1px 4px; font-size: 10px; background: #dbeafe; color: #2563eb; border: none; border-radius: 3px; cursor: pointer;">
+                        ✏️
                     </button>
                     ${deleteBtn}
                 </td>
@@ -10221,110 +10899,108 @@ function showImportFromBatchModal() {
     // 渲染待扣减入库批次
     function renderPendingDeductBatches() {
         const container = document.getElementById('pendingDeductContainer');
-        const countEl = document.getElementById('pendingDeductCount');
-        if (!container) return;
+        const countSpan = document.getElementById('pendingDeductCount');
 
         const start = document.getElementById('pendingStartDate').value;
         const end = document.getElementById('pendingEndDate').value;
 
-        // 找出所有入库批次中尚未扣减的
-        let pendingBatches = batches.filter(b => {
-            if (b.type !== 'in') return false;
-            // 检查是否有产品配置了纸箱
-            const hasCartonProduct = b.items.some(item => {
-                const product = products.find(p => p.id === item.productId);
-                if (!product) return false;
-                return !!getProductCartonConfig(product);
-            });
-            if (!hasCartonProduct) return false;
-            // 检查是否已扣减
-            if (cartonDeductedBatchIds.includes(b.id)) return false;
-            // 日期筛选
-            const batchDate = b.dateRange ? b.dateRange.min : (b.date || '').split('T')[0];
-            if (start && batchDate < start) return false;
-            if (end && batchDate > end) return false;
-            return true;
+        let inBatches = batches.filter(b => b.type === 'in');
+        if (start) inBatches = inBatches.filter(b => (b.dateRange?.min || b.date?.split('T')[0] || '') >= start);
+        if (end) inBatches = inBatches.filter(b => (b.dateRange?.min || b.date?.split('T')[0] || '') <= end);
+
+        inBatches = inBatches.filter(b => !cartonDeductedBatchIds.includes(b.id));
+
+        inBatches.sort((a, b) => {
+            const dateA = a.dateRange?.min || (a.date || '').split('T')[0] || '';
+            const dateB = b.dateRange?.min || (b.date || '').split('T')[0] || '';
+            return dateB > dateA ? 1 : -1;
         });
 
-        if (countEl) countEl.textContent = `共 ${pendingBatches.length} 条`;
+        countSpan.textContent = `共 ${inBatches.length} 条`;
 
-        if (pendingBatches.length === 0) {
-            container.innerHTML = `
-                <div style="text-align: center; padding: 40px; color: var(--text-tertiary);">
-                    <div style="font-size: 48px; margin-bottom: 8px;">✅</div>
-                    <div>所有入库批次已扣减纸箱</div>
-                </div>
-            `;
+        if (inBatches.length === 0) {
+            container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-tertiary);"><div style="font-size: 48px; margin-bottom: 8px;">✅</div><div>所有入库批次已扣减纸箱</div></div>';
             return;
         }
 
-        let html = '<div style="display: flex; flex-direction: column; gap: 10px;">';
-        pendingBatches.forEach(batch => {
-            const dateStr = batch.dateRange ? batch.dateRange.min : (batch.date || '').split('T')[0];
-            // 计算该批次会扣减哪些纸箱
-            const cartonDeductions = {};
-            batch.items.forEach(item => {
+        container.innerHTML = inBatches.map(batch => {
+            const batchDate = batch.dateRange?.min || (batch.date || '').split('T')[0] || '-';
+            const totalQty = batch.items.reduce((sum, item) => sum + (item.qty || 0), 0);
+
+            const itemsWithConfig = batch.items.map(item => {
                 const product = products.find(p => p.id === item.productId);
-                if (!product) return;
-                const config = getProductCartonConfig(product);
-                if (!config) return;
-                if (config.carton1) {
-                    cartonDeductions[config.carton1] = (cartonDeductions[config.carton1] || 0) + item.qty * config.ratio1;
-                }
-                if (config.carton2 && config.ratio2 > 0) {
-                    cartonDeductions[config.carton2] = (cartonDeductions[config.carton2] || 0) + item.qty * config.ratio2;
-                }
+                const config = product ? getProductCartonConfig(product) : null;
+                return { item, product, config };
             });
 
-            let cartonInfo = '';
-            Object.keys(cartonDeductions).forEach(cartonId => {
-                const carton = CARTON_TYPES.find(c => c.id === cartonId);
-                if (carton) {
-                    cartonInfo += `<span style="display: inline-flex; align-items: center; padding: 3px 8px; background: #fee2e2; color: #dc2626; border-radius: 10px; font-size: 11px; font-weight: 600; margin-right: 6px;">${carton.name} -${cartonDeductions[cartonId]}${carton.unit}</span>`;
-                }
-            });
+            const hasUnlinked = itemsWithConfig.some(({config}) => !config);
+            const allLinked = itemsWithConfig.every(({config}) => config);
 
-            html += `
-                <div style="padding: 14px 16px; background: white; border-radius: 10px; border: 1.5px solid #fde68a; display: flex; align-items: center; gap: 12px;">
-                    <div style="font-size: 24px; flex-shrink: 0;">📥</div>
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
-                            <span style="font-weight: 700; font-size: 14px; color: #0f172a;">批次 #${batch.id.substr(-6)}</span>
-                            <span style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #dcfce7; color: #059669; font-weight: 600;">入库</span>
-                            <span style="font-size: 12px; color: #64748b;">${dateStr}</span>
+            return `
+            <div style="background: white; border: 2px solid ${hasUnlinked ? '#ef4444' : '#f59e0b'}; border-radius: 12px; margin-bottom: 16px; overflow: hidden;">
+                <div style="padding: 16px 20px; background: linear-gradient(135deg, ${hasUnlinked ? '#fef2f2' : '#fef3c7'} 0%, ${hasUnlinked ? '#fee2e2' : '#fde68a'} 100%); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                    <div>
+                        <div style="font-weight: 700; font-size: 16px; color: ${hasUnlinked ? '#dc2626' : '#92400e'};">
+                            📦 入库批次 #${batch.id.substr(-6)}
+                            ${hasUnlinked ? '<span style="display: inline-flex; margin-left: 8px; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; background: #dc2626; color: white; cursor: pointer;" onclick="event.stopPropagation();" title="点击下方产品行的【点击关联纸箱】按钮进行关联">⚠️ 有产品未关联</span>' : ''}
+                            ${allLinked ? '<span style="display: inline-flex; margin-left: 8px; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; background: #059669; color: white;">✅ 已关联</span>' : ''}
                         </div>
-                        <div style="font-size: 13px; color: #0f172a; margin-bottom: 4px;">
-                            共 ${batch.totalQty} 件 · ${batch.items.length} 种商品
-                        </div>
-                        <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;">
-                            ${cartonInfo || '<span style="font-size: 12px; color: #94a3b8;">无纸箱配置</span>'}
+                        <div style="font-size: 13px; color: ${hasUnlinked ? '#b91c1c' : '#a16207'}; margin-top: 4px;">
+                            📅 ${batchDate} · ${batch.items.length} 种产品 · 共 ${totalQty} 件
                         </div>
                     </div>
-                    <button onclick="manualDeductCartonForBatch('${batch.id}')" 
-                        style="flex-shrink: 0; padding: 10px 18px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; box-shadow: 0 2px 8px rgba(245,158,11,0.3); white-space: nowrap;">
-                        📦 扣减纸箱
-                    </button>
+                    <div style="display: flex; gap: 8px; flex-shrink: 0;">
+                        <button onclick="showManualDeductModal('${batch.id}')" 
+                                style="padding: 10px 20px; background: ${hasUnlinked ? '#dc2626' : '#f59e0b'}; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; box-shadow: 0 2px 8px ${hasUnlinked ? 'rgba(220,38,38,0.3)' : 'rgba(245,158,11,0.3)'};">
+                            ➖ 扣减纸箱
+                        </button>
+                        <button onclick="skipCartonDeduct('${batch.id}')" 
+                                style="padding: 10px 16px; background: #e2e8f0; color: #64748b; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer;">
+                            ⏭️ 跳过
+                        </button>
+                    </div>
                 </div>
+                <div style="padding: 12px 20px;">
+                    <div style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 10px;">📋 产品明细</div>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        ${itemsWithConfig.map(({item, product, config}) => {
+                            const carton1 = config?.carton1 ? CARTON_TYPES.find(c => c.id === config.carton1) : null;
+                            const carton2 = config?.carton2 ? CARTON_TYPES.find(c => c.id === config.carton2) : null;
+
+                            return `
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; flex-wrap: wrap; gap: 8px;">
+                                <div style="flex: 1; min-width: 200px;">
+                                    <div style="font-weight: 600; font-size: 14px; color: #0f172a;">
+                                        ${escapeHtml(item.brand || '')} ${escapeHtml(item.name || '')} ${escapeHtml(item.sku || '')}
+                                    </div>
+                                    <div style="font-size: 12px; color: #64748b; margin-top: 2px;">
+                                        数量: <strong style="color: #0284c7;">${item.qty}</strong> 件 · 净重: ${item.net}kg
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                                    ${config ? `
+                                        <div style="font-size: 12px; color: #059669; background: #d1fae5; padding: 4px 12px; border-radius: 6px; font-weight: 500;">
+                                            📦 ${carton1 ? carton1.name : ''}
+                                            ${carton2 ? ' + ' + carton2.name : ''}
+                                        </div>
+                                        <div style="font-size: 12px; color: #475569; background: #f1f5f9; padding: 4px 10px; border-radius: 6px;">
+                                            建议扣: ${Math.ceil(item.qty * (config.ratio1 || 1))}${carton2 ? ' + ' + Math.ceil(item.qty * (config.ratio2 || 0)) : ''}
+                                        </div>
+                                    ` : `
+                                        <div style="font-size: 12px; color: #dc2626; background: #fee2e2; padding: 4px 12px; border-radius: 6px; font-weight: 500;">
+                                            ⚠️ 未关联纸箱
+                                        </div>
+                                    `}
+                                </div>
+                            </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            </div>
             `;
-        });
-        html += '</div>';
-        container.innerHTML = html;
+        }).join('');
     }
-
-    // 手动扣减指定批次的纸箱库存
-    async function manualDeductCartonForBatch(batchId) {
-        const batch = batches.find(b => b.id === batchId);
-        if (!batch) {
-            showToast('❌ 批次不存在', 'error');
-            return;
-        }
-
-        showLoading('正在扣减纸箱库存...');
-        await deductCartonStockOnImport(batch.items, batch.dateRange.min, batch.id);
-        hideLoading();
-    }
-
-    // 筛选待扣减记录
     function filterPendingDeduct() {
         renderPendingDeductBatches();
     }
@@ -10388,39 +11064,51 @@ function showImportFromBatchModal() {
         }
 
         let html = '<div style="display: flex; flex-direction: column; gap: 8px;">';
-        cartonHistory.forEach(h => {
+        cartonHistory.forEach((h, index) => {
             const isAuto = h.type === 'auto_deduct';
+            const isManualDeduct = h.type === 'manual_deduct';
             const isIn = h.type === 'manual_in';
-            const bgColor = isAuto ? '#fef2f2' : (isIn ? '#f0fdf4' : '#fffbeb');
-            const borderColor = isAuto ? '#fecaca' : (isIn ? '#bbf7d0' : '#fde68a');
-            const icon = isAuto ? '📦' : (isIn ? '➕' : '➖');
-            const typeText = isAuto ? '自动扣减' : (isIn ? '手动入库' : '手动出库/损耗');
-            const typeColor = isAuto ? '#dc2626' : (isIn ? '#059669' : '#d97706');
-            const qtyText = isAuto || !isIn ? `-${h.qty}` : `+${h.qty}`;
-            const qtyColor = isAuto || !isIn ? '#dc2626' : '#059669';
+            const isShortage = h.type === 'shortage';
+            const bgColor = isAuto || isManualDeduct ? '#fef2f2' : (isIn ? '#f0fdf4' : (isShortage ? '#fef2f2' : '#fffbeb'));
+            const borderColor = isAuto || isManualDeduct ? '#fecaca' : (isIn ? '#bbf7d0' : (isShortage ? '#fecaca' : '#fde68a'));
+            const icon = isAuto || isManualDeduct ? '📦' : (isIn ? '➕' : (isShortage ? '⚠️' : '➖'));
+            const typeText = isAuto ? '自动扣减' : (isManualDeduct ? '手动扣减' : (isIn ? '手动入库' : (isShortage ? '欠货记录' : '手动出库/损耗')));
+            const typeColor = isAuto || isManualDeduct || isShortage ? '#dc2626' : (isIn ? '#059669' : '#d97706');
+            const qtyText = isAuto || isManualDeduct || isShortage ? `-${h.qty}` : (isIn ? `+${h.qty}` : `-${h.qty}`);
+            const qtyColor = isAuto || isManualDeduct || isShortage ? '#dc2626' : (isIn ? '#059669' : '#d97706');
             const afterStock = h.afterStock !== undefined ? h.afterStock : (cartonStockData[h.cartonId] || 0);
+            const canRevoke = !h.revoked;
 
             html += `
-                <div style="padding: 12px 16px; background: ${bgColor}; border-radius: 10px; border: 1px solid ${borderColor}; display: flex; align-items: center; gap: 12px;">
+                <div style="padding: 12px 16px; background: ${bgColor}; border-radius: 10px; border: 1px solid ${borderColor}; display: flex; align-items: center; gap: 12px; ${h.revoked ? 'opacity: 0.5;' : ''}">
                     <div style="font-size: 20px; flex-shrink: 0;">${icon}</div>
                     <div style="flex: 1; min-width: 0;">
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
                             <span style="font-weight: 700; font-size: 14px; color: #0f172a;">${escapeHtml(h.cartonName)}</span>
                             <span style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: white; color: ${typeColor}; font-weight: 600; border: 1px solid ${borderColor};">${typeText}</span>
+                            ${h.revoked ? '<span style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #e2e8f0; color: #64748b; font-weight: 600;">已撤销</span>' : ''}
                         </div>
                         <div style="font-size: 12px; color: #64748b;">
-                            ${isAuto ? `关联产品: ${escapeHtml(h.productName)} ${escapeHtml(h.productSku)}` : escapeHtml(h.remark || '-')}
+                            ${isAuto || isManualDeduct ? `关联产品: ${escapeHtml(h.productName || '')} ${escapeHtml(h.productSku || '')}` : escapeHtml(h.remark || '-')}
                             <span style="margin: 0 6px; color: #cbd5e1;">|</span>
                             ${h.date}
                         </div>
                     </div>
-                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0;">
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0;">
                         <div style="font-size: 16px; font-weight: 700; color: ${qtyColor}; font-variant-numeric: tabular-nums;">
-                            ${qtyText}
+                            ${h.revoked ? '<s>' : ''}${qtyText}${h.revoked ? '</s>' : ''}
                         </div>
                         <div style="font-size: 12px; color: #64748b; font-variant-numeric: tabular-nums;">
                             剩余: <span style="font-weight: 600; color: #0f172a;">${afterStock}</span>
                         </div>
+                        ${canRevoke ? `
+                        <button onclick="revokeCartonHistoryItem('${h.id}')" 
+                                style="padding: 4px 10px; background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; margin-top: 2px;"
+                                onmouseover="this.style.background='#dc2626'; this.style.color='white';"
+                                onmouseout="this.style.background='#fee2e2'; this.style.color='#dc2626';">
+                            ↩️ 撤销
+                        </button>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -10429,20 +11117,101 @@ function showImportFromBatchModal() {
         container.innerHTML = html;
     }
 
-    // 点击弹窗外部关闭
-    document.addEventListener('click', function(e) {
-        const modal = document.getElementById('cartonAddModal');
-        if (modal && e.target.id === 'cartonAddModal') {
-            closeCartonAddModal();
+    // 撤销纸箱历史记录
+    async function revokeCartonHistoryItem(historyId) {
+        if (!editPermissionVerified) { checkEditPermission(() => revokeCartonHistoryItem(historyId)); return; }
+
+        const hIndex = cartonHistory.findIndex(h => h.id === historyId);
+        if (hIndex === -1) return;
+
+        const h = cartonHistory[hIndex];
+        if (h.revoked) {
+            showToast('⚠️ 该记录已撤销', 'warning');
+            return;
         }
-    });
 
+        // 确认弹窗
+        const carton = CARTON_TYPES.find(c => c.id === h.cartonId);
+        const cartonName = carton ? carton.name : h.cartonId;
+        let confirmMsg = `确定撤销以下纸箱变动记录吗？\n\n`;
+        confirmMsg += `📦 ${cartonName}\n`;
+        confirmMsg += `类型: ${h.type === 'auto_deduct' ? '自动扣减' : (h.type === 'manual_deduct' ? '手动扣减' : (h.type === 'manual_in' ? '手动入库' : (h.type === 'shortage' ? '欠货记录' : '手动出库')))}\n`;
+        confirmMsg += `数量: ${h.qty}\n`;
+        confirmMsg += `日期: ${h.date}\n\n`;
 
+        if (h.type === 'manual_deduct' || h.type === 'auto_deduct') {
+            confirmMsg += `撤销后：纸箱库存 +${h.qty}（加回）`;
+        } else if (h.type === 'manual_in') {
+            confirmMsg += `撤销后：纸箱库存 -${h.qty}（减去）`;
+        } else if (h.type === 'shortage') {
+            confirmMsg += `撤销后：仅删除欠货记录，不修改库存`;
+        } else {
+            confirmMsg += `撤销后：纸箱库存 +${h.qty}（加回）`;
+        }
 
+        if (!confirm(confirmMsg)) return;
 
-    // ==================== 从入库批次导入功能 ====================
-    let selectedImportBatchIds = new Set();
+        showLoading('正在撤销...');
 
+        try {
+            // 根据类型撤销库存变动
+            if (h.type === 'manual_deduct' || h.type === 'auto_deduct') {
+                // 扣减类型：加回库存
+                cartonStockData[h.cartonId] = (cartonStockData[h.cartonId] || 0) + h.qty;
+
+                // 如果是手动扣减，且有关联批次，把批次重新放回待扣减列表
+                if (h.type === 'manual_deduct' && h.batchId) {
+                    const batchIdx = cartonDeductedBatchIds.indexOf(h.batchId);
+                    if (batchIdx !== -1) {
+                        cartonDeductedBatchIds.splice(batchIdx, 1);
+                    }
+                }
+            } else if (h.type === 'manual_in') {
+                // 入库类型：减去库存
+                cartonStockData[h.cartonId] = (cartonStockData[h.cartonId] || 0) - h.qty;
+            }
+            // shortage 类型不修改库存，只删除记录
+
+            // 标记为已撤销
+            h.revoked = true;
+            h.revokeTime = new Date().toISOString();
+
+            // 添加一条撤销记录到历史
+            cartonHistory.unshift({
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+                type: 'revoke',
+                cartonId: h.cartonId,
+                cartonName: cartonName,
+                qty: h.qty,
+                date: new Date().toISOString().split('T')[0],
+                timestamp: new Date().toISOString(),
+                remark: `撤销了 ${h.date} 的${h.type === 'auto_deduct' ? '自动扣减' : (h.type === 'manual_deduct' ? '手动扣减' : (h.type === 'manual_in' ? '手动入库' : '记录'))}记录`,
+                afterStock: cartonStockData[h.cartonId] || 0,
+                originalId: h.id
+            });
+
+            // 限制历史记录数量
+            if (cartonHistory.length > 200) cartonHistory = cartonHistory.slice(0, 200);
+
+            saveCartonDataLocal();
+            await saveData();
+
+            hideLoading();
+            showToast('✅ 撤销成功');
+
+            // 刷新纸箱页面
+            if (document.getElementById('carton').classList.contains('show')) {
+                renderCartonTable();
+                updateCartonStats();
+                checkCartonAlerts();
+                renderCartonHistory();
+                renderPendingDeductBatches();
+            }
+        } catch (err) {
+            hideLoading();
+            showError('撤销失败', err.message);
+        }
+    }
     function showImportFromBatchModal() {
       selectedImportBatchIds.clear();
       renderImportBatchList();
@@ -10640,6 +11409,414 @@ function showImportFromBatchModal() {
       calculateProfitBatchMetrics();
       showToast('✅ 已下移');
     }
+
+    // ==================== 导出所有入库批次清单 ====================
+    function exportAllInBatchesToExcel() {
+        // 获取所有入库批次
+        const inBatches = batches.filter(b => b.type === 'in').sort((a, b) => {
+            const dateA = a.dateRange?.min || (a.date || '').split('T')[0] || '';
+            const dateB = b.dateRange?.min || (b.date || '').split('T')[0] || '';
+            return dateA > dateB ? 1 : -1; // 按日期升序
+        });
+
+        if (inBatches.length === 0) {
+            showToast('⚠️ 没有入库批次记录', 'warning');
+            return;
+        }
+
+        // 构建数据：每个产品一行
+        const rows = [];
+        inBatches.forEach((batch, batchIdx) => {
+            const batchDate = batch.dateRange?.min || (batch.date || '').split('T')[0] || '-';
+            const isDeducted = cartonDeductedBatchIds.includes(batch.id);
+
+            batch.items.forEach(item => {
+                const product = products.find(p => p.id === item.productId);
+                const config = product ? getProductCartonConfig(product) : null;
+
+                const carton1 = config?.carton1 ? CARTON_TYPES.find(c => c.id === config.carton1) : null;
+                const carton2 = config?.carton2 ? CARTON_TYPES.find(c => c.id === config.carton2) : null;
+
+                rows.push({
+                    '序号': batchIdx + 1,
+                    '批次ID': batch.id.substr(-6),
+                    '日期': batchDate,
+                    '品牌': item.brand || '',
+                    '品名': item.name || '',
+                    '规格': item.sku || '',
+                    '入库数量(件)': item.qty || 0,
+                    '净重(kg)': item.net || 0,
+                    '纸箱1': carton1 ? carton1.name : (config ? '未匹配' : '未关联'),
+                    '纸箱1规格': carton1 ? carton1.spec : '',
+                    '建议扣减1': config ? Math.ceil(item.qty * (config.ratio1 || 1)) : '',
+                    '纸箱2': carton2 ? carton2.name : '',
+                    '纸箱2规格': carton2 ? carton2.spec : '',
+                    '建议扣减2': config && config.carton2 ? Math.ceil(item.qty * (config.ratio2 || 0)) : '',
+                    '扣减状态': isDeducted ? '已扣减' : '待扣减',
+                    '备注': item.remark || ''
+                });
+            });
+        });
+
+        // 使用xlsx库导出
+        const ws = XLSX.utils.json_to_sheet(rows);
+
+        // 设置列宽
+        ws['!cols'] = [
+            {wch: 6}, {wch: 10}, {wch: 12}, {wch: 10}, {wch: 18}, 
+            {wch: 12}, {wch: 12}, {wch: 10}, {wch: 22}, {wch: 18},
+            {wch: 12}, {wch: 22}, {wch: 18}, {wch: 12}, {wch: 10}, {wch: 15}
+        ];
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, '入库批次清单');
+
+        // 添加汇总sheet
+        const summaryRows = [];
+        summaryRows.push({项目: '总入库批次数', 数量: inBatches.length});
+        summaryRows.push({项目: '已扣减批次', 数量: inBatches.filter(b => cartonDeductedBatchIds.includes(b.id)).length});
+        summaryRows.push({项目: '待扣减批次', 数量: inBatches.filter(b => !cartonDeductedBatchIds.includes(b.id)).length});
+        summaryRows.push({项目: '总产品种类', 数量: rows.length});
+
+        const ws2 = XLSX.utils.json_to_sheet(summaryRows);
+        ws2['!cols'] = [{wch: 20}, {wch: 15}];
+        XLSX.utils.book_append_sheet(wb, ws2, '汇总');
+
+        XLSX.writeFile(wb, `入库批次清单_${new Date().toISOString().split('T')[0]}.xlsx`);
+        showToast(`✅ 已导出 ${rows.length} 条入库记录`);
+    }
+
+    // ==================== 重置纸箱系统 ====================
+    function showResetCartonSystemModal() {
+        const modal = document.createElement('div');
+        modal.id = 'resetCartonModal';
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+            z-index: 10000; display: flex; align-items: center; justify-content: center;
+            padding: 16px;
+        `;
+
+        modal.innerHTML = `
+            <div style="background: white; border-radius: 16px; padding: 32px; width: 100%; max-width: 480px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); animation: fadeIn 0.3s ease-out;">
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <div style="font-size: 48px; margin-bottom: 8px;">🔄</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">重置纸箱系统</div>
+                    <div style="font-size: 14px; color: #64748b;">此操作将清空所有纸箱数据，请谨慎操作</div>
+                </div>
+
+                <div style="background: #fef2f2; border: 2px solid #ef4444; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                    <div style="font-weight: 700; color: #dc2626; margin-bottom: 8px;">⚠️ 即将执行以下操作：</div>
+                    <ul style="font-size: 13px; color: #7f1d1d; margin: 0; padding-left: 20px; line-height: 1.8;">
+                        <li>所有纸箱库存清零（8种纸箱全部设为0）</li>
+                        <li>清空所有纸箱变动历史记录</li>
+                        <li>清空所有已扣减标记（所有批次重新变为待扣减）</li>
+                        <li>此操作不可撤销！</li>
+                    </ul>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 8px; display: block;">
+                        请输入 <strong style="color: #dc2626;">RESET</strong> 确认重置
+                    </label>
+                    <input type="text" id="resetConfirmInput" placeholder="请输入 RESET" 
+                           style="width: 100%; padding: 14px; font-size: 16px; text-align: center; letter-spacing: 4px;
+                                  border: 2px solid #e2e8f0; border-radius: 12px; outline: none; transition: all 0.2s;">
+                    <div id="resetError" style="color: #dc2626; font-size: 13px; margin-top: 8px; text-align: center; display: none;">
+                        输入错误，请输入 RESET（大写）
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <button onclick="closeResetCartonModal()" style="padding: 14px; border: 1.5px solid #e2e8f0; background: white; border-radius: 10px; font-weight: 600; color: #64748b; cursor: pointer; font-size: 15px;">
+                        取消
+                    </button>
+                    <button onclick="executeResetCartonSystem()" style="padding: 14px; border: none; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); border-radius: 10px; font-weight: 600; color: white; cursor: pointer; font-size: 15px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);">
+                        确认重置
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        setTimeout(() => document.getElementById('resetConfirmInput').focus(), 100);
+
+        document.getElementById('resetConfirmInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') executeResetCartonSystem();
+        });
+    }
+
+    function closeResetCartonModal() {
+        const modal = document.getElementById('resetCartonModal');
+        if (modal) modal.remove();
+    }
+
+    async function executeResetCartonSystem() {
+        const input = document.getElementById('resetConfirmInput');
+        const error = document.getElementById('resetError');
+
+        if (input.value !== 'RESET') {
+            error.style.display = 'block';
+            input.style.borderColor = '#dc2626';
+            input.value = '';
+            input.focus();
+            return;
+        }
+
+        closeResetCartonModal();
+        showLoading('正在重置纸箱系统...');
+
+        try {
+            // 1. 清空所有纸箱库存
+            CARTON_TYPES.forEach(c => {
+                cartonStockData[c.id] = 0;
+            });
+
+            // 2. 清空纸箱历史记录
+            cartonHistory = [];
+
+            // 3. 清空已扣减标记（所有批次重新变为待扣减）
+            cartonDeductedBatchIds = [];
+
+            // 4. 保存到本地
+            saveCartonDataLocal();
+
+            // 5. 同步到云端
+            await saveData();
+
+            hideLoading();
+            showToast('✅ 纸箱系统已重置！所有库存清零，所有批次重新变为待扣减');
+
+            // 刷新纸箱页面
+            if (document.getElementById('carton').classList.contains('show')) {
+                renderCartonTable();
+                updateCartonStats();
+                checkCartonAlerts();
+                renderCartonHistory();
+                renderPendingDeductBatches();
+            }
+        } catch (err) {
+            hideLoading();
+            showError('重置失败', err.message);
+        }
+    }
+
+
+    // ==================== 纸箱重命名功能 ====================
+    let currentRenameCartonId = null;
+
+    function showRenameCartonModal(cartonId) {
+        const carton = CARTON_TYPES.find(c => c.id === cartonId);
+        if (!carton) return;
+
+        currentRenameCartonId = cartonId;
+        document.getElementById('renameCartonCurrentName').textContent = carton.name;
+        document.getElementById('renameCartonCurrentSpec').textContent = carton.spec;
+        document.getElementById('renameCartonId').textContent = cartonId;
+        document.getElementById('renameCartonNewName').value = carton.name;
+
+        document.getElementById('renameCartonModal').classList.add('show');
+        setTimeout(() => {
+            const input = document.getElementById('renameCartonNewName');
+            input.focus();
+            input.select();
+        }, 100);
+    }
+
+    function closeRenameCartonModal() {
+        document.getElementById('renameCartonModal').classList.remove('show');
+        currentRenameCartonId = null;
+    }
+
+    async function confirmRenameCarton() {
+        if (!currentRenameCartonId) return;
+
+        const newName = document.getElementById('renameCartonNewName').value.trim();
+        if (!newName) {
+            showToast('⚠️ 请输入新名称', 'warning');
+            return;
+        }
+
+        const carton = CARTON_TYPES.find(c => c.id === currentRenameCartonId);
+        if (!carton) return;
+
+        const oldName = carton.name;
+        if (oldName === newName) {
+            closeRenameCartonModal();
+            return;
+        }
+
+        showLoading('正在修改名称...');
+
+        // 1. 修改 CARTON_TYPES 中的名称
+        carton.name = newName;
+
+        // 2. 同步更新 cartonHistory 中所有引用该纸箱的历史记录名称
+        let historyUpdated = 0;
+        cartonHistory.forEach(h => {
+            if (h.cartonId === currentRenameCartonId) {
+                h.cartonName = newName;
+                historyUpdated++;
+            }
+        });
+
+        // 3. 同步更新 DEFAULT_PRODUCT_CARTON_MAP 中纸箱名称的引用（如果有的话）
+        // 注意：DEFAULT_PRODUCT_CARTON_MAP 关联的是 cartonId，不是名称，所以不需要改
+        // 但如果有其他地方存储了纸箱名称，需要同步
+
+        // 4. 保存数据
+        saveCartonDataLocal();
+
+        try {
+            await saveData();
+            hideLoading();
+            closeRenameCartonModal();
+            showToast(`✅ 纸箱名称已修改：${oldName} → ${newName}${historyUpdated > 0 ? '（同步更新 ' + historyUpdated + ' 条历史记录）' : ''}`);
+
+            // 刷新纸箱页面
+            if (document.getElementById('carton').classList.contains('show')) {
+                renderCartonTable();
+                updateCartonStats();
+                checkCartonAlerts();
+                renderCartonHistory();
+                renderPendingDeductBatches();
+            }
+        } catch (err) {
+            hideLoading();
+            showError('修改失败', err.message);
+        }
+    }
+
+    
+
+    // ==================== 快速关联纸箱功能 ====================
+    let currentQuickLinkProductId = null;
+    let currentQuickLinkBrand = '';
+    let currentQuickLinkName = '';
+    let currentQuickLinkSku = '';
+
+    function showQuickLinkCartonModal(productId, brand, name, sku) {
+        currentQuickLinkProductId = productId;
+        currentQuickLinkBrand = brand;
+        currentQuickLinkName = name;
+        currentQuickLinkSku = sku;
+
+        document.getElementById('quickLinkBrand').textContent = brand || '-';
+        document.getElementById('quickLinkName').textContent = name || '-';
+        document.getElementById('quickLinkSku').textContent = sku || '-';
+        document.getElementById('quickLinkProductId').value = productId || '';
+
+        // 填充纸箱下拉选项
+        const select1 = document.getElementById('quickLinkCartonSelect');
+        const select2 = document.getElementById('quickLinkCartonSelect2');
+
+        const options = CARTON_TYPES.map(c => 
+            `<option value="${c.id}">${escapeHtml(c.name)} (${c.spec}) - ${c.unit}</option>`
+        ).join('');
+
+        select1.innerHTML = '<option value="">-- 请选择纸箱 --</option>' + options;
+        select2.innerHTML = '<option value="">-- 请选择 --</option>' + options;
+
+        // 重置表单
+        document.getElementById('quickLinkRatio1').value = '1';
+        document.getElementById('quickLinkAddSecond').checked = false;
+        document.getElementById('quickLinkSecondConfig').style.display = 'none';
+        document.getElementById('quickLinkCartonSelect2').value = '';
+        document.getElementById('quickLinkRatio2').value = '1';
+
+        document.getElementById('quickLinkCartonModal').classList.add('show');
+    }
+
+    function toggleQuickLinkSecond() {
+        const checked = document.getElementById('quickLinkAddSecond').checked;
+        document.getElementById('quickLinkSecondConfig').style.display = checked ? 'grid' : 'none';
+    }
+
+    function closeQuickLinkCartonModal() {
+        document.getElementById('quickLinkCartonModal').classList.remove('show');
+        currentQuickLinkProductId = null;
+        currentQuickLinkBrand = '';
+        currentQuickLinkName = '';
+        currentQuickLinkSku = '';
+    }
+
+    async function confirmQuickLinkCarton() {
+        if (!currentQuickLinkProductId && !currentQuickLinkName) {
+            showToast('⚠️ 产品信息缺失', 'warning');
+            return;
+        }
+
+        const cartonId1 = document.getElementById('quickLinkCartonSelect').value;
+        if (!cartonId1) {
+            showToast('⚠️ 请选择纸箱', 'warning');
+            return;
+        }
+
+        const ratio1 = parseFloat(document.getElementById('quickLinkRatio1').value) || 1;
+        if (ratio1 < 1) {
+            showToast('⚠️ 扣减比例至少为1', 'warning');
+            return;
+        }
+
+        const hasSecond = document.getElementById('quickLinkAddSecond').checked;
+        const cartonId2 = hasSecond ? document.getElementById('quickLinkCartonSelect2').value : null;
+        const ratio2 = hasSecond ? (parseFloat(document.getElementById('quickLinkRatio2').value) || 1) : null;
+
+        if (hasSecond && !cartonId2) {
+            showToast('⚠️ 请选择第二纸箱', 'warning');
+            return;
+        }
+
+        showLoading('正在保存关联...');
+
+        try {
+            // 构建产品key: 品牌|品名|规格
+            const productKey = `${currentQuickLinkBrand}|${currentQuickLinkName}|${currentQuickLinkSku}`;
+
+            // 保存到 PRODUCT_CARTON_MAP（自定义配置，会同步到云端）
+            PRODUCT_CARTON_MAP[productKey] = {
+                carton1: cartonId1,
+                ratio1: ratio1
+            };
+
+            if (hasSecond && cartonId2) {
+                PRODUCT_CARTON_MAP[productKey].carton2 = cartonId2;
+                PRODUCT_CARTON_MAP[productKey].ratio2 = ratio2;
+            }
+
+            // 同时更新产品对象的 cartonId 字段（如果存在）
+            const product = products.find(p => p.id === currentQuickLinkProductId);
+            if (product) {
+                product.cartonId = cartonId1;
+                product.cartonRatio = ratio1;
+                if (hasSecond && cartonId2) {
+                    product.cartonId2 = cartonId2;
+                    product.cartonRatio2 = ratio2;
+                }
+            }
+
+            // 保存数据
+            saveCartonDataLocal();
+            await saveData();
+
+            hideLoading();
+            closeQuickLinkCartonModal();
+
+            const carton1 = CARTON_TYPES.find(c => c.id === cartonId1);
+            const msg = `✅ ${currentQuickLinkName} ${currentQuickLinkSku} 已关联 ${carton1 ? carton1.name : cartonId1}${hasSecond ? ' + 第二纸箱' : ''}`;
+            showToast(msg);
+
+            // 刷新待扣减列表（显示关联状态更新）
+            if (document.getElementById('carton').classList.contains('show')) {
+                renderPendingDeductBatches();
+            }
+        } catch (err) {
+            hideLoading();
+            showError('关联失败', err.message);
+        }
+    }
+
+    
 </script>
 
   <!-- 批次利润编辑弹窗 -->
@@ -10883,6 +12060,144 @@ function showImportFromBatchModal() {
       <div class="modal-footer">
         <button class="modal-btn modal-btn-secondary" onclick="closeProductImportConfirmModal()">取消</button>
         <button class="modal-btn modal-btn-primary" onclick="executeProductImport()">确认导入</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 手动扣减纸箱弹窗 -->
+  <div class="modal-overlay" id="manualDeductModal">
+    <div class="modal-content" style="max-width: 700px; max-height: 90vh;">
+      <div class="modal-header">
+        <div class="modal-icon" style="background: #fef3c7; color: #f59e0b;">📦</div>
+        <div class="modal-title">手动扣减纸箱</div>
+      </div>
+      <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+        <div id="manualDeductBatchInfo" style="margin-bottom: 16px; padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;"></div>
+        <div id="manualDeductItems" style="display: flex; flex-direction: column; gap: 12px;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-secondary" onclick="closeManualDeductModal()">取消</button>
+        <button class="modal-btn modal-btn-primary" onclick="confirmManualDeduct()" style="background: #f59e0b;">确认扣减</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 纸箱重命名弹窗 -->
+  <div class="modal-overlay" id="renameCartonModal">
+    <div class="modal-content" style="max-width: 420px;">
+      <div class="modal-header">
+        <div class="modal-icon" style="background: #dbeafe; color: #2563eb;">✏️</div>
+        <div class="modal-title">修改纸箱名称</div>
+      </div>
+      <div class="modal-body">
+        <div class="modal-info" style="margin-bottom: 16px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1px solid #0ea5e9;">
+          <div class="modal-info-row">
+            <span class="modal-info-label">当前名称</span>
+            <span class="modal-info-value" id="renameCartonCurrentName" style="color: var(--primary); font-weight: 700;">-</span>
+          </div>
+          <div class="modal-info-row">
+            <span class="modal-info-label">规格</span>
+            <span class="modal-info-value" id="renameCartonCurrentSpec">-</span>
+          </div>
+          <div class="modal-info-row">
+            <span class="modal-info-label">纸箱ID</span>
+            <span class="modal-info-value" id="renameCartonId" style="font-family: monospace; font-size: 12px; color: var(--text-tertiary);">-</span>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; display: block;">
+            新名称 <span style="color: var(--danger);">*</span>
+          </label>
+          <input type="text" id="renameCartonNewName" placeholder="请输入新名称..." 
+                 style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 15px; font-weight: 600;">
+        </div>
+        <div style="margin-top: 12px; padding: 12px; background: var(--bg); border-radius: var(--radius); font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+          💡 <strong>提示：</strong>修改名称后，所有已关联该纸箱的产品仍保持关联关系，仅名称更新。历史记录中的纸箱名称也会同步更新。
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-secondary" onclick="closeRenameCartonModal()">取消</button>
+        <button class="modal-btn modal-btn-primary" onclick="confirmRenameCarton()" style="background: var(--primary);">确认修改</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 快速关联纸箱弹窗 -->
+  <div class="modal-overlay" id="quickLinkCartonModal">
+    <div class="modal-content" style="max-width: 480px;">
+      <div class="modal-header">
+        <div class="modal-icon" style="background: #fef3c7; color: #f59e0b;">🔗</div>
+        <div class="modal-title">关联纸箱</div>
+      </div>
+      <div class="modal-body">
+        <div class="modal-info" style="margin-bottom: 16px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1px solid #0ea5e9;">
+          <div class="modal-info-row">
+            <span class="modal-info-label">品牌</span>
+            <span class="modal-info-value" id="quickLinkBrand" style="font-weight: 700; color: #0f172a;">-</span>
+          </div>
+          <div class="modal-info-row">
+            <span class="modal-info-label">品名</span>
+            <span class="modal-info-value" id="quickLinkName" style="font-weight: 700; color: #0f172a;">-</span>
+          </div>
+          <div class="modal-info-row">
+            <span class="modal-info-label">规格</span>
+            <span class="modal-info-value" id="quickLinkSku">-</span>
+          </div>
+        </div>
+
+        <input type="hidden" id="quickLinkProductId">
+
+        <div style="display: grid; gap: 16px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">
+              📦 选择纸箱 <span style="color: var(--danger);">*</span>
+            </label>
+            <select id="quickLinkCartonSelect" style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px; background: white;">
+              <option value="">-- 请选择纸箱 --</option>
+            </select>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">扣减比例（件/个）</label>
+              <input type="number" id="quickLinkRatio1" value="1" min="1" step="1" 
+                     style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px; text-align: center; font-weight: 600;">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">单位</label>
+              <div style="padding: 12px; background: #f1f5f9; border-radius: var(--radius); font-size: 14px; text-align: center; color: #475569; font-weight: 500;">个/套</div>
+            </div>
+          </div>
+
+          <div style="padding: 10px; background: #f0fdf4; border-radius: 8px; border: 1px solid #bbf7d0;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; color: #15803d; font-weight: 500;">
+              <input type="checkbox" id="quickLinkAddSecond" onchange="toggleQuickLinkSecond()" style="width: 18px; height: 18px; accent-color: #059669;">
+              <span>📦 添加第二纸箱（如内盒+外箱）</span>
+            </label>
+          </div>
+
+          <div id="quickLinkSecondConfig" style="display: none; grid-template-columns: 2fr 1fr; gap: 12px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">第二纸箱</label>
+              <select id="quickLinkCartonSelect2" style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px; background: white;">
+                <option value="">-- 请选择 --</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">比例</label>
+              <input type="number" id="quickLinkRatio2" value="1" min="1" step="1" 
+                     style="width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px; text-align: center; font-weight: 600;">
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 16px; padding: 12px; background: var(--bg); border-radius: var(--radius); font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+          💡 <strong>提示：</strong>关联后，该产品入库时将自动建议扣减此纸箱。扣减比例 = 入库多少件产品扣减多少个纸箱。
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-secondary" onclick="closeQuickLinkCartonModal()">取消</button>
+        <button class="modal-btn modal-btn-primary" onclick="confirmQuickLinkCarton()" style="background: var(--primary);">确认关联</button>
       </div>
     </div>
   </div>
