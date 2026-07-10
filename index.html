@@ -2195,36 +2195,43 @@ async function init() {
     // 修复：从云端加载纸箱数据
     function loadCartonDataFromCloud(cartonData) {
       if (!cartonData) {
-        console.warn('云端没有纸箱数据，使用本地默认');
+        console.warn('云端没有纸箱数据，使用代码默认配置');
         cartonsLoadedFromCloud = false;
+        rebuildCartonTypes();
         return;
       }
 
-      console.log('从云端加载纸箱数据');
+      console.log('从云端加载纸箱数据，合并自定义纸箱');
       cartonsLoadedFromCloud = true;
 
-      // 修复：加载纸箱类型（使用云端保存的完整列表）
-      if (cartonData.types && Array.isArray(cartonData.types) && cartonData.types.length > 0) {
-        CARTON_TYPES = cartonData.types.map(c => ({
-          ...c,
-          isDefault: c.isDefault || false
-        }));
+      // 加载用户自定义纸箱（非默认ID的纸箱）
+      const defaultIds = new Set(DEFAULT_CARTON_TYPES.map(c => c.id));
+      if (cartonData.customTypes && Array.isArray(cartonData.customTypes)) {
+        // 新格式：自定义纸箱单独存储
+        CUSTOM_CARTON_TYPES = cartonData.customTypes.map(c => ({...c, isDefault: false}));
+      } else if (cartonData.types && Array.isArray(cartonData.types)) {
+        // 兼容旧格式：从 types 中筛选非默认纸箱
+        CUSTOM_CARTON_TYPES = cartonData.types
+          .filter(c => !defaultIds.has(c.id))
+          .map(c => ({...c, isDefault: false}));
       } else {
-        console.warn('云端纸箱类型为空，使用默认值');
-        CARTON_TYPES = [...DEFAULT_CARTON_TYPES];
+        CUSTOM_CARTON_TYPES = [];
       }
 
-      // 修复：加载库存数据
+      // 重建完整纸箱列表：代码默认 + 用户自定义
+      rebuildCartonTypes();
+
+      // 加载库存数据
       if (cartonData.stock && typeof cartonData.stock === 'object') {
         cartonStockData = { ...cartonData.stock };
       }
 
-      // 修复：加载阈值
+      // 加载阈值
       if (cartonData.threshold !== undefined && !isNaN(cartonData.threshold)) {
         cartonAlertThreshold = parseInt(cartonData.threshold);
       }
 
-      // 修复：加载产品关联配置
+      // 加载产品关联配置
       if (cartonData.productMap && typeof cartonData.productMap === 'object') {
         PRODUCT_CARTON_MAP = { 
           ...DEFAULT_PRODUCT_CARTON_MAP, 
@@ -2242,6 +2249,14 @@ async function init() {
       if (cartonData.deductedBatchIds && Array.isArray(cartonData.deductedBatchIds)) {
         cartonDeductedBatchIds = [...cartonData.deductedBatchIds];
       }
+    }
+
+    // 重建纸箱列表：默认 + 自定义
+    function rebuildCartonTypes() {
+      CARTON_TYPES = [
+        ...JSON.parse(JSON.stringify(DEFAULT_CARTON_TYPES)),
+        ...CUSTOM_CARTON_TYPES
+      ];
 
       // 确保所有纸箱都有库存条目
       CARTON_TYPES.forEach(carton => {
@@ -2250,7 +2265,7 @@ async function init() {
         }
       });
 
-      // 清理已删除纸箱的库存数据
+      // 清理已删除纸箱的库存残留
       const validCartonIds = new Set(CARTON_TYPES.map(c => c.id));
       Object.keys(cartonStockData).forEach(id => {
         if (!validCartonIds.has(id)) {
@@ -2336,13 +2351,14 @@ async function init() {
 
         // 修复：确保纸箱数据完整
         const cartonDataToSave = {
-          types: CARTON_TYPES.map(c => ({
+          // 只保存自定义纸箱，默认纸箱由代码管理
+          customTypes: CUSTOM_CARTON_TYPES.map(c => ({
             id: c.id,
             name: c.name,
             spec: c.spec,
             unit: c.unit,
             brand: c.brand,
-            isDefault: c.isDefault || false
+            isDefault: false
           })),
           stock: { ...cartonStockData },
           threshold: cartonAlertThreshold || 50,
@@ -7324,6 +7340,7 @@ function exportInvoicedList() {
 
     // 纸箱类型数组（支持从本地存储加载自定义纸箱）
     let CARTON_TYPES = [];
+    let CUSTOM_CARTON_TYPES = [];  // 用户自定义纸箱（从云端加载，与代码默认分离）
 
     // 默认8种标准纸箱
     const DEFAULT_CARTON_TYPES = [
@@ -9391,7 +9408,8 @@ async function exportCurrentBatchImage() {
 
 function getCartonSaveData() {
   return {
-    types: CARTON_TYPES.map(c => ({ id: c.id, name: c.name, spec: c.spec, unit: c.unit, brand: c.brand, isDefault: c.isDefault || false })),
+    // 只保存自定义纸箱，默认纸箱由代码管理
+    customTypes: CUSTOM_CARTON_TYPES.map(c => ({ id: c.id, name: c.name, spec: c.spec, unit: c.unit, brand: c.brand, isDefault: false })),
     stock: { ...cartonStockData },
     threshold: cartonAlertThreshold || 50,
     productMap: { ...PRODUCT_CARTON_MAP },
