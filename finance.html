@@ -1949,6 +1949,9 @@
                         <button onclick="switchSalesSubTab('flow')" id="sales-subtab-flow" class="sales-subtab flex-1 py-3 px-4 text-sm font-medium text-center transition-all border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50">
                             📦 出货流水
                         </button>
+                        <button onclick="switchSalesSubTab('returns')" id="sales-subtab-returns" class="sales-subtab flex-1 py-3 px-4 text-sm font-medium text-center transition-all border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50">
+                            🔄 退货流水
+                        </button>
                     </div>
                 </div>
 
@@ -2032,7 +2035,50 @@
                             </table>
                         </div>
                     </div>
+                </div>                <!-- 退货流水子标签内容 -->
+                <div id="sales-content-returns" class="sales-subcontent hidden">
+                    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                        <div class="p-4 border-b border-gray-200 flex flex-wrap gap-4">
+                            <input type="text" id="returnFlowSearch" placeholder="搜索品名/规格/客户/单号/原因..." class="px-4 py-2 border rounded-lg flex-1 min-w-[150px]" onkeyup="renderReturnFlow()">
+                            <select id="returnFlowCustomerFilter" class="px-4 py-2 border rounded-lg" onchange="renderReturnFlow()">
+                                <option value="">全部客户</option>
+                            </select>
+                            <div class="flex items-center gap-2">
+                                <label class="text-sm text-gray-600">退货日期:</label>
+                                <input type="date" id="returnFlowStartDate" class="px-3 py-2 border rounded-lg text-sm" onchange="renderReturnFlow()">
+                                <span class="text-gray-400">~</span>
+                                <input type="date" id="returnFlowEndDate" class="px-3 py-2 border rounded-lg text-sm" onchange="renderReturnFlow()">
+                            </div>
+                            <button onclick="resetReturnFlowFilters()" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
+                                重置筛选
+                            </button>
+                            <button onclick="exportReturnFlowImage()" class="inventory-jump-btn" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); border: none; cursor: pointer; padding: 8px 14px; font-size: 12px;">
+                                <span style="font-size: 14px;">📷</span>
+                                <span class="btn-text">导出图片</span>
+                            </button>
+                        </div>
+                        <div id="returnFlowExportArea" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                            <table class="w-full" style="min-width: 1000px;">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">退货日期</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">订单号</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">客户</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">退货类型</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">退货产品</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">退货件数</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">退货金额</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">原单金额</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">退货原因</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="returnFlowList" class="divide-y divide-gray-200"></tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
+
             </div><!-- 产品库管理 -->
             <div id="view-products" class="view-section hidden">
                 <div class="flex justify-between items-center mb-6">
@@ -3036,7 +3082,8 @@
             transactions: [],
             lastPurchaseDocNumber: 0,
             expenses: [],  // 新增：费用管理
-            shareholders: []  // 新增：股东投资
+            shareholders: [],  // 新增：股东投资
+            returns: []  // 新增：退货流水
         };
 
         // 网络状态管理
@@ -3636,7 +3683,8 @@ async function saveData() {
                     data.expensePayments = localData.expensePayments || [];
                     data.expenseTypes = localData.expenseTypes || {};
                     data.shareholders = localData.shareholders || [];
-                    data._lastModified = localData._lastModified || Date.now();
+                        data.returns = localData.returns || [];
+                        data._lastModified = localData._lastModified || Date.now();
                     data._deviceId = localData._deviceId || '';
                     isOnline = true;
                     updateSyncStatus('synced', '已加载本地数据（GitHub 云端为空，请手动保存）');
@@ -3655,6 +3703,7 @@ async function saveData() {
                     data.expensePayments = cloudData.expensePayments || [];
                     data.expenseTypes = cloudData.expenseTypes || {};
                     data.shareholders = cloudData.shareholders || [];
+                    data.returns = cloudData.returns || [];
                     data._lastModified = Date.now();
                     data._deviceId = navigator.userAgent ? navigator.userAgent.slice(0, 50) : 'unknown';
                     isOnline = true;
@@ -3685,7 +3734,8 @@ async function saveData() {
                         data.expensePayments = cloudData.expensePayments || [];
                         data.expenseTypes = cloudData.expenseTypes || {};
                         data.shareholders = cloudData.shareholders || [];
-                        data._lastModified = cloudTime;
+                    data.returns = cloudData.returns || [];
+                    data._lastModified = cloudTime;
                         data._version = cloudData._version || 0;
                         data._deviceId = cloudData._deviceId || '';
                         // ★ 关键：同步更新本地缓存，防止下次加载旧数据
@@ -3716,6 +3766,7 @@ async function saveData() {
                         data.expensePayments = parsed.expensePayments || [];
                         data.expenseTypes = parsed.expenseTypes || {};
                         data.shareholders = parsed.shareholders || [];
+                        data.returns = parsed.returns || [];
                         showToast('⚠️ 离线模式，使用本地数据', 'warning');
                     } catch(e) {
                         console.error('本地缓存解析失败:', e);
@@ -3753,6 +3804,53 @@ async function saveData() {
             updateAllViews();
             updateProductBrandFilter();
             initSalesCustomerFilter();
+
+            // 自动重建退货流水：检查所有标记为退货的订单，确保都有对应的退货流水记录
+            // 这用于兼容旧版本数据或修复遗漏的退货记录
+            if (data.salesOrders) {
+                const returns = data.returns || [];
+                const returnOrderIds = new Set(returns.map(r => r.orderId));
+                const rebuiltReturns = [];
+
+                data.salesOrders.forEach(order => {
+                    if (order.isReturned && !returnOrderIds.has(order.id)) {
+                        rebuiltReturns.push({
+                            id: 'RET' + (order.returnDate ? order.returnDate.replace(/-/g, '') : '') + '_' + order.id.slice(-6) + '_' + Math.random().toString(36).substr(2, 3),
+                            returnDate: order.returnDate || order.date,
+                            orderId: order.id,
+                            docNumber: order.docNumber || order.id.slice(-6),
+                            customerId: order.customerId,
+                            customerName: order.customerName,
+                            originalAmount: order.originalTotalAmount || (order.totalAmount + (order.returnAmount || 0)),
+                            returnAmount: order.returnAmount || 0,
+                            returnType: order.returnType || 'partial',
+                            returnReason: order.returnReason || '',
+                            items: (order.returnItems || []).map(item => ({
+                                seq: item.seq,
+                                name: item.name,
+                                spec: item.spec || '',
+                                brand: item.brand || '',
+                                qty: item.qty,
+                                weight: item.weight || 0,
+                                price: item.price,
+                                total: item.total,
+                                remark: item.remark || ''
+                            })),
+                            createdAt: Date.now()
+                        });
+                    }
+                });
+
+                if (rebuiltReturns.length > 0) {
+                    returns.push(...rebuiltReturns);
+                    data.returns = returns.sort((a, b) => new Date(b.returnDate) - new Date(a.returnDate));
+                    console.log('自动重建退货流水:', rebuiltReturns.length, '条');
+                    try {
+                        localStorage.setItem('finance_data_cache', JSON.stringify(data));
+                        showToast('✅ 已自动重建 ' + rebuiltReturns.length + ' 条遗漏的退货流水记录');
+                    } catch(e) { console.error('本地缓存更新失败:', e); }
+                }
+            }
 
             // 初始渲染存储进度条
             try {
@@ -3792,7 +3890,7 @@ async function saveData() {
             switch(viewName) {
                 case 'dashboard': updateDashboard(); break;
                 case 'purchase': renderPurchaseList(); break;
-                case 'sales': initSalesFlowCustomerFilter(); renderSalesList(); renderSalesFlow(); break;
+                case 'sales': initSalesFlowCustomerFilter(); initReturnFlowCustomerFilter(); renderSalesList(); renderSalesFlow(); renderReturnFlow(); break;
                 case 'products': renderProductList(); break;
                 case 'customers': renderCustomerList(); break;
                 case 'suppliers': renderSupplierList(); break;
@@ -3832,7 +3930,45 @@ async function saveData() {
                 } else {
                     updateSyncStatus('synced', '当前已是最新版本 (v' + localVersion + ')');
                     showToast('✅ 当前已是最新版本', 'success');
+                
+
+            // 自动重建退货流水：如果 returns 为空但 salesOrders 中有退货记录，则从订单重建
+            if ((!data.returns || data.returns.length === 0) && data.salesOrders) {
+                const rebuiltReturns = [];
+                data.salesOrders.forEach(order => {
+                    if (order.isReturned && order.returnItems && order.returnItems.length > 0) {
+                        rebuiltReturns.push({
+                            id: 'RET' + (order.returnDate ? order.returnDate.replace(/-/g, '') : '') + '_' + order.id.slice(-6),
+                            returnDate: order.returnDate || order.date,
+                            orderId: order.id,
+                            docNumber: order.docNumber || order.id.slice(-6),
+                            customerId: order.customerId,
+                            customerName: order.customerName,
+                            originalAmount: order.originalTotalAmount || (order.totalAmount + (order.returnAmount || 0)),
+                            returnAmount: order.returnAmount || 0,
+                            returnType: order.returnType || 'partial',
+                            returnReason: order.returnReason || '',
+                            items: order.returnItems.map(item => ({
+                                seq: item.seq,
+                                name: item.name,
+                                spec: item.spec || '',
+                                brand: item.brand || '',
+                                qty: item.qty,
+                                weight: item.weight || 0,
+                                price: item.price,
+                                total: item.total,
+                                remark: item.remark || ''
+                            })),
+                            createdAt: Date.now()
+                        });
+                    }
+                });
+                if (rebuiltReturns.length > 0) {
+                    data.returns = rebuiltReturns.sort((a, b) => new Date(b.returnDate) - new Date(a.returnDate));
+                    console.log('自动重建退货流水:', rebuiltReturns.length, '条');
                 }
+            }
+}
             } catch (err) {
                 console.error('强制刷新失败:', err);
                 updateSyncStatus('error', '刷新失败: ' + (err.message || '网络错误'));
@@ -5648,11 +5784,14 @@ async function saveData() {
 
             const tbody = document.getElementById('returnItemsBody');
             tbody.innerHTML = order.items.map(item => `
-                <tr style="border-bottom: 1px solid #f3f4f6;" class="return-item-row" data-seq="${item.seq}">
+                <tr style="border-bottom: 1px solid #f3f4f6;" class="return-item-row" 
+                    data-seq="${item.seq}" 
+                    data-weight="${item.weight || 0}" 
+                    data-price-type="${item.priceType || 'kg'}">
                     <td style="padding: 8px; text-align: center;">
                         <input type="checkbox" class="return-item-check" onchange="calculateReturnTotal()">
                     </td>
-                    <td style="padding: 8px;">${item.name}</td>
+                    <td style="padding: 8px;">${item.name} <span style="color:#9ca3af;font-size:11px;">(${item.weight || 0}kg/${item.priceType === 'piece' ? '件' : 'kg'})</span></td>
                     <td style="padding: 8px;">${item.spec}</td>
                     <td style="padding: 8px; text-align: center;">${item.qty}</td>
                     <td style="padding: 8px; text-align: center;">
@@ -5690,7 +5829,15 @@ async function saveData() {
                 const checkbox = row.querySelector('.return-item-check');
                 const qty = parseFloat(row.querySelector('.return-qty').value) || 0;
                 const price = parseFloat(row.querySelector('.return-price').value) || 0;
-                const itemTotal = qty * price;
+                const weight = parseFloat(row.dataset.weight) || 0;
+                const priceType = row.dataset.priceType || 'kg';
+
+                let itemTotal = 0;
+                if (priceType === 'piece') {
+                    itemTotal = qty * price;
+                } else {
+                    itemTotal = qty * parseFloat(row.dataset.weight || 0) * price;
+                }
 
                 row.querySelector('.return-item-total').textContent = '¥' + itemTotal.toFixed(2);
 
@@ -5730,8 +5877,16 @@ async function saveData() {
                     const originalItem = order.items.find(i => i.seq === seq);
                     const returnQty = parseFloat(row.querySelector('.return-qty').value) || 0;
                     const returnPrice = parseFloat(row.querySelector('.return-price').value) || 0;
+                    const weight = parseFloat(row.dataset.weight) || 0;
+                    const priceType = row.dataset.priceType || 'kg';
 
                     if (returnQty > 0 && originalItem) {
+                        let itemTotal = 0;
+                        if (priceType === 'piece') {
+                            itemTotal = returnQty * returnPrice;
+                        } else {
+                            itemTotal = returnQty * weight * returnPrice;
+                        }
                         returnItems.push({
                             seq: originalItem.seq,
                             name: originalItem.name,
@@ -5740,7 +5895,7 @@ async function saveData() {
                             qty: returnQty,
                             weight: originalItem.weight,
                             price: returnPrice,
-                            total: (returnQty * returnPrice).toFixed(2),
+                            total: itemTotal.toFixed(2),
                             remark: '退货'
                         });
                     }
@@ -5752,18 +5907,57 @@ async function saveData() {
             }
 
             order.isReturned = true;
-            order.returnType = returnAmount >= order.originalTotalAmount ? 'full' : 'partial';
-            order.returnAmount = returnAmount;
             order.returnDate = returnDate;
             order.returnReason = returnReason;
             order.returnItems = returnItems;
 
-            const newTotalAmount = order.originalTotalAmount - returnAmount;
-            order.totalAmount = newTotalAmount;
-            order.chineseAmount = numberToChinese(newTotalAmount);
+            // 检查是否所有产品都被完全退货（勾选的产品数量等于原数量，且覆盖了所有产品）
+            const allItemsChecked = order.items.every(originalItem => {
+                const returnedItem = returnItems.find(ri => ri.seq === originalItem.seq);
+                return returnedItem && returnedItem.qty >= originalItem.qty;
+            });
 
-            if (order.paidAmount >= newTotalAmount) {
-                const refundAmount = order.paidAmount - newTotalAmount;
+            if (allItemsChecked && returnItems.length === order.items.length) {
+                // 全部退货：订单金额直接归零
+                order.returnType = 'full';
+                order.returnAmount = order.originalTotalAmount;
+                order.totalAmount = 0;
+                order.remainingAmount = 0;
+                order.chineseAmount = numberToChinese(0);
+            } else {
+                // 部分退货：按实际退货金额计算
+                order.returnType = 'partial';
+                order.returnAmount = returnAmount;
+                const newTotalAmount = order.originalTotalAmount - returnAmount;
+                order.totalAmount = newTotalAmount;
+                order.chineseAmount = numberToChinese(newTotalAmount);
+            }
+
+            // 更新付款状态
+            if (order.totalAmount === 0) {
+                // 全部退货：如果有已付款，全部退回
+                if (order.paidAmount > 0) {
+                    const refundAmount = order.paidAmount;
+                    order.remainingAmount = 0;
+                    order.paymentStatus = 'paid';
+                    if (refundAmount > 0) {
+                        data.transactions.push({
+                            id: 'TRX' + Date.now(),
+                            date: returnDate,
+                            type: 'expense',
+                            partyId: order.customerId,
+                            partyName: order.customerName,
+                            amount: refundAmount,
+                            paymentMethod: '退货退款',
+                            remark: `销售单${order.docNumber || order.id.slice(-6)}全部退货退款：${returnReason || '无原因'}`
+                        });
+                    }
+                } else {
+                    order.remainingAmount = 0;
+                    order.paymentStatus = 'unpaid';
+                }
+            } else if (order.paidAmount >= order.totalAmount) {
+                const refundAmount = order.paidAmount - order.totalAmount;
                 order.remainingAmount = 0;
                 order.paymentStatus = 'paid';
 
@@ -5776,11 +5970,11 @@ async function saveData() {
                         partyName: order.customerName,
                         amount: refundAmount,
                         paymentMethod: '退货退款',
-                        remark: `销售单${order.docNumber || order.id.slice(-6)}退货退款：${returnReason || '无原因'}`
+                        remark: `销售单${order.docNumber || order.id.slice(-6)}部分退货退款：${returnReason || '无原因'}`
                     });
                 }
             } else {
-                order.remainingAmount = newTotalAmount - order.paidAmount;
+                order.remainingAmount = order.totalAmount - order.paidAmount;
                 order.paymentStatus = order.paidAmount > 0 ? 'partial' : 'unpaid';
             }
 
@@ -5797,6 +5991,34 @@ async function saveData() {
                 customer.balance = Math.max(0, totalSales - totalPayments + totalRefunds);
             }
 
+            // 创建退货流水记录
+            const returnRecord = {
+                id: 'RET' + Date.now(),
+                returnDate: returnDate,
+                orderId: orderId,
+                docNumber: order.docNumber || order.id.slice(-6),
+                customerId: order.customerId,
+                customerName: order.customerName,
+                originalAmount: order.originalTotalAmount || order.totalAmount + returnAmount,
+                returnAmount: returnAmount,
+                returnType: returnAmount >= (order.originalTotalAmount || order.totalAmount + returnAmount) ? 'full' : 'partial',
+                returnReason: returnReason,
+                items: returnItems.map(item => ({
+                    seq: item.seq,
+                    name: item.name,
+                    spec: item.spec,
+                    brand: item.brand || '',
+                    qty: item.qty,
+                    weight: item.weight || 0,
+                    price: item.price,
+                    total: item.total,
+                    remark: item.remark || ''
+                })),
+                createdAt: Date.now()
+            };
+            data.returns = data.returns || [];
+            data.returns.unshift(returnRecord);
+
             try {
                 await saveData();
                 closeModal('returnModal');
@@ -5808,6 +6030,231 @@ async function saveData() {
             } catch (err) {
                 console.error('退货处理失败:', err);
                 showToast('❌ 退货处理失败: ' + (err.message || '未知错误'), 'error');
+            }
+        }
+
+        // 查看退货详情
+        function viewReturnDetail(returnId) {
+            const returnRecord = data.returns.find(r => r.id === returnId);
+            if (!returnRecord) {
+                showToast('❌ 退货记录不存在', 'error');
+                return;
+            }
+
+            const order = data.salesOrders.find(o => o.id === returnRecord.orderId);
+
+            // 生成产品明细HTML
+            const itemsHtml = (returnRecord.items || []).map((item, idx) => `
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 10px 8px; text-align: center; color: #6b7280; font-size: 13px;">${idx + 1}</td>
+                    <td style="padding: 10px 8px; text-align: left; color: #111827; font-size: 13px; font-weight: 500;">${item.name}</td>
+                    <td style="padding: 10px 8px; text-align: center; color: #6b7280; font-size: 13px;">${item.spec || '-'}</td>
+                    <td style="padding: 10px 8px; text-align: center; color: #6b7280; font-size: 13px;">${item.brand || '-'}</td>
+                    <td style="padding: 10px 8px; text-align: center; color: #dc2626; font-size: 13px; font-weight: 600;">${item.qty}</td>
+                    <td style="padding: 10px 8px; text-align: right; color: #111827; font-size: 13px; font-weight: 600;">¥${(item.total || 0).toFixed(2)}</td>
+                </tr>
+            `).join('');
+
+            const returnTypeLabel = returnRecord.returnType === 'full' ? '全部退货' : '部分退货';
+            const returnTypeColor = returnRecord.returnType === 'full' ? '#dc2626' : '#d97706';
+            const returnTypeBg = returnRecord.returnType === 'full' ? '#fee2e2' : '#fef3c7';
+
+            // 创建模态框
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.id = 'returnDetailModal';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 700px;">
+                    <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="text-xl font-bold text-red-600">退货详情</h3>
+                        <button onclick="document.getElementById('returnDetailModal').remove()" class="text-gray-400 hover:text-gray-600">✕</button>
+                    </div>
+                    <div class="p-6">
+                        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 14px;">
+                                <div><span style="color: #6b7280;">订单号：</span><span style="font-weight: 600; color: #111827;">${returnRecord.docNumber || '-'}</span></div>
+                                <div><span style="color: #6b7280;">客户：</span><span style="font-weight: 600; color: #111827;">${returnRecord.customerName}</span></div>
+                                <div><span style="color: #6b7280;">退货日期：</span><span style="font-weight: 600; color: #111827;">${returnRecord.returnDate}</span></div>
+                                <div><span style="color: #6b7280;">退货类型：</span><span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; color: ${returnTypeColor}; background: ${returnTypeBg};">${returnTypeLabel}</span></div>
+                                <div><span style="color: #6b7280;">原单金额：</span><span style="font-weight: 600; color: #111827;">¥${(returnRecord.originalAmount || 0).toFixed(2)}</span></div>
+                                <div><span style="color: #6b7280;">退货金额：</span><span style="font-weight: 600; color: #dc2626;">¥${(returnRecord.returnAmount || 0).toFixed(2)}</span></div>
+                                <div style="grid-column: 1 / -1;"><span style="color: #6b7280;">退货原因：</span><span style="font-weight: 500; color: #111827;">${returnRecord.returnReason || '无'}</span></div>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 12px; font-weight: 600; color: #374151;">退货产品明细</div>
+                        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <thead>
+                                <tr style="background: #f9fafb;">
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">序号</th>
+                                    <th style="padding: 10px 8px; text-align: left; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">品名</th>
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">规格</th>
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">品牌</th>
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">退货件数</th>
+                                    <th style="padding: 10px 8px; text-align: right; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">金额</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${itemsHtml}
+                            </tbody>
+                        </table>
+
+                        <div style="margin-top: 16px; text-align: right; font-size: 14px;">
+                            <span style="color: #6b7280;">退货合计：</span>
+                            <span style="font-size: 20px; font-weight: 800; color: #dc2626;">¥${(returnRecord.returnAmount || 0).toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // 从退货流水页面取消退货
+        async function cancelReturnFromFlow(returnId) {
+            if (!checkEditPermission()) return;
+
+            const returnRecord = data.returns.find(r => r.id === returnId);
+            if (!returnRecord) {
+                showToast('❌ 退货记录不存在', 'error');
+                return;
+            }
+
+            if (!confirm('确定要取消这条退货记录吗？\n\n这将恢复订单原始金额，并删除退货退款流水记录。')) {
+                return;
+            }
+
+            await cancelReturn(returnRecord.orderId);
+        }
+
+        // 修改退货信息
+        async function editReturnRecord(returnId) {
+            if (!checkEditPermission()) return;
+
+            const returnRecord = data.returns.find(r => r.id === returnId);
+            if (!returnRecord) {
+                showToast('❌ 退货记录不存在', 'error');
+                return;
+            }
+
+            const order = data.salesOrders.find(o => o.id === returnRecord.orderId);
+            if (!order) {
+                showToast('❌ 原订单不存在', 'error');
+                return;
+            }
+
+            const newDate = prompt('修改退货日期:', returnRecord.returnDate);
+            if (newDate === null) return;
+
+            const newReason = prompt('修改退货原因:', returnRecord.returnReason || '');
+            if (newReason === null) return;
+
+            returnRecord.returnDate = newDate || returnRecord.returnDate;
+            returnRecord.returnReason = newReason;
+            order.returnDate = returnRecord.returnDate;
+            order.returnReason = returnRecord.returnReason;
+
+            try {
+                await saveData();
+                renderReturnFlow();
+                renderSalesList();
+                showToast('✅ 退货信息已修改');
+            } catch (err) {
+                console.error('修改失败:', err);
+                showToast('❌ 修改失败', 'error');
+            }
+        }
+
+
+
+
+        // ==================== 取消退货功能 ====================
+        async function cancelReturn(orderId) {
+            if (!checkEditPermission()) return;
+
+            const order = data.salesOrders.find(o => o.id === orderId);
+            if (!order) {
+                showToast('❌ 订单不存在', 'error');
+                return;
+            }
+
+            if (!order.isReturned) {
+                showToast('⚠️ 该订单未标记退货', 'warning');
+                return;
+            }
+
+            if (!confirm('确定要取消退货吗？\n\n这将恢复订单原始金额，并删除退货退款流水记录。')) {
+                return;
+            }
+
+            // 1. 恢复订单原始金额
+            if (order.originalTotalAmount) {
+                order.totalAmount = order.originalTotalAmount;
+            }
+            order.chineseAmount = numberToChinese(order.totalAmount);
+
+            // 2. 恢复付款状态
+            const oldPaidAmount = order.paidAmount || 0;
+            const newTotal = order.totalAmount;
+
+            if (oldPaidAmount >= newTotal) {
+                order.remainingAmount = 0;
+                order.paymentStatus = 'paid';
+            } else if (oldPaidAmount > 0) {
+                order.remainingAmount = newTotal - oldPaidAmount;
+                order.paymentStatus = 'partial';
+            } else {
+                order.remainingAmount = newTotal;
+                order.paymentStatus = 'unpaid';
+            }
+
+            // 3. 清除退货标记
+            order.isReturned = false;
+            order.returnType = null;
+            order.returnAmount = 0;
+            order.returnDate = null;
+            order.returnReason = '';
+            order.returnItems = [];
+
+            // 4. 删除该订单相关的退货退款流水记录
+            const beforeCount = data.transactions.length;
+            data.transactions = data.transactions.filter(t => {
+                const isReturnRefund = t.paymentMethod === '退货退款' && 
+                                       t.type === 'expense' && 
+                                       t.partyId === order.customerId &&
+                                       (t.remark || '').includes(order.docNumber || order.id.slice(-6));
+                return !isReturnRefund;
+            });
+            const deletedCount = beforeCount - data.transactions.length;
+
+            // 5. 删除对应的退货流水记录
+            const beforeReturnCount = (data.returns || []).length;
+            data.returns = (data.returns || []).filter(r => r.orderId !== orderId);
+            const deletedReturnCount = beforeReturnCount - data.returns.length;
+
+            // 5. 重新计算客户余额（与客户管理同步）
+            const customer = data.customers.find(c => c.id === order.customerId);
+            if (customer) {
+                const customerOrders = data.salesOrders.filter(o => o.customerId === order.customerId);
+                const totalSales = customerOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+                const totalPayments = data.transactions
+                    .filter(t => t.partyId === order.customerId && t.type === 'income' && !t.isExpensePayment)
+                    .reduce((sum, t) => sum + (t.amount || 0), 0);
+                const totalRefunds = data.transactions
+                    .filter(t => t.partyId === order.customerId && t.type === 'expense' && t.paymentMethod === '退货退款')
+                    .reduce((sum, t) => sum + (t.amount || 0), 0);
+                customer.balance = Math.max(0, totalSales - totalPayments + totalRefunds);
+            }
+
+            try {
+                await saveData();
+                renderSalesList();
+                renderCustomerList();
+                updateDashboard();
+                updateCapitalOverview();
+                showToast(`✅ 已取消退货${deletedCount > 0 ? '，删除 ' + deletedCount + ' 条退款流水' : ''}${deletedReturnCount > 0 ? '，删除 ' + deletedReturnCount + ' 条退货流水' : ''}`);
+            } catch (err) {
+                console.error('取消退货失败:', err);
+                showToast('❌ 取消退货失败: ' + (err.message || '未知错误'), 'error');
             }
         }
 
@@ -5903,7 +6350,7 @@ function downloadSalesReceipt() {
                     <td class="px-6 py-4 text-sm font-medium">${amountDisplay}</td>
                     <td class="px-6 py-4 text-sm space-x-1">
                         <button onclick="viewSalesReceiptById('${order.id}')" class="text-blue-600 hover:underline">查看</button>
-                        ${!order.isReturned ? `<button onclick="openReturnModal('${order.id}')" class="text-orange-600 hover:underline">退货</button>` : '<span class="text-gray-400 text-xs">已退</span>'}
+                        ${!order.isReturned ? `<button onclick="openReturnModal('${order.id}')" class="text-orange-600 hover:underline">退货</button>` : `<button onclick="cancelReturn('${order.id}')" class="text-blue-600 hover:underline">取消退货</button>`}
                         <button onclick="showDeleteConfirm('sales', '${order.id}')" class="text-red-600 hover:underline">删除</button>
                     </td>
                 </tr>`;
@@ -7564,39 +8011,66 @@ function downloadExpenseStatement() {
             const totalQty = orders.reduce((sum, o) => sum + (o.totalQty || 0), 0);
 
             // 获取该供应商的付款记录（提前定义，用于日期范围计算）
-            const payments = data.transactions.filter(t => t.partyId === customerId && t.type === 'income').sort((a, b) => new Date(b.date) - new Date(a.date));
+            // 收款记录 + 退货退款记录（都在对账单中显示）
+            const payments = data.transactions.filter(t => {
+                if (t.partyId !== customerId) return false;
+                // 正常的客户收款
+                if (t.type === 'income' && !t.isExpensePayment) return true;
+                // 退货退款记录
+                if (t.type === 'expense' && t.paymentMethod === '退货退款') return true;
+                return false;
+            }).sort((a, b) => new Date(b.date) - new Date(a.date));
 
             // 生成日期范围文本（包含订单日期和支付日期，以晚的为主）
             const orderDates = orders.map(o => o.date);
             const paymentDates = payments.map(p => p.date);
             const allDates = [...orderDates, ...paymentDates].sort();
             const startDate = allDates[0];
-            const endDate = allDates[allDates.length - 1];
+            const endDate = new Date().toISOString().split('T')[0];
             const dateRangeText = startDate === endDate ? startDate : `${startDate} 至 ${endDate}`;
 
-            const totalPayments = payments.reduce((sum, p) => sum + p.amount, 0);
-            const remainingAmount = totalAmount - totalPayments;
+            const totalIncomePayments = payments.filter(p => p.type === 'income').reduce((sum, p) => sum + p.amount, 0);
+            const totalRefundPayments = payments.filter(p => p.type === 'expense' && p.paymentMethod === '退货退款').reduce((sum, p) => sum + p.amount, 0);
+            const totalPayments = totalIncomePayments;
+            const remainingAmount = totalAmount - totalIncomePayments + totalRefundPayments;
 
             // 生成订单明细HTML（不显示状态列）
             const orderRows = orders.map((order, index) => {
+                const isReturned = order.isReturned;
+                const returnBadge = isReturned ? `<span style="display: inline-block; margin-left: 4px; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; background: #fee2e2; color: #dc2626;">已退¥${(order.returnAmount || 0).toFixed(0)}</span>` : '';
+                const originalAmount = isReturned && order.originalTotalAmount ? order.originalTotalAmount : order.totalAmount;
+                const amountDisplay = isReturned 
+                    ? `<span style="text-decoration: line-through; color: #9ca3af; font-size: 11px; margin-right: 4px;">¥${originalAmount.toFixed(2)}</span><span style="color: #dc2626; font-weight: 600;">¥${order.totalAmount.toFixed(2)}</span>`
+                    : `¥${order.totalAmount.toFixed(2)}`;
+                const rowBg = isReturned ? 'background: #fef2f2;' : '';
+
                 return `
-                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <tr style="border-bottom: 1px solid #e5e7eb; ${rowBg}">
                         <td style="padding: 12px 8px; text-align: center; color: #6b7280; font-size: 13px;">${index + 1}</td>
                         <td style="padding: 12px 8px; text-align: center; color: #111827; font-size: 13px; font-weight: 500;">${order.date}</td>
-                        <td style="padding: 12px 8px; text-align: center; font-size: 13px;"><span onclick="viewSalesReceiptById('${order.id}')" class="cursor-pointer hover:underline" style="color: #2563eb; background: #dbeafe; padding: 2px 6px; border-radius: 4px; font-weight: 500;">${order.docNumber || order.id.slice(-6)}</span></td>
+                        <td style="padding: 12px 8px; text-align: center; font-size: 13px;"><span onclick="viewSalesReceiptById('${order.id}')" class="cursor-pointer hover:underline" style="color: #2563eb; background: #dbeafe; padding: 2px 6px; border-radius: 4px; font-weight: 500;">${order.docNumber || order.id.slice(-6)}</span>${returnBadge}</td>
                         <td style="padding: 12px 8px; text-align: center; color: #111827; font-size: 13px; font-weight: 600;">${order.totalQty || 0}件</td>
-                        <td style="padding: 12px 8px; text-align: right; color: #dc2626; font-size: 13px; font-weight: 600;">¥${order.totalAmount.toFixed(2)}</td>
+                        <td style="padding: 12px 8px; text-align: right; font-size: 13px; font-weight: 600;">${amountDisplay}</td>
                     </tr>
                 `;
             }).join('');
 
             // 生成支付明细HTML
             const paymentRows = payments.map((payment, index) => {
+                const isRefund = payment.type === 'expense' && payment.paymentMethod === '退货退款';
+                const amountColor = isRefund ? '#dc2626' : '#059669';
+                const typeLabel = isRefund ? '退货退款' : '收款';
+                const typeBg = isRefund ? '#fee2e2' : '#d1fae5';
+                const typeTextColor = isRefund ? '#991b1b' : '#166534';
+
                 return `
                     <tr style="border-bottom: 1px solid #e5e7eb;">
                         <td style="padding: 10px 8px; text-align: center; color: #6b7280; font-size: 12px;">${index + 1}</td>
                         <td style="padding: 10px 8px; text-align: center; color: #111827; font-size: 12px;">${payment.date}</td>
-                        <td style="padding: 10px 8px; text-align: center; color: #059669; font-size: 12px; font-weight: 500;">¥${payment.amount.toFixed(2)}</td>
+                        <td style="padding: 10px 8px; text-align: center; font-size: 12px;">
+                            <span style="display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; background: ${typeBg}; color: ${typeTextColor};">${typeLabel}</span>
+                        </td>
+                        <td style="padding: 10px 8px; text-align: center; color: ${amountColor}; font-size: 12px; font-weight: 600;">${isRefund ? '-' : '+'}¥${payment.amount.toFixed(2)}</td>
                         <td style="padding: 10px 8px; text-align: center; color: #6b7280; font-size: 12px;">${payment.paymentMethod || '-'}</td>
                         <td style="padding: 10px 8px; text-align: left; color: #6b7280; font-size: 12px;">${payment.remark || '-'}</td>
                     </tr>
@@ -7646,7 +8120,8 @@ function downloadExpenseStatement() {
                         </div>
                         <div class="statement-summary-card" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #86efac;">
                             <div style="font-size: 12px; color: #166534; margin-bottom: 4px;">已支付</div>
-                            <div style="font-size: 22px; font-weight: 800; color: #16a34a;">¥${totalPayments.toFixed(2)}</div>
+                            <div style="font-size: 22px; font-weight: 800; color: #16a34a;">¥${totalIncomePayments.toFixed(2)}</div>
+                            ${totalRefundPayments > 0 ? `<div style="font-size: 11px; color: #6b7280; margin-top: 2px;">含退货退款 ¥${totalRefundPayments.toFixed(2)}</div>` : ''}
                         </div>
                         <div class="statement-summary-card" style="background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #fde047;">
                             <div style="font-size: 12px; color: #854d0e; margin-bottom: 4px;">未支付</div>
@@ -7682,6 +8157,7 @@ function downloadExpenseStatement() {
                                 <tr style="background: #f0fdf4;">
                                     <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">序号</th>
                                     <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">日期</th>
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">类型</th>
                                     <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">金额</th>
                                     <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">支付方式</th>
                                     <th style="padding: 10px 8px; text-align: left; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">备注</th>
@@ -7869,11 +8345,13 @@ function downloadExpenseStatement() {
             const paymentDates = payments.map(p => p.date);
             const allDates = [...orderDates, ...paymentDates].sort();
             const startDate = allDates[0];
-            const endDate = allDates[allDates.length - 1];
+            const endDate = new Date().toISOString().split('T')[0];
             const dateRangeText = startDate === endDate ? startDate : `${startDate} 至 ${endDate}`;
 
-            const totalPayments = payments.reduce((sum, p) => sum + p.amount, 0);
-            const remainingAmount = totalAmount - totalPayments;
+            const totalIncomePayments = payments.filter(p => p.type === 'income').reduce((sum, p) => sum + p.amount, 0);
+            const totalRefundPayments = payments.filter(p => p.type === 'expense' && p.paymentMethod === '退货退款').reduce((sum, p) => sum + p.amount, 0);
+            const totalPayments = totalIncomePayments;
+            const remainingAmount = totalAmount - totalIncomePayments + totalRefundPayments;
 
             // 生成订单明细HTML
             const orderRows = orders.map((order, index) => {
@@ -7891,11 +8369,20 @@ function downloadExpenseStatement() {
 
             // 生成付款明细HTML
             const paymentRows = payments.map((payment, index) => {
+                const isRefund = payment.type === 'expense' && payment.paymentMethod === '退货退款';
+                const amountColor = isRefund ? '#dc2626' : '#059669';
+                const typeLabel = isRefund ? '退货退款' : '收款';
+                const typeBg = isRefund ? '#fee2e2' : '#d1fae5';
+                const typeTextColor = isRefund ? '#991b1b' : '#166534';
+
                 return `
                     <tr style="border-bottom: 1px solid #e5e7eb;">
                         <td style="padding: 10px 8px; text-align: center; color: #6b7280; font-size: 12px;">${index + 1}</td>
                         <td style="padding: 10px 8px; text-align: center; color: #111827; font-size: 12px;">${payment.date}</td>
-                        <td style="padding: 10px 8px; text-align: center; color: #059669; font-size: 12px; font-weight: 500;">¥${payment.amount.toFixed(2)}</td>
+                        <td style="padding: 10px 8px; text-align: center; font-size: 12px;">
+                            <span style="display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; background: ${typeBg}; color: ${typeTextColor};">${typeLabel}</span>
+                        </td>
+                        <td style="padding: 10px 8px; text-align: center; color: ${amountColor}; font-size: 12px; font-weight: 600;">${isRefund ? '-' : '+'}¥${payment.amount.toFixed(2)}</td>
                         <td style="padding: 10px 8px; text-align: center; color: #6b7280; font-size: 12px;">${payment.paymentMethod || '-'}</td>
                         <td style="padding: 10px 8px; text-align: left; color: #6b7280; font-size: 12px;">${payment.remark || '-'}</td>
                     </tr>
@@ -7945,7 +8432,8 @@ function downloadExpenseStatement() {
                         </div>
                         <div class="statement-summary-card" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #86efac;">
                             <div style="font-size: 12px; color: #166534; margin-bottom: 4px;">已支付</div>
-                            <div style="font-size: 22px; font-weight: 800; color: #16a34a;">¥${totalPayments.toFixed(2)}</div>
+                            <div style="font-size: 22px; font-weight: 800; color: #16a34a;">¥${totalIncomePayments.toFixed(2)}</div>
+                            ${totalRefundPayments > 0 ? `<div style="font-size: 11px; color: #6b7280; margin-top: 2px;">含退货退款 ¥${totalRefundPayments.toFixed(2)}</div>` : ''}
                         </div>
                         <div class="statement-summary-card" style="background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #fde047;">
                             <div style="font-size: 12px; color: #854d0e; margin-bottom: 4px;">未支付</div>
@@ -7982,6 +8470,7 @@ function downloadExpenseStatement() {
                                 <tr style="background: #f0fdf4;">
                                     <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">序号</th>
                                     <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">日期</th>
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">类型</th>
                                     <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">金额</th>
                                     <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">支付方式</th>
                                     <th style="padding: 10px 8px; text-align: left; font-size: 12px; font-weight: 600; color: #166534; border-bottom: 1px solid #bbf7d0;">备注</th>
@@ -9214,6 +9703,10 @@ function payExpense(expenseId) {
                 initSalesFlowCustomerFilter();
                 renderSalesFlow();
             }
+            if (tab === 'returns') {
+                initReturnFlowCustomerFilter();
+                renderReturnFlow();
+            }
         }
 
         // ==================== 出货流水 ====================
@@ -9349,6 +9842,418 @@ function payExpense(expenseId) {
             document.getElementById('salesFlowEndDate').value = '';
             renderSalesFlow();
         }
+
+        // ==================== 退货流水功能 ====================
+        function initReturnFlowCustomerFilter() {
+            const select = document.getElementById('returnFlowCustomerFilter');
+            if (!select) return;
+            const uniqueCustomers = [];
+            const seenNames = new Set();
+            data.customers.forEach(c => {
+                if (!seenNames.has(c.name)) {
+                    seenNames.add(c.name);
+                    uniqueCustomers.push(c);
+                }
+            });
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">全部客户</option>' +
+                uniqueCustomers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            if (uniqueCustomers.some(c => c.id === currentValue)) {
+                select.value = currentValue;
+            }
+        }
+
+        function renderReturnFlow() {
+            const search = document.getElementById('returnFlowSearch').value.toLowerCase().trim();
+            const customerFilter = document.getElementById('returnFlowCustomerFilter').value;
+            const startDate = document.getElementById('returnFlowStartDate').value;
+            const endDate = document.getElementById('returnFlowEndDate').value;
+
+            let returns = data.returns || [];
+
+            // 筛选
+            if (search) {
+                returns = returns.filter(r =>
+                    (r.customerName && r.customerName.toLowerCase().includes(search)) ||
+                    (r.docNumber && r.docNumber.toLowerCase().includes(search)) ||
+                    (r.returnReason && r.returnReason.toLowerCase().includes(search)) ||
+                    (r.items && r.items.some(item =>
+                        (item.name && item.name.toLowerCase().includes(search)) ||
+                        (item.spec && item.spec.toLowerCase().includes(search)) ||
+                        (item.brand && item.brand.toLowerCase().includes(search))
+                    ))
+                );
+            }
+            if (customerFilter) {
+                returns = returns.filter(r => r.customerId === customerFilter);
+            }
+            if (startDate) {
+                returns = returns.filter(r => r.returnDate >= startDate);
+            }
+            if (endDate) {
+                returns = returns.filter(r => r.returnDate <= endDate);
+            }
+
+            // 按退货日期倒序排列
+            returns.sort((a, b) => new Date(b.returnDate) - new Date(a.returnDate));
+
+            const tbody = document.getElementById('returnFlowList');
+
+            // 计算汇总
+            let totalReturnAmount = 0;
+            let totalOriginalAmount = 0;
+            let totalReturnQty = 0;
+            returns.forEach(r => {
+                totalReturnAmount += r.returnAmount || 0;
+                totalOriginalAmount += r.originalAmount || 0;
+                (r.items || []).forEach(item => {
+                    totalReturnQty += parseFloat(item.qty) || 0;
+                });
+            });
+
+            let html = returns.map(r => {
+                const returnTypeLabel = r.returnType === 'full' ? '全部退货' : '部分退货';
+                const returnTypeClass = r.returnType === 'full' ? 'status-cancelled' : 'status-partial';
+
+                // 生成退货产品明细
+                const productDetails = (r.items || []).map(item => {
+                    return `<div style="display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">
+                        <span style="font-weight: 500; color: #111827;">${item.name}</span>
+                        <span style="color: #6b7280; font-size: 11px;">${item.spec}</span>
+                        ${item.brand ? `<span style="color: #9ca3af; font-size: 11px;">${item.brand}</span>` : ''}
+                    </div>`;
+                }).join('');
+
+                const qtyDetails = (r.items || []).map(item => {
+                    return `<div style="text-align: center; margin-bottom: 2px;">
+                        <span style="font-weight: 600; color: #dc2626;">${item.qty}</span>
+                        <span style="color: #6b7280; font-size: 11px;">件</span>
+                    </div>`;
+                }).join('');
+
+                return `<tr class="hover:bg-red-50 transition-colors">
+                    <td class="px-3 py-3 text-sm text-gray-700 whitespace-nowrap">${r.returnDate}</td>
+                    <td class="px-3 py-3 text-sm font-medium text-blue-600 whitespace-nowrap">${r.docNumber || '-'}</td>
+                    <td class="px-3 py-3 text-sm text-gray-700 whitespace-nowrap">${r.customerName}</td>
+                    <td class="px-3 py-3 whitespace-nowrap">
+                        <span class="status-badge ${returnTypeClass}" style="font-size: 11px;">${returnTypeLabel}</span>
+                    </td>
+                    <td class="px-3 py-3 text-sm" style="min-width: 150px;">${productDetails || '-'}</td>
+                    <td class="px-3 py-3 text-sm whitespace-nowrap">${qtyDetails || '-'}</td>
+                    <td class="px-3 py-3 text-sm font-bold text-red-600 whitespace-nowrap">¥${(r.returnAmount || 0).toFixed(2)}</td>
+                    <td class="px-3 py-3 text-sm text-gray-500 whitespace-nowrap">¥${(r.originalAmount || 0).toFixed(2)}</td>
+                    <td class="px-3 py-3 text-sm text-gray-500 whitespace-nowrap" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis;">${r.returnReason || '-'}</td>
+                    <td class="px-3 py-3 text-sm space-x-1 whitespace-nowrap">
+                        <button onclick="viewReturnDetail('${r.id}')" class="text-blue-600 hover:underline">详情</button>
+                        <button onclick="editReturnRecord('${r.id}')" class="text-orange-600 hover:underline">修改</button>
+                        <button onclick="cancelReturnFromFlow('${r.id}')" class="text-red-600 hover:underline">取消</button>
+                    </td>
+                </tr>`;
+            }).join('');
+
+            // 添加汇总行
+            if (returns.length > 0) {
+                html += `<tr style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-top: 2px solid #dc2626;">
+                    <td class="px-3 py-3 text-sm font-bold text-red-800" colspan="2">
+                        合计（${returns.length}笔）
+                    </td>
+                    <td class="px-3 py-3 text-sm font-bold text-red-800" colspan="2">
+                        合计件数: <span style="font-size: 16px;">${totalReturnQty}</span> 件
+                    </td>
+                    <td class="px-3 py-3 text-sm font-bold text-red-800" colspan="2">
+                        退货总额: ¥${totalReturnAmount.toFixed(2)}
+                    </td>
+                    <td class="px-3 py-3 text-sm font-bold text-red-800" colspan="2">
+                        原单总额: ¥${totalOriginalAmount.toFixed(2)}
+                    </td>
+                    <td class="px-3 py-3 text-sm font-bold text-red-800" colspan="2">
+                    </td>
+                </tr>`;
+            } else {
+                html = `<tr>
+                    <td colspan="10" class="px-6 py-8 text-center text-gray-500">
+                        <div class="text-4xl mb-2">🔄</div>
+                        <p>暂无退货记录</p>
+                    </td>
+                </tr>`;
+            }
+
+            tbody.innerHTML = html;
+        }
+
+        function resetReturnFlowFilters() {
+            document.getElementById('returnFlowSearch').value = '';
+            document.getElementById('returnFlowCustomerFilter').value = '';
+            document.getElementById('returnFlowStartDate').value = '';
+            document.getElementById('returnFlowEndDate').value = '';
+            renderReturnFlow();
+        }
+
+        // 导出退货流水图片
+        function exportReturnFlowImage() {
+            const search = document.getElementById('returnFlowSearch').value.toLowerCase();
+            const customerFilter = document.getElementById('returnFlowCustomerFilter').value;
+            const startDate = document.getElementById('returnFlowStartDate').value;
+            const endDate = document.getElementById('returnFlowEndDate').value;
+
+            let returns = data.returns || [];
+            if (search) {
+                returns = returns.filter(r => {
+                    const text = (r.customerName + ' ' + r.docNumber + ' ' + r.returnReason + ' ' + 
+                        (r.items || []).map(i => i.name + ' ' + i.spec).join(' ')).toLowerCase();
+                    return text.includes(search);
+                });
+            }
+            if (customerFilter) returns = returns.filter(r => r.customerId === customerFilter);
+            if (startDate) returns = returns.filter(r => r.returnDate >= startDate);
+            if (endDate) returns = returns.filter(r => r.returnDate <= endDate);
+
+            returns.sort((a, b) => new Date(b.returnDate) - new Date(a.returnDate));
+
+            if (returns.length === 0) {
+                showToast('⚠️ 当前筛选条件下无退货数据', 'warning');
+                return;
+            }
+
+            // 计算汇总
+            let totalReturnAmount = 0;
+            let totalOriginalAmount = 0;
+            let totalReturnQty = 0;
+            returns.forEach(r => {
+                totalReturnAmount += r.returnAmount || 0;
+                totalOriginalAmount += r.originalAmount || 0;
+                (r.items || []).forEach(item => {
+                    totalReturnQty += parseFloat(item.qty) || 0;
+                });
+            });
+
+            // 生成筛选标签
+            let filterTags = [];
+            if (customerFilter) {
+                const customer = data.customers.find(c => c.id === customerFilter);
+                filterTags.push('客户：' + (customer ? customer.name : customerFilter));
+            }
+            if (startDate || endDate) filterTags.push('日期：' + (startDate || '...') + ' 至 ' + (endDate || '...'));
+            if (search) filterTags.push('搜索：' + search);
+            const filterLabel = filterTags.length > 0 ? '（' + filterTags.join(' · ') + '）' : '';
+
+            // 生成表格行
+            const rows = returns.map((r, index) => {
+                const returnTypeLabel = r.returnType === 'full' ? '全部退货' : '部分退货';
+                const returnTypeColor = r.returnType === 'full' ? '#dc2626' : '#d97706';
+                const returnTypeBg = r.returnType === 'full' ? '#fee2e2' : '#fef3c7';
+
+                const productDetails = (r.items || []).map(item => {
+                    return `<div style="margin-bottom: 2px;"><span style="font-weight: 500;">${item.name}</span> <span style="color: #6b7280; font-size: 11px;">${item.spec}</span></div>`;
+                }).join('');
+
+                const qtyDetails = (r.items || []).map(item => {
+                    return `<div style="text-align: center; margin-bottom: 2px;"><span style="font-weight: 600; color: #dc2626;">${item.qty}</span> <span style="color: #6b7280; font-size: 11px;">件</span></div>`;
+                }).join('');
+
+                return `
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 8px 6px; text-align: center; color: #6b7280; font-size: 12px;">${index + 1}</td>
+                        <td style="padding: 8px 6px; text-align: center; color: #111827; font-size: 12px; font-weight: 500;">${r.returnDate}</td>
+                        <td style="padding: 8px 6px; text-align: center; color: #2563eb; font-size: 12px; font-weight: 500;">${r.docNumber || '-'}</td>
+                        <td style="padding: 8px 6px; text-align: center; color: #111827; font-size: 12px;">${r.customerName}</td>
+                        <td style="padding: 8px 6px; text-align: center; font-size: 11px;">
+                            <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-weight: 500; color: ${returnTypeColor}; background: ${returnTypeBg};">${returnTypeLabel}</span>
+                        </td>
+                        <td style="padding: 8px 6px; text-align: left; font-size: 12px; min-width: 120px;">${productDetails || '-'}</td>
+                        <td style="padding: 8px 6px; text-align: center; font-size: 12px;">${qtyDetails || '-'}</td>
+                        <td style="padding: 8px 6px; text-align: right; color: #dc2626; font-size: 12px; font-weight: 600;">¥${(r.returnAmount || 0).toFixed(2)}</td>
+                        <td style="padding: 8px 6px; text-align: right; color: #6b7280; font-size: 12px;">¥${(r.originalAmount || 0).toFixed(2)}</td>
+                        <td style="padding: 8px 6px; text-align: left; color: #6b7280; font-size: 11px; max-width: 120px; word-break: break-all;">${r.returnReason || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            // 创建导出预览容器
+            const exportDiv = document.createElement('div');
+            exportDiv.id = 'returnFlowExportPreview';
+            exportDiv.style.cssText = 'position: fixed; left: -9999px; top: 0; width: 1100px; padding: 32px; background: white; font-family: "Inter", "Microsoft YaHei", sans-serif; color: #1f2937; box-sizing: border-box;';
+            exportDiv.innerHTML = `
+                <div style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 3px solid #dc2626;">
+                    <h1 style="font-size: 24px; font-weight: 800; color: #1e3a5f; margin-bottom: 6px; letter-spacing: 2px;">佳信水产有限公司</h1>
+                    <h2 style="font-size: 18px; font-weight: 600; color: #dc2626; margin-bottom: 12px;">退货流水报表</h2>
+                    <div style="font-size: 12px; color: #6b7280;">
+                        <span>电话：18077761212</span> · <span>联系人：郑佳宝</span>
+                    </div>
+                    ${filterLabel ? `<div style="font-size: 11px; color: #dc2626; margin-top: 6px; background: #fef2f2; padding: 3px 10px; border-radius: 4px; display: inline-block;">${filterLabel}</div>` : ''}
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-radius: 10px; padding: 14px 20px; border: 1px solid #fecaca;">
+                        <div style="font-size: 13px; color: #991b1b; font-weight: 500;">退货笔数</div>
+                        <div style="font-size: 22px; font-weight: 800; color: #dc2626;">${returns.length} 笔</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-radius: 10px; padding: 14px 20px; border: 1px solid #fecaca;">
+                        <div style="font-size: 13px; color: #991b1b; font-weight: 500;">退货件数</div>
+                        <div style="font-size: 22px; font-weight: 800; color: #dc2626;">${totalReturnQty} 件</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-radius: 10px; padding: 14px 20px; border: 1px solid #fecaca;">
+                        <div style="font-size: 13px; color: #991b1b; font-weight: 500;">退货总额</div>
+                        <div style="font-size: 22px; font-weight: 800; color: #dc2626;">¥${totalReturnAmount.toFixed(2)}</div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <div style="font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 8px; padding-left: 6px; border-left: 3px solid #dc2626;">退货明细（共 ${returns.length} 笔）</div>
+                    <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05); font-size: 12px;">
+                        <thead>
+                            <tr style="background: #f8fafc;">
+                                <th style="padding: 8px 6px; text-align: center; font-size: 11px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb; width: 30px;">序号</th>
+                                <th style="padding: 8px 6px; text-align: center; font-size: 11px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">退货日期</th>
+                                <th style="padding: 8px 6px; text-align: center; font-size: 11px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">订单号</th>
+                                <th style="padding: 8px 6px; text-align: center; font-size: 11px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">客户</th>
+                                <th style="padding: 8px 6px; text-align: center; font-size: 11px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">类型</th>
+                                <th style="padding: 8px 6px; text-align: left; font-size: 11px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">退货产品</th>
+                                <th style="padding: 8px 6px; text-align: center; font-size: 11px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">退货件数</th>
+                                <th style="padding: 8px 6px; text-align: right; font-size: 11px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">退货金额</th>
+                                <th style="padding: 8px 6px; text-align: right; font-size: 11px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">原单金额</th>
+                                <th style="padding: 8px 6px; text-align: left; font-size: 11px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">退货原因</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-radius: 10px; padding: 16px; margin: 16px 0; border: 2px solid #dc2626; text-align: center;">
+                    <div style="display: flex; justify-content: center; gap: 24px; align-items: center;">
+                        <div>
+                            <div style="font-size: 11px; color: #991b1b; margin-bottom: 2px;">原单总额</div>
+                            <div style="font-size: 18px; font-weight: 800; color: #991b1b;">¥${totalOriginalAmount.toFixed(2)}</div>
+                        </div>
+                        <div style="font-size: 20px; color: #dc2626;">−</div>
+                        <div>
+                            <div style="font-size: 11px; color: #dc2626; margin-bottom: 2px;">退货总额</div>
+                            <div style="font-size: 18px; font-weight: 800; color: #dc2626;">¥${totalReturnAmount.toFixed(2)}</div>
+                        </div>
+                        <div style="font-size: 20px; color: #dc2626;">=</div>
+                        <div>
+                            <div style="font-size: 11px; color: #059669; margin-bottom: 2px;">实际销售额</div>
+                            <div style="font-size: 20px; font-weight: 800; color: #059669;">¥${(totalOriginalAmount - totalReturnAmount).toFixed(2)}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: #f8fafc; border-radius: 6px; padding: 12px; margin-top: 20px; border: 1px solid #e5e7eb;">
+                    <div style="font-size: 11px; color: #6b7280; line-height: 1.6; text-align: center;">
+                        <p style="margin-bottom: 4px;">如有疑问，请联系：郑佳宝 18077761212</p>
+                        <p>本报表由佳信水产财务系统自动生成</p>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 10px; font-size: 10px; color: #9ca3af;">
+                    生成时间：${new Date().toLocaleString('zh-CN')}
+                </div>
+            `;
+            document.body.appendChild(exportDiv);
+
+            document.getElementById('loading').classList.add('show');
+            document.querySelector('.loading-text').textContent = '生成退货报表图片中...';
+
+            setTimeout(() => {
+                html2canvas(exportDiv, {
+                    scale: 2,
+                    backgroundColor: '#ffffff',
+                    useCORS: true,
+                    logging: false,
+                    width: 1100,
+                    height: exportDiv.scrollHeight + 50
+                }).then(canvas => {
+                    document.getElementById('loading').classList.remove('show');
+                    const link = document.createElement('a');
+                    const dateStr = new Date().toISOString().split('T')[0];
+                    link.download = '退货流水报表_' + dateStr + '.png';
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    document.body.removeChild(exportDiv);
+                    showToast('✅ 退货流水报表已导出');
+                }).catch(err => {
+                    console.error('导出失败:', err);
+                    document.getElementById('loading').classList.remove('show');
+                    document.body.removeChild(exportDiv);
+                    showToast('❌ 导出失败', 'error');
+                });
+            }, 300);
+        }
+
+        // 查看退货详情
+        function viewReturnDetail(returnId) {
+            const returnRecord = (data.returns || []).find(r => r.id === returnId);
+            if (!returnRecord) return;
+
+            const order = data.salesOrders.find(o => o.id === returnRecord.orderId);
+
+            // 生成退货产品明细表格
+            const itemsHtml = (returnRecord.items || []).map((item, idx) => `
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 8px; text-align: center; color: #6b7280; font-size: 13px;">${idx + 1}</td>
+                    <td style="padding: 8px; text-align: left; color: #111827; font-size: 13px; font-weight: 500;">${item.name}</td>
+                    <td style="padding: 8px; text-align: center; color: #6b7280; font-size: 13px;">${item.spec}</td>
+                    <td style="padding: 8px; text-align: center; color: #6b7280; font-size: 13px;">${item.brand || '-'}</td>
+                    <td style="padding: 8px; text-align: center; color: #dc2626; font-size: 13px; font-weight: 600;">${item.qty}</td>
+                    <td style="padding: 8px; text-align: center; color: #6b7280; font-size: 13px;">${item.weight || '-'}</td>
+                    <td style="padding: 8px; text-align: right; color: #111827; font-size: 13px;">¥${item.price}</td>
+                    <td style="padding: 8px; text-align: right; color: #dc2626; font-size: 13px; font-weight: 600;">¥${item.total}</td>
+                </tr>
+            `).join('');
+
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.id = 'returnDetailModal';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 700px;">
+                    <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="text-xl font-bold text-red-600">🔄 退货详情</h3>
+                        <button onclick="document.getElementById('returnDetailModal').remove()" class="text-gray-400 hover:text-gray-600">✕</button>
+                    </div>
+                    <div class="p-6">
+                        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 14px;">
+                                <div><span style="color: #6b7280;">退货日期：</span><span style="font-weight: 600; color: #111827;">${returnRecord.returnDate}</span></div>
+                                <div><span style="color: #6b7280;">原单号：</span><span style="font-weight: 600; color: #1e40af;">${returnRecord.docNumber || '-'}</span></div>
+                                <div><span style="color: #6b7280;">客户：</span><span style="font-weight: 600; color: #111827;">${returnRecord.customerName}</span></div>
+                                <div><span style="color: #6b7280;">退货类型：</span><span style="font-weight: 600; color: ${returnRecord.returnType === 'full' ? '#dc2626' : '#d97706'};">${returnRecord.returnType === 'full' ? '全部退货' : '部分退货'}</span></div>
+                                <div><span style="color: #6b7280;">原单金额：</span><span style="font-weight: 600; color: #111827;">¥${(returnRecord.originalAmount || 0).toFixed(2)}</span></div>
+                                <div><span style="color: #6b7280;">退货金额：</span><span style="font-weight: 600; color: #dc2626;">¥${(returnRecord.returnAmount || 0).toFixed(2)}</span></div>
+                            </div>
+                            ${returnRecord.returnReason ? `<div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed #fecaca;"><span style="color: #6b7280;">退货原因：</span><span style="font-weight: 500; color: #991b1b;">${returnRecord.returnReason}</span></div>` : ''}
+                        </div>
+
+                        <div style="font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 8px; padding-left: 6px; border-left: 3px solid #dc2626;">退货产品明细</div>
+                        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 13px;">
+                            <thead>
+                                <tr style="background: #f8fafc;">
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">序号</th>
+                                    <th style="padding: 10px 8px; text-align: left; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">品名</th>
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">规格</th>
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">品牌</th>
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">退货数量</th>
+                                    <th style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">重量</th>
+                                    <th style="padding: 10px 8px; text-align: right; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">单价</th>
+                                    <th style="padding: 10px 8px; text-align: right; font-size: 12px; font-weight: 600; color: #6b7280; border-bottom: 1px solid #e5e7eb;">金额</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${itemsHtml}
+                            </tbody>
+                        </table>
+
+                        <div style="margin-top: 16px; text-align: right;">
+                            <span style="font-size: 14px; color: #6b7280;">退货合计：</span>
+                            <span style="font-size: 20px; font-weight: 800; color: #dc2626;">¥${(returnRecord.returnAmount || 0).toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
 function resetExpenseFilters() {
             document.getElementById('expenseTypeFilter').value = '';
             document.getElementById('expenseStartDate').value = '';
@@ -10880,7 +11785,7 @@ function resetExpenseFilters() {
             switch(viewName) {
                 case 'dashboard': updateDashboard(); break;
                 case 'purchase': renderPurchaseList(); break;
-                case 'sales': initSalesFlowCustomerFilter(); renderSalesList(); renderSalesFlow(); break;
+                case 'sales': initSalesFlowCustomerFilter(); initReturnFlowCustomerFilter(); renderSalesList(); renderSalesFlow(); renderReturnFlow(); break;
                 case 'products': renderProductList(); break;
                 case 'customers': renderCustomerList(); break;
                 case 'suppliers': renderSupplierList(); break;
