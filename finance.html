@@ -8029,10 +8029,10 @@ function downloadExpenseStatement() {
             const endDate = new Date().toISOString().split('T')[0];
             const dateRangeText = startDate === endDate ? startDate : `${startDate} 至 ${endDate}`;
 
-            const totalIncomePayments = payments.filter(p => p.type === 'income').reduce((sum, p) => sum + p.amount, 0);
-            const totalRefundPayments = payments.filter(p => p.type === 'expense' && p.paymentMethod === '退货退款').reduce((sum, p) => sum + p.amount, 0);
-            const totalPayments = totalIncomePayments;
-            const remainingAmount = totalAmount - totalIncomePayments + totalRefundPayments;
+            const totalPaidPayments = payments.filter(p => !p.isExpensePayment).reduce((sum, p) => sum + (p.amount || 0), 0);
+            const totalRefundPayments = payments.filter(p => p.paymentMethod === '退货退款').reduce((sum, p) => sum + (p.amount || 0), 0);
+            const totalPayments = totalPaidPayments;
+            const remainingAmount = totalAmount - totalPaidPayments + totalRefundPayments;
 
             // 生成订单明细HTML（不显示状态列）
             const orderRows = orders.map((order, index) => {
@@ -8120,7 +8120,7 @@ function downloadExpenseStatement() {
                         </div>
                         <div class="statement-summary-card" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #86efac;">
                             <div style="font-size: 12px; color: #166534; margin-bottom: 4px;">已支付</div>
-                            <div style="font-size: 22px; font-weight: 800; color: #16a34a;">¥${totalIncomePayments.toFixed(2)}</div>
+                            <div style="font-size: 22px; font-weight: 800; color: #16a34a;">¥${totalPaidPayments.toFixed(2)}</div>
                             ${totalRefundPayments > 0 ? `<div style="font-size: 11px; color: #6b7280; margin-top: 2px;">含退货退款 ¥${totalRefundPayments.toFixed(2)}</div>` : ''}
                         </div>
                         <div class="statement-summary-card" style="background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #fde047;">
@@ -8348,10 +8348,10 @@ function downloadExpenseStatement() {
             const endDate = new Date().toISOString().split('T')[0];
             const dateRangeText = startDate === endDate ? startDate : `${startDate} 至 ${endDate}`;
 
-            const totalIncomePayments = payments.filter(p => p.type === 'income').reduce((sum, p) => sum + p.amount, 0);
-            const totalRefundPayments = payments.filter(p => p.type === 'expense' && p.paymentMethod === '退货退款').reduce((sum, p) => sum + p.amount, 0);
-            const totalPayments = totalIncomePayments;
-            const remainingAmount = totalAmount - totalIncomePayments + totalRefundPayments;
+            const totalPaidPayments = payments.filter(p => !p.isExpensePayment).reduce((sum, p) => sum + (p.amount || 0), 0);
+            const totalRefundPayments = payments.filter(p => p.paymentMethod === '退货退款').reduce((sum, p) => sum + (p.amount || 0), 0);
+            const totalPayments = totalPaidPayments;
+            const remainingAmount = totalAmount - totalPaidPayments + totalRefundPayments;
 
             // 生成订单明细HTML
             const orderRows = orders.map((order, index) => {
@@ -8432,7 +8432,7 @@ function downloadExpenseStatement() {
                         </div>
                         <div class="statement-summary-card" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #86efac;">
                             <div style="font-size: 12px; color: #166534; margin-bottom: 4px;">已支付</div>
-                            <div style="font-size: 22px; font-weight: 800; color: #16a34a;">¥${totalIncomePayments.toFixed(2)}</div>
+                            <div style="font-size: 22px; font-weight: 800; color: #16a34a;">¥${totalPaidPayments.toFixed(2)}</div>
                             ${totalRefundPayments > 0 ? `<div style="font-size: 11px; color: #6b7280; margin-top: 2px;">含退货退款 ¥${totalRefundPayments.toFixed(2)}</div>` : ''}
                         </div>
                         <div class="statement-summary-card" style="background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #fde047;">
