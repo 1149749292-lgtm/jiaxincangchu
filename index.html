@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="timestamp" content="2026-05-26 15:41">
-  <title>佳信水产仓库系统 v6.0.6 · GitHub存储</title>
+  <title>佳信水产仓库系统 v6.0.7 · GitHub存储</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js?v=20260502_1130"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js?v=20260502_1130"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter&v=20260502_1130:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
@@ -442,7 +442,7 @@
         </div>
       <div style="position: relative; z-index: 1;">
         <h1>🦐 佳信水产</h1>
-        <p>佳信水产仓库系统 v6.0.6 · GitHub存储 · 微信缓存已优化</p>
+        <p>佳信水产仓库系统 v6.0.7 · GitHub存储 · 微信缓存已优化</p>
       </div>
     </div>
 
@@ -1889,8 +1889,11 @@ localStorage.setItem('warehouse_device_id', DEVICE_ID);
     }
 
     let pendingVirtualStock = null;
+    let selectedImportBatchIds = new Set();
 
 async function init() {
+      console.log('[系统初始化] 版本 v6.0.7，时间:', new Date().toLocaleString('zh-CN'));
+
       // ===== 微信防缓存 =====
       (function clearWeChatCache() {
         const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
@@ -1956,8 +1959,13 @@ async function init() {
                 batches = localData.batches || [];
                 loadProfitBatchData(localData);
                 cleanInvalidProducts();
-                if (localData.cartons) loadCartonDataFromCloud(localData.cartons);
-                else initCartonModule();
+          if (localData.cartons) {
+            loadCartonDataFromCloud(localData.cartons);
+            console.log('✅ 已加载本地纸箱数据，自定义纸箱:', (localData.cartons.customTypes || []).length, '种');
+          } else {
+            console.warn('⚠️ 本地无纸箱数据，初始化默认纸箱');
+            initCartonModule();
+          }
               }
             }
           } catch (e) { console.error('本地数据比较失败:', e); }
@@ -1971,11 +1979,16 @@ async function init() {
             cleanInvalidProducts();
           }
 
-          // 加载纸箱数据（无论使用本地还是云端）
-          if (data.cartons) loadCartonDataFromCloud(data.cartons);
-          else if (!useLocal) initCartonModule();
+        // 加载纸箱数据（无论使用本地还是云端）
+        if (data.cartons) {
+          loadCartonDataFromCloud(data.cartons);
+          console.log('✅ 已从云端加载纸箱数据，自定义纸箱:', (data.cartons.customTypes || []).length, '种');
+        } else if (!useLocal) {
+          console.warn('⚠️ 云端无纸箱数据，初始化默认纸箱');
+          initCartonModule();
+        }
 
-          isOnline = true;
+        isOnline = true;
           updateSyncStatus('synced', useLocal ? '已加载本地最新数据（云端较旧）' : '已同步到云端');
           showToast(useLocal ? '✅ 已加载本地最新数据（撤销操作已保留）' : '✅ 云端数据加载成功');
         }
@@ -2118,7 +2131,7 @@ async function init() {
         throw new Error('未配置 GitHub Token');
       }
 
-      const url = `https://api.github.com/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/contents/${CONFIG.GITHUB_PATH}`;
+      const url = `https://api.github.com/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/contents/${CONFIG.GITHUB_PATH}?_=${Date.now()}`;
 
       try {
         const response = await fetch(url, {
@@ -2202,6 +2215,9 @@ async function init() {
       }
 
       console.log('从云端加载纸箱数据，合并自定义纸箱');
+      console.log('云端纸箱数据键:', Object.keys(cartonData));
+      console.log('自定义纸箱数量:', (cartonData.customTypes || []).length);
+      console.log('纸箱库存条目:', Object.keys(cartonData.stock || {}).length);
       cartonsLoadedFromCloud = true;
 
       // 加载用户自定义纸箱（非默认ID的纸箱）
@@ -2293,7 +2309,7 @@ async function init() {
         let cloudSha = null;
         let cloudData = null;
         try {
-          const checkUrl = `https://api.github.com/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/contents/${CONFIG.GITHUB_PATH}`;
+          const checkUrl = `https://api.github.com/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/contents/${CONFIG.GITHUB_PATH}?_=${Date.now()}`;
           const checkResp = await fetch(checkUrl, {
             method: 'GET',
             headers: {
@@ -2445,8 +2461,9 @@ async function init() {
         // 保存成功后更新本地记录的云端版本号
         localStorage.setItem('warehouse_cloud_lastModified', savePayload._lastModified.toString());
         localStorage.setItem('warehouse_cloud_version', savePayload._version.toString());
+        localStorage.setItem('warehouse_last_save_time', Date.now().toString());
 
-        updateSyncStatus('synced', '已同步到云端');
+        updateSyncStatus('synced', '已同步到云端 v' + savePayload._version);
         saveCartonDataLocal();
         console.log('✅ GitHub 云端同步成功，版本:', savePayload._version);
 
@@ -2544,6 +2561,34 @@ function updateStats() {
         showToast('⚠️ 当前处于离线模式，请检查网络连接', 'warning');
       } else {
         showToast('✅ 已连接到云端，数据会自动同步');
+      }
+    }
+
+    // 强制刷新云端数据（绕过缓存）
+    async function forceRefreshFromCloud() {
+      showLoading('正在强制刷新云端数据...');
+      try {
+        // 清除本地缓存标记，强制从云端重新加载
+        localStorage.removeItem('warehouse_cloud_lastModified');
+        localStorage.removeItem('warehouse_cloud_version');
+
+        const data = await fetchData();
+        products = data.products || [];
+        stock = data.stock || {};
+        batches = data.batches || [];
+        loadProfitBatchData(data);
+        cleanInvalidProducts();
+
+        if (data.cartons) loadCartonDataFromCloud(data.cartons);
+        else initCartonModule();
+
+        saveLocalData();
+        updateUI();
+        hideLoading();
+        showToast('✅ 已强制刷新到最新云端数据');
+      } catch (err) {
+        hideLoading();
+        showToast('❌ 刷新失败: ' + err.message, 'error');
       }
     }
 
