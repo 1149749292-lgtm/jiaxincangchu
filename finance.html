@@ -7844,13 +7844,13 @@ function downloadExpenseStatement() {
 
         // 费用管理板块（复刻其筛选逻辑）：费用支出始终等于费用管理当前筛选下的“已付”合计
         function buildExpenseMgmtRows() {
-            const val = id => { const el = document.getElementById(id); return el ? el.value : ''; };
-            const typeF = val('expenseTypeFilter');
-            const payF = val('expensePaymentFilter');
-            const kw = (val('expenseSearch') || '').toLowerCase().trim();
-            const sD = val('expenseStartDate');
-            const eD = val('expenseEndDate');
-            const pD = val('expensePaymentDateFilter');
+            // 固定口径：费用板块永远按关键词“财务微信”统计，不跟随费用管理页面的筛选，打开即出结果
+            const typeF = '';
+            const payF = '';
+            const kw = '财务微信';
+            const sD = '';
+            const eD = '';
+            const pD = '';
 
             let exps = (data.expenses || []).slice();
             if (typeF) exps = exps.filter(e => e.type === typeF);
@@ -7943,7 +7943,11 @@ function downloadExpenseStatement() {
             // 费用支出：与费用管理当前筛选完全一致
             let expRows = (cat === 'income' || cat === 'payment') ? [] : buildExpenseMgmtRows();
 
-            const rows = incPayRows.concat(expRows).sort((a, b) => a.date === b.date ? (a.ts - b.ts) : (a.date < b.date ? -1 : 1));
+            // 先按时间正序计算每笔结余，再按日期从近到远显示
+            const asc = incPayRows.concat(expRows).sort((a, b) => a.date === b.date ? (a.ts - b.ts) : (a.date < b.date ? -1 : 1));
+            let running = opening;
+            asc.forEach(r => { running += (r.category === 'income' ? r.amount : -r.amount); r.bal = running; });
+            const rows = asc.slice().sort((a, b) => a.date === b.date ? (b.ts - a.ts) : (a.date < b.date ? 1 : -1));
 
             let income = 0, payment = 0, expense = 0, balance = opening;
             let incomeCount = 0, paymentCount = 0, expenseCount = 0;
@@ -7954,9 +7958,10 @@ function downloadExpenseStatement() {
             };
             const body = rows.map(r => {
                 const meta = catMeta[r.category] || catMeta.expense;
-                if (r.category === 'income') { income += r.amount; incomeCount++; balance += r.amount; }
-                else if (r.category === 'payment') { payment += r.amount; paymentCount++; balance -= r.amount; }
-                else { expense += r.amount; expenseCount++; balance -= r.amount; }
+                if (r.category === 'income') { income += r.amount; incomeCount++; }
+                else if (r.category === 'payment') { payment += r.amount; paymentCount++; }
+                else { expense += r.amount; expenseCount++; }
+                balance = r.bal;
                 const isOut = r.category !== 'income';
                 return `<tr>
                     <td class="px-3 py-2 text-sm text-gray-500 whitespace-nowrap">${r.date}</td>
@@ -7980,7 +7985,7 @@ function downloadExpenseStatement() {
             document.getElementById('wechatList').innerHTML = body || `<tr><td colspan="8" class="px-3 py-8 text-center text-gray-400">当前筛选条件下没有流水</td></tr>`;
 
             const note = document.getElementById('wechatNote');
-            if (note) note.textContent = '口径：收款/付款=收付款明细中备注含“财务微信”的流水（可用上方日期/搜索筛选）；费用支出=与费用管理页面当前筛选的列表逐项一致（费用行已付 + 付款流水行），合计即费用管理“已付”列合计；余额=期初+收款−付款−费用支出。';
+            if (note) note.textContent = '口径：收款/付款=收付款明细中备注含“财务微信”的流水（可用上方日期/搜索筛选）；费用支出=费用管理中备注含“财务微信”的全部已付（费用行已付+付款流水行），打开即自动统计，无需再筛选；余额=期初+收款−付款−费用支出。';
         }
 
         // ==================== 图片处理 ====================
