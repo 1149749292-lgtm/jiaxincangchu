@@ -1789,6 +1789,9 @@
                     <button onclick="updateCapitalOverview()" class="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-cyan-600 flex items-center space-x-2 shadow-md text-sm">
                         <span>刷新数据</span>
                     </button>
+                    <button onclick="openWeChatReconcile()" class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-lg hover:from-green-600 hover:to-emerald-700 flex items-center space-x-2 shadow-md text-sm" title="核对财务微信收付款余额">
+                        <span>💚 微信对账</span>
+                    </button>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     <div class="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-6 shadow-lg text-white">
@@ -2983,6 +2986,88 @@
             </div>
         </div>
     </div>
+
+    <!-- 财务微信对账模态框 -->
+    <div id="wechatReconcileModal" class="modal">
+        <div class="modal-content" style="max-width: 980px;">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-green-700">💚 财务微信余额核对</h3>
+                <button onclick="closeModal('wechatReconcileModal')" class="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+            <div class="p-6">
+                <div class="flex flex-wrap gap-3 items-end mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">期初微信余额</label>
+                        <input type="number" id="wechatOpening" value="0" step="0.01" class="px-3 py-2 border rounded-lg w-36" oninput="renderWechatList()">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">开始日期</label>
+                        <input type="date" id="wechatStart" class="px-3 py-2 border rounded-lg" onchange="renderWechatList()">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">结束日期</label>
+                        <input type="date" id="wechatEnd" class="px-3 py-2 border rounded-lg" onchange="renderWechatList()">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">类型</label>
+                        <select id="wechatCat" class="px-3 py-2 border rounded-lg" onchange="renderWechatList()">
+                            <option value="">全部</option>
+                            <option value="income">💚 收款</option>
+                            <option value="payment">💸 付款</option>
+                            <option value="expense">🧾 费用支出</option>
+                        </select>
+                    </div>
+                    <div class="flex-1 min-w-[180px]">
+                        <label class="block text-sm font-medium text-gray-600 mb-1">搜索</label>
+                        <input type="text" id="wechatSearch" placeholder="搜对方/备注/金额..." class="px-3 py-2 border rounded-lg w-full" onkeyup="renderWechatList()">
+                    </div>
+                    <button onclick="resetWechatFilters()" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">重置</button>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+                        <div class="text-xs text-green-600 font-medium">💚 收款合计</div>
+                        <div id="wechatIncomeTotal" class="text-xl font-bold text-green-700">¥0.00</div>
+                        <div id="wechatIncomeCount" class="text-xs text-gray-400 mt-1">0 笔</div>
+                    </div>
+                    <div class="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
+                        <div class="text-xs text-orange-600 font-medium">💸 付款合计</div>
+                        <div id="wechatPayTotal" class="text-xl font-bold text-orange-700">¥0.00</div>
+                        <div id="wechatPayCount" class="text-xs text-gray-400 mt-1">0 笔</div>
+                    </div>
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
+                        <div class="text-xs text-red-600 font-medium">🧾 费用支出合计</div>
+                        <div id="wechatExpenseTotal" class="text-xl font-bold text-red-700">¥0.00</div>
+                        <div id="wechatExpenseCount" class="text-xs text-gray-400 mt-1">0 笔</div>
+                    </div>
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                        <div class="text-xs text-blue-600 font-medium">账面应有余额</div>
+                        <div id="wechatBalance" class="text-xl font-bold text-blue-700">¥0.00</div>
+                    </div>
+                </div>
+
+                <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+                    <table class="w-full" style="min-width:860px;">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">日期</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">类型</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">对方/类别</th>
+                                <th class="px-3 py-2 text-right text-xs font-medium text-gray-500">收入</th>
+                                <th class="px-3 py-2 text-right text-xs font-medium text-gray-500">支出</th>
+                                <th class="px-3 py-2 text-right text-xs font-medium text-gray-500">结余</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">备注</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">来源</th>
+                            </tr>
+                        </thead>
+                        <tbody id="wechatList" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+                <p id="wechatNote" class="text-xs text-gray-400 mt-3"></p>
+            </div>
+        </div>
+    </div>
+
 <!-- 加载动画 -->
     <div class="loading-overlay" id="loading">
         <div class="loading-spinner"></div>
@@ -7706,6 +7791,198 @@ function downloadExpenseStatement() {
             });
         }
 
+
+        // ==================== 财务微信对账 ====================
+        // 规则：只要备注里包含“财务微信”四个字就计入；按类型分为 收款 / 付款 / 费用支出
+        let wechatRowsCache = [];
+
+        function openWeChatReconcile() {
+            buildWechatRows();
+            renderWechatList();
+            document.getElementById('wechatReconcileModal').classList.add('active');
+        }
+
+        function resetWechatFilters() {
+            document.getElementById('wechatOpening').value = '0';
+            document.getElementById('wechatStart').value = '';
+            document.getElementById('wechatEnd').value = '';
+            document.getElementById('wechatSearch').value = '';
+            document.getElementById('wechatCat').value = '';
+            renderWechatList();
+        }
+
+        function buildWechatRows() {
+            const rows = [];
+            // 收付款明细：备注含“财务微信”
+            (data.transactions || []).forEach(t => {
+                if (!((t.remark || '').includes('财务微信'))) return;
+                if (t.type === 'income' && !t.isExpensePayment) {
+                    rows.push({
+                        date: t.date,
+                        ts: parseInt((t.id || '').replace(/\D/g, '')) || 0,
+                        category: 'income',
+                        party: t.partyName || '',
+                        amount: t.amount || 0,
+                        remark: t.remark || '',
+                        src: '收付款明细·收款'
+                    });
+                } else if (t.type === 'expense' && !t.isExpensePayment) {
+                    rows.push({
+                        date: t.date,
+                        ts: parseInt((t.id || '').replace(/\D/g, '')) || 0,
+                        category: 'payment',
+                        party: t.partyName || '',
+                        amount: t.amount || 0,
+                        remark: t.remark || '',
+                        src: '收付款明细·付款'
+                    });
+                }
+            });
+            rows.sort((a, b) => a.date === b.date ? (a.ts - b.ts) : (a.date < b.date ? -1 : 1));
+            wechatRowsCache = rows;
+        }
+
+        // 费用管理板块（复刻其筛选逻辑）：费用支出始终等于费用管理当前筛选下的“已付”合计
+        function buildExpenseMgmtRows() {
+            const val = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+            const typeF = val('expenseTypeFilter');
+            const payF = val('expensePaymentFilter');
+            const kw = (val('expenseSearch') || '').toLowerCase().trim();
+            const sD = val('expenseStartDate');
+            const eD = val('expenseEndDate');
+            const pD = val('expensePaymentDateFilter');
+
+            let exps = (data.expenses || []).slice();
+            if (typeF) exps = exps.filter(e => e.type === typeF);
+            if (sD) exps = exps.filter(e => e.date >= sD);
+            if (eD) exps = exps.filter(e => e.date <= eD);
+            if (payF === 'paid') exps = exps.filter(e => (e.remainingAmount || 0) <= 0);
+            else if (payF === 'unpaid') exps = exps.filter(e => (e.remainingAmount || 0) > 0);
+            if (kw) exps = exps.filter(e => {
+                const r = (e.remark || '').toLowerCase();
+                const t = ((EXPENSE_TYPES[e.type] || {}).name || e.type || '').toLowerCase();
+                return r.includes(kw) || t.includes(kw);
+            });
+            if (pD) exps = exps.filter(e => e.lastPaymentDate === pD);
+
+            let pays = (data.expensePayments || []).slice();
+            if (typeF) pays = pays.filter(p => p.expenseType === typeF);
+            if (sD) pays = pays.filter(p => p.date >= sD);
+            if (eD) pays = pays.filter(p => p.date <= eD);
+            if (pD) pays = pays.filter(p => p.date === pD);
+            if (kw) pays = pays.filter(p => {
+                const r = (p.remark || '').toLowerCase();
+                const t = ((EXPENSE_TYPES[p.expenseType] || {}).name || p.expenseType || '').toLowerCase();
+                const m = (p.paymentMethod || '').toLowerCase();
+                return r.includes(kw) || t.includes(kw) || m.includes(kw);
+            });
+
+            const rows = [];
+            const related = pays.filter(p => p.expenseId);
+            const direct = pays.filter(p => !p.expenseId);
+            const flowById = {};
+            related.forEach(p => { flowById[p.expenseId] = (flowById[p.expenseId] || 0) + (p.amount || 0); });
+            // 1) 费用单：已付 = max(登记已付, 关联流水合计) —— 与费用管理“已付”列一致
+            exps.forEach(e => {
+                const paid = Math.max(e.paidAmount || 0, flowById[e.id] || 0);
+                if (paid <= 0) return;
+                rows.push({
+                    date: e.date,
+                    ts: parseInt((e.id || '').replace(/\D/g, '')) || 0,
+                    category: 'expense',
+                    party: (EXPENSE_TYPES[e.type] || {}).name || e.type || '费用',
+                    amount: paid,
+                    remark: e.remark || '',
+                    src: '费用管理'
+                });
+            });
+            // 2) 关联费用单的付款流水：逐条列出（与费用管理列表显示一致）
+            related.forEach(p => {
+                rows.push({
+                    date: p.date,
+                    ts: parseInt((p.id || '').replace(/\D/g, '')) || 0,
+                    category: 'expense',
+                    party: (EXPENSE_TYPES[p.expenseType] || {}).name || p.expenseType || '费用',
+                    amount: p.amount || 0,
+                    remark: (p.remark || '') + (p.paymentMethod ? ' · ' + p.paymentMethod : ''),
+                    src: '费用管理·流水'
+                });
+            });
+            // 3) 独立付款流水
+            direct.forEach(p => {
+                rows.push({
+                    date: p.date,
+                    ts: parseInt((p.id || '').replace(/\D/g, '')) || 0,
+                    category: 'expense',
+                    party: (EXPENSE_TYPES[p.expenseType] || {}).name || p.expenseType || '费用',
+                    amount: p.amount || 0,
+                    remark: (p.remark || '') + (p.paymentMethod ? ' · ' + p.paymentMethod : ''),
+                    src: '费用管理·流水'
+                });
+            });
+            rows.sort((a, b) => a.date === b.date ? (a.ts - b.ts) : (a.date < b.date ? -1 : 1));
+            return rows;
+        }
+
+        function renderWechatList() {
+            const opening = parseFloat(document.getElementById('wechatOpening').value) || 0;
+            const start = document.getElementById('wechatStart').value;
+            const end = document.getElementById('wechatEnd').value;
+            const kw = (document.getElementById('wechatSearch').value || '').toLowerCase().trim();
+            const cat = document.getElementById('wechatCat').value;
+
+            // 收款/付款：微信对账自己的筛选
+            let incPayRows = wechatRowsCache.slice();
+            if (start) incPayRows = incPayRows.filter(r => r.date >= start);
+            if (end) incPayRows = incPayRows.filter(r => r.date <= end);
+            if (kw) incPayRows = incPayRows.filter(r => (r.party + ' ' + r.remark + ' ' + r.amount + ' ' + r.src).toLowerCase().includes(kw));
+            if (cat === 'income') incPayRows = incPayRows.filter(r => r.category === 'income');
+            else if (cat === 'payment') incPayRows = incPayRows.filter(r => r.category === 'payment');
+            else if (cat === 'expense') incPayRows = [];
+
+            // 费用支出：与费用管理当前筛选完全一致
+            let expRows = (cat === 'income' || cat === 'payment') ? [] : buildExpenseMgmtRows();
+
+            const rows = incPayRows.concat(expRows).sort((a, b) => a.date === b.date ? (a.ts - b.ts) : (a.date < b.date ? -1 : 1));
+
+            let income = 0, payment = 0, expense = 0, balance = opening;
+            let incomeCount = 0, paymentCount = 0, expenseCount = 0;
+            const catMeta = {
+                income: { label: '收款', badge: 'status-paid', color: '#059669' },
+                payment: { label: '付款', badge: 'status-partial', color: '#ea580c' },
+                expense: { label: '费用支出', badge: 'status-pending', color: '#dc2626' }
+            };
+            const body = rows.map(r => {
+                const meta = catMeta[r.category] || catMeta.expense;
+                if (r.category === 'income') { income += r.amount; incomeCount++; balance += r.amount; }
+                else if (r.category === 'payment') { payment += r.amount; paymentCount++; balance -= r.amount; }
+                else { expense += r.amount; expenseCount++; balance -= r.amount; }
+                const isOut = r.category !== 'income';
+                return `<tr>
+                    <td class="px-3 py-2 text-sm text-gray-500 whitespace-nowrap">${r.date}</td>
+                    <td class="px-3 py-2 text-sm"><span class="status-badge ${meta.badge}" style="font-size:10px;padding:2px 6px;">${meta.label}</span></td>
+                    <td class="px-3 py-2 text-sm whitespace-nowrap">${r.party}</td>
+                    <td class="px-3 py-2 text-sm text-right whitespace-nowrap" style="color:#059669;font-weight:600;">${r.category === 'income' ? '+' + r.amount.toFixed(2) : '-'}</td>
+                    <td class="px-3 py-2 text-sm text-right whitespace-nowrap" style="color:${meta.color};font-weight:600;">${isOut ? '-' + r.amount.toFixed(2) : '-'}</td>
+                    <td class="px-3 py-2 text-sm text-right whitespace-nowrap" style="color:${balance < 0 ? '#dc2626' : '#2563eb'};font-weight:700;">${balance.toFixed(2)}</td>
+                    <td class="px-3 py-2 text-sm text-gray-500" style="max-width:300px;white-space:normal;word-break:break-all;">${r.remark || '-'}</td>
+                    <td class="px-3 py-2 text-xs text-gray-400 whitespace-nowrap">${r.src}</td>
+                </tr>`;
+            }).join('');
+
+            document.getElementById('wechatIncomeTotal').textContent = '¥' + income.toFixed(2);
+            document.getElementById('wechatPayTotal').textContent = '¥' + payment.toFixed(2);
+            document.getElementById('wechatExpenseTotal').textContent = '¥' + expense.toFixed(2);
+            document.getElementById('wechatIncomeCount').textContent = incomeCount + ' 笔';
+            document.getElementById('wechatPayCount').textContent = paymentCount + ' 笔';
+            document.getElementById('wechatExpenseCount').textContent = expenseCount + ' 笔';
+            document.getElementById('wechatBalance').textContent = '¥' + (opening + income - payment - expense).toFixed(2);
+            document.getElementById('wechatList').innerHTML = body || `<tr><td colspan="8" class="px-3 py-8 text-center text-gray-400">当前筛选条件下没有流水</td></tr>`;
+
+            const note = document.getElementById('wechatNote');
+            if (note) note.textContent = '口径：收款/付款=收付款明细中备注含“财务微信”的流水（可用上方日期/搜索筛选）；费用支出=与费用管理页面当前筛选的列表逐项一致（费用行已付 + 付款流水行），合计即费用管理“已付”列合计；余额=期初+收款−付款−费用支出。';
+        }
+
         // ==================== 图片处理 ====================
 
 
@@ -10443,6 +10720,56 @@ function resetExpenseFilters() {
                 `;
             }
 
+
+            // 总负债分项明细：供应商欠款 + 各费用类型未付
+            const supplierDebtRows = (data.suppliers || [])
+                .filter(s => (s.balance || 0) > 0.004)
+                .sort((a, b) => (b.balance || 0) - (a.balance || 0))
+                .map(s => `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px dashed #fecaca; font-size:13px;">
+                        <span style="color:#7f1d1d;">🏭 ${s.name}</span>
+                        <span style="color:#dc2626; font-weight:700;">欠 ¥${(s.balance || 0).toFixed(2)}</span>
+                    </div>
+                `).join('');
+            const liabilityRows = (data.liabilityBreakdown || []).map(item => `
+                <div style="padding: 7px 0; border-bottom: 1px dashed #fecaca; font-size: 13px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="color: #7f1d1d;"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${item.color};margin-right:6px;"></span>${item.name}</span>
+                        <span style="color: #dc2626; font-weight: 800;">欠 ¥${item.unpaid.toFixed(2)}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:11px; color:#9ca3af; margin-top:2px; padding-left:15px;">
+                        <span>费用总额 ¥${item.total.toFixed(2)}</span>
+                        <span>已付/已登记流水 ¥${item.paid.toFixed(2)}</span>
+                    </div>
+                </div>
+            `).join('');
+            const liabilityBreakdownHtml = `
+                <div style="margin-top: 16px; background: white; border-radius: 8px; border: 1px solid #fecaca; overflow: hidden;">
+                    <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); padding: 12px; border-bottom: 1px solid #fecaca; display:flex; justify-content:space-between; align-items:center;">
+                        <div style="font-size: 14px; font-weight: 700; color: #991b1b;">🧾 总负债明细拆分</div>
+                        <div style="font-size: 16px; font-weight: 800; color: #dc2626;">¥${(data.supplierDebt + data.expenseUnpaid).toFixed(2)}</div>
+                    </div>
+                    <div style="padding: 12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #fee2e2; font-size:14px;">
+                            <span style="color:#374151; font-weight:700;">🏭 供应商欠款</span>
+                            <span style="color:#dc2626; font-weight:800;">欠 ¥${data.supplierDebt.toFixed(2)}</span>
+                        </div>
+                        <div style="margin:6px 0 10px; padding:10px; background:#fff7ed; border:1px solid #fed7aa; border-radius:6px;">
+                            <div style="font-size:12px; color:#9a3412; font-weight:700; margin-bottom:4px;">供应商按单位展开</div>
+                            ${supplierDebtRows || '<div style="color:#16a34a; font-size:13px; padding:6px 0;">✅ 当前无供应商欠款</div>'}
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #fee2e2; font-size:14px;">
+                            <span style="color:#374151; font-weight:700;">🧾 费用未付合计</span>
+                            <span style="color:#dc2626; font-weight:800;">欠 ¥${data.expenseUnpaid.toFixed(2)}</span>
+                        </div>
+                        <div style="margin-top:6px; padding: 10px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 6px;">
+                            <div style="font-size: 12px; color: #9a3412; font-weight: 700; margin-bottom: 4px;">费用按类型展开（欠多少）</div>
+                            ${liabilityRows || '<div style="color:#16a34a; font-size:13px; padding:6px 0;">✅ 当前口径下费用已结清</div>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+
             const detailHtml = `
                 <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 2px solid #0ea5e9; border-radius: 12px; padding: 20px; margin-top: 20px;">
                     <h4 style="font-size: 16px; font-weight: bold; color: #0369a1; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
@@ -10479,11 +10806,11 @@ function resetExpenseFilters() {
                                 </div>
                                 <div style="display: flex; justify-content: space-between; padding: 4px 0;">
                                     <span>费用支出：</span>
-                                    <span style="color: #059669; font-weight: 600;">+¥${data.totalExpensePayment.toFixed(2)}</span>
+                                    <span style="color: #ef4444; font-weight: 600;">-¥${data.totalExpensePayment.toFixed(2)}</span>
                                 </div>
                                 <div style="display: flex; justify-content: space-between; padding: 4px 0; border-top: 1px dashed #e5e7eb; margin-top: 4px;">
                                     <span style="font-weight: 600;">流出合计：</span>
-                                    <span style="color: #ef4444; font-weight: 700;">-¥${(data.totalSupplierPayment - data.totalExpensePayment).toFixed(2)}</span>
+                                    <span style="color: #ef4444; font-weight: 700;">-¥${(data.totalSupplierPayment + data.totalExpensePayment).toFixed(2)}</span>
                                 </div>
                             </div>
                         </div>
@@ -10495,14 +10822,16 @@ function resetExpenseFilters() {
                     <div style="background: white; border-radius: 8px; padding: 16px; border: 2px solid #f59e0b; text-align: center; margin-top: 16px;">
                         <div style="font-size: 13px; color: #6b7280; margin-bottom: 8px;">计算公式</div>
                         <div style="font-size: 14px; color: #1f2937; font-weight: 600; font-family: monospace; background: #fef3c7; padding: 12px; border-radius: 6px; line-height: 1.8;">
-                            流动资金 = ${data.totalInvestment.toFixed(2)} + ${data.totalIncome.toFixed(2)} - ${data.totalSupplierPayment.toFixed(2)} + (${data.expensePaidFromRegistration.toFixed(2)} + ${data.expensePaidFromPayments.toFixed(2)})
-                            <br> = ${data.totalInvestment.toFixed(2)} + ${data.totalIncome.toFixed(2)} - ${data.totalSupplierPayment.toFixed(2)} + ${data.totalExpensePayment.toFixed(2)} 
+                            流动资金 = ${data.totalInvestment.toFixed(2)} + ${data.totalIncome.toFixed(2)} - ${data.totalSupplierPayment.toFixed(2)} - (${data.expensePaidFromRegistration.toFixed(2)} + ${data.expensePaidFromPayments.toFixed(2)})
+                            <br> = ${data.totalInvestment.toFixed(2)} + ${data.totalIncome.toFixed(2)} - ${data.totalSupplierPayment.toFixed(2)} - ${data.totalExpensePayment.toFixed(2)} 
                             <br> = <span style="color: #059669; font-size: 18px;">¥${data.liquidity.toFixed(2)}</span>
                         </div>
                         <div style="font-size: 12px; color: #6b7280; margin-top: 8px;">
                             费用支出明细：登记已付 ¥${data.expensePaidFromRegistration.toFixed(2)} + 付款流水 ¥${data.expensePaidFromPayments.toFixed(2)}
                         </div>
                     </div>
+
+                    ${liabilityBreakdownHtml}
 
                     <!-- 其他资金状况 -->
                     <div style="margin-top: 16px; padding-top: 16px; border-top: 1px dashed #bae6fd;">
@@ -10604,13 +10933,38 @@ function resetExpenseFilters() {
 
             // 供应商欠款
             const supplierDebt = (data.suppliers || []).reduce((sum, s) => sum + (s.balance || 0), 0);
-            // 费用未付（从费用板块计算）
-            const expenseUnpaid = Object.values(EXPENSE_TYPES).map((type, index) => {
-                const key = Object.keys(EXPENSE_TYPES)[index];
-                const total = (data.expenses || []).filter(e => e.type === key).reduce((sum, e) => sum + (e.totalAmount || 0), 0);
-                const paid = (data.expensePayments || []).filter(p => p.expenseType === key).reduce((sum, p) => sum + (p.amount || 0), 0);
-                return Math.max(0, total - paid);
-            }).reduce((sum, val) => sum + val, 0);
+            // 费用未付：只要登记过“已付金额”或产生过费用付款流水，都要冲减负债；
+            // 同一笔付款若同时体现在“登记已付”和“付款流水”里，只扣一次（按 expenseId 匹配去重）。
+            const expenseList = data.expenses || [];
+            const flowByExpenseId = {};
+            const flowPaidByType = {};
+            expensePayments.forEach(p => {
+                const amount = p.amount || 0;
+                const key = p.expenseType || 'other';
+                flowPaidByType[key] = (flowPaidByType[key] || 0) + amount;
+                if (p.expenseId) flowByExpenseId[p.expenseId] = (flowByExpenseId[p.expenseId] || 0) + amount;
+            });
+            const registeredPaidByType = {};
+            const matchedFlowByType = {};
+            const totalByType = {};
+            expenseList.forEach(e => {
+                const key = e.type || 'other';
+                totalByType[key] = (totalByType[key] || 0) + (e.totalAmount || 0);
+                registeredPaidByType[key] = (registeredPaidByType[key] || 0) + (e.paidAmount || 0);
+                const flow = flowByExpenseId[e.id] || 0;
+                matchedFlowByType[key] = (matchedFlowByType[key] || 0) + Math.min(e.paidAmount || 0, flow);
+            });
+            const liabilityBreakdown = Object.keys(EXPENSE_TYPES).map(key => {
+                const total = totalByType[key] || 0;
+                const registeredPaid = registeredPaidByType[key] || 0;
+                const flowPaid = flowPaidByType[key] || 0;
+                const matchedFlow = matchedFlowByType[key] || 0;
+                const independentFlow = Math.max(0, flowPaid - matchedFlow); // 直接记流水/未关联费用单的付款
+                const paid = registeredPaid + independentFlow;
+                const unpaid = Math.max(0, total - paid);
+                return { key, name: EXPENSE_TYPES[key].name, color: EXPENSE_TYPES[key].color || '#6b7280', total, paid, unpaid };
+            }).filter(item => item.unpaid > 0.004);
+            const expenseUnpaid = liabilityBreakdown.reduce((sum, item) => sum + item.unpaid, 0);
 
             // 客户欠款（与客户管理同步：订单总额 - 所有收款）
             const totalSalesAmount = (data.salesOrders || []).reduce((sum, o) => sum + (o.totalAmount || 0), 0);
@@ -10638,6 +10992,7 @@ function resetExpenseFilters() {
 
             // 显示计算明细（用于核对）
             renderCapitalCalculationDetail({
+                liabilityBreakdown,
                 totalInvestment,
                 totalIncome,
                 totalSupplierPayment,
